@@ -16,12 +16,14 @@ import {
   saveHideCompleted,
   saveLists,
 } from "@/lib/storage";
+import ArchivedTasks from "@/components/ArchivedTasks";
 
 function createDefaultList(): SortdList {
   return {
     id: crypto.randomUUID(),
     name: "My first list",
     tasks: [],
+    archivedTasks: [],
     createdAt: new Date().toISOString(),
   };
 }
@@ -45,12 +47,19 @@ const [activeListId, setActiveListId] = useState(() => {
   );
 
   const activeList = useMemo(() => {
-    return lists.find((list) => list.id === activeListId) || lists[0];
+    const foundList = lists.find((list) => list.id === activeListId) || lists[0];
+
+    if (!foundList) return undefined;
+
+    return {
+      ...foundList,
+      archivedTasks: foundList.archivedTasks ?? [],
+    };
   }, [lists, activeListId]);
 
   const tasks = useMemo(() => {
-  return activeList?.tasks ?? [];
-}, [activeList]);
+    return activeList?.tasks ?? [];
+    }, [activeList]);
 
   const visibleTasks = useMemo(() => {
     if (!hideCompleted) return tasks;
@@ -154,6 +163,7 @@ const [activeListId, setActiveListId] = useState(() => {
       id: crypto.randomUUID(),
       name: "Untitled list",
       tasks: [],
+      archivedTasks: [],
       createdAt: new Date().toISOString(),
     };
 
@@ -179,6 +189,25 @@ const [activeListId, setActiveListId] = useState(() => {
 
   function reorderLists(reorderedLists: SortdList[]) {
     setLists(reorderedLists);
+  }
+
+  function archiveCompletedTasks() {
+    if (!activeList) return;
+
+    const completedTasks = tasks
+      .filter((task) => task.completed)
+      .map((task) => ({
+        ...task,
+        archivedAt: new Date().toISOString(),
+      }));
+
+    const activeTasks = tasks.filter((task) => !task.completed);
+
+    updateActiveList({
+      ...activeList,
+      tasks: activeTasks,
+      archivedTasks: [...(activeList.archivedTasks ?? []), ...completedTasks],
+    });
   }
 
   return (
@@ -207,6 +236,7 @@ const [activeListId, setActiveListId] = useState(() => {
               onAddTask={addTask}
               hideCompleted={hideCompleted}
               onToggleHideCompleted={() => setHideCompleted((current) => !current)}
+              onArchiveCompleted={archiveCompletedTasks} // 👈 add this
             />
 
             <TaskList
@@ -216,6 +246,7 @@ const [activeListId, setActiveListId] = useState(() => {
               onDeleteTask={deleteTask}
               onReorderTasks={reorderTasks}
             />
+            <ArchivedTasks tasks={activeList?.archivedTasks ?? []} />
           </div>
         </div>
       </section>
