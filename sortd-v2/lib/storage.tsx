@@ -1,14 +1,13 @@
-import { Task } from "./types";
+import { SortdList } from "./types";
 
-const TASKS_KEY = "sortd-tasks";
-const LIST_NAME_KEY = "sortd-list-name";
+const LISTS_KEY = "sortd-lists";
+const ACTIVE_LIST_KEY = "sortd-active-list-id";
 const HIDE_COMPLETED_KEY = "sortd-hide-completed";
 
-export function getStoredTasks(): Task[] {
+export function getStoredLists(): SortdList[] {
   if (typeof window === "undefined") return [];
 
-  const stored = localStorage.getItem(TASKS_KEY);
-
+  const stored = localStorage.getItem(LISTS_KEY);
   if (!stored) return [];
 
   try {
@@ -18,19 +17,19 @@ export function getStoredTasks(): Task[] {
   }
 }
 
-export function saveTasks(tasks: Task[]) {
+export function saveLists(lists: SortdList[]) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+  localStorage.setItem(LISTS_KEY, JSON.stringify(lists));
 }
 
-export function getStoredListName() {
+export function getStoredActiveListId() {
   if (typeof window === "undefined") return "";
-  return localStorage.getItem(LIST_NAME_KEY) || "";
+  return localStorage.getItem(ACTIVE_LIST_KEY) || "";
 }
 
-export function saveListName(name: string) {
+export function saveActiveListId(id: string) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(LIST_NAME_KEY, name);
+  localStorage.setItem(ACTIVE_LIST_KEY, id);
 }
 
 export function getStoredHideCompleted() {

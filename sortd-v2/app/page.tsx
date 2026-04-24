@@ -4,85 +4,161 @@ import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import ControlPanel from "@/components/ControlPanel";
 import ListTitle from "@/components/ListTitle";
+import ListSwitcher from "@/components/ListSwitcher";
 import TaskList from "@/components/TaskList";
 import Footer from "@/components/Footer";
-import { Task } from "@/lib/types";
+import { SortdList, Task } from "@/lib/types";
 import {
+  getStoredActiveListId,
   getStoredHideCompleted,
-  getStoredListName,
-  getStoredTasks,
+  getStoredLists,
+  saveActiveListId,
   saveHideCompleted,
-  saveListName,
-  saveTasks,
+  saveLists,
 } from "@/lib/storage";
 
+function createDefaultList(): SortdList {
+  return {
+    id: crypto.randomUUID(),
+    name: "My first list",
+    tasks: [],
+    createdAt: new Date().toISOString(),
+  };
+}
+
 export default function Home() {
-  const [tasks, setTasks] = useState<Task[]>(() => getStoredTasks());
-  const [listName, setListName] = useState(() => getStoredListName());
+  const [lists, setLists] = useState<SortdList[]>(() => {
+    const storedLists = getStoredLists();
+    return storedLists.length > 0 ? storedLists : [createDefaultList()];
+  });
+
+const [activeListId, setActiveListId] = useState(() => {
+  const stored = getStoredActiveListId();
+  if (stored) return stored;
+
+  const lists = getStoredLists();
+  return lists[0]?.id || "";
+});
+
   const [hideCompleted, setHideCompleted] = useState(() =>
     getStoredHideCompleted()
   );
 
+  const activeList = useMemo(() => {
+    return lists.find((list) => list.id === activeListId) || lists[0];
+  }, [lists, activeListId]);
 
-  useEffect(() => {
-    saveTasks(tasks);
-  }, [tasks]);
-
-  useEffect(() => {
-    saveListName(listName);
-    document.title = listName || "Sort'd";
-  }, [listName]);
-
-  useEffect(() => {
-    saveHideCompleted(hideCompleted);
-  }, [hideCompleted]);
+  const tasks = useMemo(() => {
+  return activeList?.tasks ?? [];
+}, [activeList]);
 
   const visibleTasks = useMemo(() => {
     if (!hideCompleted) return tasks;
     return tasks.filter((task) => !task.completed);
   }, [tasks, hideCompleted]);
 
-  function addTask() {
-  console.log("Add task clicked");
+  useEffect(() => {
+    saveLists(lists);
+  }, [lists]);
 
-  const newTask: Task = {
-    id: crypto.randomUUID(),
-    title: "",
-    completed: false,
-    createdAt: new Date().toISOString(),
-    order: tasks.length + 1,
-  };
+  useEffect(() => {
+    if (activeListId) {
+      saveActiveListId(activeListId);
+    }
+  }, [activeListId]);
 
-  setTasks((currentTasks) => {
-    console.log("Current tasks:", currentTasks);
-    return [...currentTasks, newTask];
-  });
-}
+  useEffect(() => {
+    saveHideCompleted(hideCompleted);
+  }, [hideCompleted]);
 
-  function updateTask(id: string, title: string) {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === id ? { ...task, title } : task
+  useEffect(() => {
+    document.title = activeList?.name || "Sort'd";
+  }, [activeList?.name]);
+
+  function updateActiveList(updatedList: SortdList) {
+    setLists((currentLists) =>
+      currentLists.map((list) =>
+        list.id === updatedList.id ? updatedList : list
       )
     );
+  }
+
+  function addTask() {
+    if (!activeList) return;
+
+    const newTask: Task = {
+      id: crypto.randomUUID(),
+      title: "",
+      completed: false,
+      createdAt: new Date().toISOString(),
+      order: tasks.length + 1,
+    };
+
+    updateActiveList({
+      ...activeList,
+      tasks: [...tasks, newTask],
+    });
+  }
+
+  function updateTask(id: string, title: string) {
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      tasks: tasks.map((task) =>
+        task.id === id ? { ...task, title } : task
+      ),
+    });
   }
 
   function toggleTask(id: string) {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      tasks: tasks.map((task) =>
         task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+      ),
+    });
   }
 
   function deleteTask(id: string) {
-    setTasks((currentTasks) =>
-      currentTasks.filter((task) => task.id !== id)
-    );
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      tasks: tasks.filter((task) => task.id !== id),
+    });
   }
 
   function reorderTasks(reorderedTasks: Task[]) {
-    setTasks(reorderedTasks);
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      tasks: reorderedTasks,
+    });
+  }
+
+  function updateListName(name: string) {
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      name,
+    });
+  }
+
+  function createList() {
+    const newList: SortdList = {
+      id: crypto.randomUUID(),
+      name: "Untitled list",
+      tasks: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    setLists((currentLists) => [...currentLists, newList]);
+    setActiveListId(newList.id);
   }
 
   return (
@@ -91,20 +167,31 @@ export default function Home() {
 
       <section className="flex flex-1 items-start justify-center px-4 py-8">
         <div className="w-full max-w-3xl rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
-          <ListTitle listName={listName} onChangeListName={setListName} />
+          <ListSwitcher
+            lists={lists}
+            activeListId={activeList?.id ?? ""}
+            onChangeList={setActiveListId}
+            onCreateList={createList}
+          />
+
+          <ListTitle
+            listName={activeList?.name ?? ""}
+            onChangeListName={updateListName}
+          />
 
           <ControlPanel
             onAddTask={addTask}
             hideCompleted={hideCompleted}
             onToggleHideCompleted={() => setHideCompleted((current) => !current)}
           />
-      <TaskList
-        tasks={visibleTasks}
-        onUpdateTask={updateTask}
-        onToggleTask={toggleTask}
-        onDeleteTask={deleteTask}
-        onReorderTasks={reorderTasks}
-      />
+
+          <TaskList
+            tasks={visibleTasks}
+            onUpdateTask={updateTask}
+            onToggleTask={toggleTask}
+            onDeleteTask={deleteTask}
+            onReorderTasks={reorderTasks}
+          />
         </div>
       </section>
 
