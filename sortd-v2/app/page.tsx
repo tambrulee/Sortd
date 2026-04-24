@@ -161,37 +161,47 @@ const [activeListId, setActiveListId] = useState(() => {
     setActiveListId(newList.id);
   }
 
+  function deleteActiveList() {
+    if (lists.length === 1) return;
+
+    const remainingLists = lists.filter((list) => list.id !== activeList?.id);
+    setLists(remainingLists);
+    setActiveListId(remainingLists[0].id);
+  }
   return (
     <main className="flex min-h-screen flex-col bg-[url('/default-img.jpg')] bg-cover bg-center text-slate-950">
       <Header />
 
-      <section className="flex flex-1 items-start justify-center px-4 py-8">
-        <div className="w-full max-w-3xl rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
+      <section className="flex flex-1 justify-center px-4 py-8">
+        <div className="grid w-full max-w-6xl gap-4 md:grid-cols-[260px_1fr]">
           <ListSwitcher
             lists={lists}
             activeListId={activeList?.id ?? ""}
             onChangeList={setActiveListId}
             onCreateList={createList}
+            onDeleteList={deleteActiveList}
           />
 
-          <ListTitle
-            listName={activeList?.name ?? ""}
-            onChangeListName={updateListName}
-          />
+          <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
+            <ListTitle
+              listName={activeList?.name ?? ""}
+              onChangeListName={updateListName}
+            />
 
-          <ControlPanel
-            onAddTask={addTask}
-            hideCompleted={hideCompleted}
-            onToggleHideCompleted={() => setHideCompleted((current) => !current)}
-          />
+            <ControlPanel
+              onAddTask={addTask}
+              hideCompleted={hideCompleted}
+              onToggleHideCompleted={() => setHideCompleted((current) => !current)}
+            />
 
-          <TaskList
-            tasks={visibleTasks}
-            onUpdateTask={updateTask}
-            onToggleTask={toggleTask}
-            onDeleteTask={deleteTask}
-            onReorderTasks={reorderTasks}
-          />
+            <TaskList
+              tasks={visibleTasks}
+              onUpdateTask={updateTask}
+              onToggleTask={toggleTask}
+              onDeleteTask={deleteTask}
+              onReorderTasks={reorderTasks}
+            />
+          </div>
         </div>
       </section>
 
