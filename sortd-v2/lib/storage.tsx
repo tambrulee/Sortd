@@ -8,10 +8,18 @@ export function getStoredTasks(): Task[] {
   if (typeof window === "undefined") return [];
 
   const stored = localStorage.getItem(TASKS_KEY);
-  return stored ? JSON.parse(stored) : [];
+
+  if (!stored) return [];
+
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return [];
+  }
 }
 
 export function saveTasks(tasks: Task[]) {
+  if (typeof window === "undefined") return;
   localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
 }
 
@@ -21,6 +29,7 @@ export function getStoredListName() {
 }
 
 export function saveListName(name: string) {
+  if (typeof window === "undefined") return;
   localStorage.setItem(LIST_NAME_KEY, name);
 }
 
@@ -30,5 +39,6 @@ export function getStoredHideCompleted() {
 }
 
 export function saveHideCompleted(value: boolean) {
+  if (typeof window === "undefined") return;
   localStorage.setItem(HIDE_COMPLETED_KEY, String(value));
 }

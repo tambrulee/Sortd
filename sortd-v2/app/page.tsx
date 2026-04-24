@@ -43,16 +43,21 @@ export default function Home() {
   }, [tasks, hideCompleted]);
 
   function addTask() {
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      title: "",
-      completed: false,
-      createdAt: new Date().toISOString(),
-      order: tasks.length + 1,
-    };
+  console.log("Add task clicked");
 
-    setTasks((currentTasks) => [...currentTasks, newTask]);
-  }
+  const newTask: Task = {
+    id: crypto.randomUUID(),
+    title: "",
+    completed: false,
+    createdAt: new Date().toISOString(),
+    order: tasks.length + 1,
+  };
+
+  setTasks((currentTasks) => {
+    console.log("Current tasks:", currentTasks);
+    return [...currentTasks, newTask];
+  });
+}
 
   function updateTask(id: string, title: string) {
     setTasks((currentTasks) =>
@@ -87,17 +92,14 @@ export default function Home() {
           <ControlPanel
             onAddTask={addTask}
             hideCompleted={hideCompleted}
-            onToggleHideCompleted={() =>
-              setHideCompleted((current) => !current)
-            }
+            onToggleHideCompleted={() => setHideCompleted((current) => !current)}
           />
-
-          <TaskList
-            tasks={visibleTasks}
-            onUpdateTask={updateTask}
-            onToggleTask={toggleTask}
-            onDeleteTask={deleteTask}
-          />
+      <TaskList
+        tasks={visibleTasks}
+        onUpdateTask={updateTask}
+        onToggleTask={toggleTask}
+        onDeleteTask={deleteTask}
+      />
         </div>
       </section>
 
