@@ -81,6 +81,10 @@ export default function Home() {
     );
   }
 
+  function reorderTasks(reorderedTasks: Task[]) {
+    setTasks(reorderedTasks);
+  }
+
   return (
     <main className="flex min-h-screen flex-col bg-[url('/default-img.jpg')] bg-cover bg-center text-slate-950">
       <Header />
@@ -99,6 +103,7 @@ export default function Home() {
         onUpdateTask={updateTask}
         onToggleTask={toggleTask}
         onDeleteTask={deleteTask}
+        onReorderTasks={reorderTasks}
       />
         </div>
       </section>
