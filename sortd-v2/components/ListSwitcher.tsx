@@ -37,6 +37,8 @@ function SortableListItem({
   onChangeList,
   onRenameList,
 }: SortableListItemProps) {
+  const completedCount = list.tasks.filter((task) => task.completed).length;
+  const totalCount = list.tasks.length;
   const {
     attributes,
     listeners,
@@ -61,6 +63,7 @@ function SortableListItem({
           : "bg-[#eeeaea] text-slate-900 hover:bg-[#cdbfd1]"
       } ${isDragging ? "z-50 opacity-60" : ""}`}
     >
+
       <button
         type="button"
         {...attributes}
@@ -80,6 +83,16 @@ function SortableListItem({
           isActive ? "placeholder:text-white/60" : ""
         }`}
       />
+
+      <span
+        className={`shrink-0 rounded-full px-2 py-1 text-xs ${
+          isActive
+            ? "bg-white/15 text-white"
+            : "bg-white/70 text-slate-600"
+        }`}
+      >
+        {completedCount}/{totalCount}
+      </span>
     </div>
   );
 }
