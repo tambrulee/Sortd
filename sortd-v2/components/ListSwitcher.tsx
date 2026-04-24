@@ -6,6 +6,7 @@ type ListSwitcherProps = {
   onChangeList: (id: string) => void;
   onCreateList: () => void;
   onDeleteList: () => void;
+  onRenameList: (id: string, name: string) => void;
 };
 
 export default function ListSwitcher({
@@ -14,6 +15,7 @@ export default function ListSwitcher({
   onChangeList,
   onCreateList,
   onDeleteList,
+  onRenameList,
 }: ListSwitcherProps) {
   return (
     <aside className="rounded-3xl bg-white/85 p-4 shadow-xl backdrop-blur-md">
@@ -32,20 +34,24 @@ export default function ListSwitcher({
       </div>
 
       <div className="space-y-2">
-        {lists.map((list) => (
-          <button
-            key={list.id}
-            type="button"
-            onClick={() => onChangeList(list.id)}
-            className={`w-full rounded-2xl px-4 py-3 text-left text-sm transition ${
-              list.id === activeListId
-                ? "bg-[#1f0825] text-white"
-                : "bg-[#eeeaea] text-slate-900 hover:bg-[#cdbfd1]"
-            }`}
-          >
-            {list.name || "Untitled list"}
-          </button>
-        ))}
+        {lists.map((list) => {
+          const isActive = list.id === activeListId;
+
+          return (
+            <input
+              key={list.id}
+              value={list.name}
+              onClick={() => onChangeList(list.id)}
+              onChange={(e) => onRenameList(list.id, e.target.value)}
+              placeholder="Untitled list"
+              className={`w-full rounded-2xl px-4 py-3 text-left text-sm outline-none transition ${
+                isActive
+                  ? "bg-[#1f0825] text-white placeholder:text-white/60"
+                  : "bg-[#eeeaea] text-slate-900 hover:bg-[#cdbfd1]"
+              }`}
+            />
+          );
+        })}
       </div>
 
       <button

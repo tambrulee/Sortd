@@ -168,6 +168,15 @@ const [activeListId, setActiveListId] = useState(() => {
     setLists(remainingLists);
     setActiveListId(remainingLists[0].id);
   }
+
+  function renameList(id: string, name: string) {
+    setLists((currentLists) =>
+      currentLists.map((list) =>
+        list.id === id ? { ...list, name } : list
+      )
+    );
+  }
+
   return (
     <main className="flex min-h-screen flex-col bg-[url('/default-img.jpg')] bg-cover bg-center text-slate-950">
       <Header />
@@ -180,6 +189,7 @@ const [activeListId, setActiveListId] = useState(() => {
             onChangeList={setActiveListId}
             onCreateList={createList}
             onDeleteList={deleteActiveList}
+            onRenameList={renameList}
           />
 
           <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
