@@ -1,4 +1,18 @@
+"use client";
+
 import { SortdList } from "@/lib/types";
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type ListSwitcherProps = {
   lists: SortdList[];
@@ -7,7 +21,68 @@ type ListSwitcherProps = {
   onCreateList: () => void;
   onDeleteList: () => void;
   onRenameList: (id: string, name: string) => void;
+  onReorderLists: (lists: SortdList[]) => void;
 };
+
+type SortableListItemProps = {
+  list: SortdList;
+  isActive: boolean;
+  onChangeList: (id: string) => void;
+  onRenameList: (id: string, name: string) => void;
+};
+
+function SortableListItem({
+  list,
+  isActive,
+  onChangeList,
+  onRenameList,
+}: SortableListItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: list.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-2 rounded-2xl px-3 py-2 transition ${
+        isActive
+          ? "bg-[#1f0825] text-white"
+          : "bg-[#eeeaea] text-slate-900 hover:bg-[#cdbfd1]"
+      } ${isDragging ? "z-50 opacity-60" : ""}`}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="cursor-grab text-sm opacity-70 active:cursor-grabbing"
+        aria-label="Drag list"
+      >
+        ⋮⋮
+      </button>
+
+      <input
+        value={list.name}
+        onClick={() => onChangeList(list.id)}
+        onChange={(e) => onRenameList(list.id, e.target.value)}
+        placeholder="Untitled list"
+        className={`min-w-0 flex-1 bg-transparent text-sm outline-none ${
+          isActive ? "placeholder:text-white/60" : ""
+        }`}
+      />
+    </div>
+  );
+}
 
 export default function ListSwitcher({
   lists,
@@ -16,7 +91,19 @@ export default function ListSwitcher({
   onCreateList,
   onDeleteList,
   onRenameList,
+  onReorderLists,
 }: ListSwitcherProps) {
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = lists.findIndex((list) => list.id === active.id);
+    const newIndex = lists.findIndex((list) => list.id === over.id);
+
+    onReorderLists(arrayMove(lists, oldIndex, newIndex));
+  }
+
   return (
     <aside className="rounded-3xl bg-white/85 p-4 shadow-xl backdrop-blur-md">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -33,26 +120,24 @@ export default function ListSwitcher({
         </button>
       </div>
 
-      <div className="space-y-2">
-        {lists.map((list) => {
-          const isActive = list.id === activeListId;
-
-          return (
-            <input
-              key={list.id}
-              value={list.name}
-              onClick={() => onChangeList(list.id)}
-              onChange={(e) => onRenameList(list.id, e.target.value)}
-              placeholder="Untitled list"
-              className={`w-full rounded-2xl px-4 py-3 text-left text-sm outline-none transition ${
-                isActive
-                  ? "bg-[#1f0825] text-white placeholder:text-white/60"
-                  : "bg-[#eeeaea] text-slate-900 hover:bg-[#cdbfd1]"
-              }`}
-            />
-          );
-        })}
-      </div>
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext
+          items={lists.map((list) => list.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-2">
+            {lists.map((list) => (
+              <SortableListItem
+                key={list.id}
+                list={list}
+                isActive={list.id === activeListId}
+                onChangeList={onChangeList}
+                onRenameList={onRenameList}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       <button
         type="button"

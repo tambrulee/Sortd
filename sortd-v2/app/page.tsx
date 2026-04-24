@@ -177,6 +177,10 @@ const [activeListId, setActiveListId] = useState(() => {
     );
   }
 
+  function reorderLists(reorderedLists: SortdList[]) {
+    setLists(reorderedLists);
+  }
+
   return (
     <main className="flex min-h-screen flex-col bg-[url('/default-img.jpg')] bg-cover bg-center text-slate-950">
       <Header />
@@ -190,6 +194,7 @@ const [activeListId, setActiveListId] = useState(() => {
             onCreateList={createList}
             onDeleteList={deleteActiveList}
             onRenameList={renameList}
+            onReorderLists={reorderLists}
           />
 
           <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
