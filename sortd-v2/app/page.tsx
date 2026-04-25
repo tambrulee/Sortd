@@ -212,6 +212,31 @@ const [activeListId, setActiveListId] = useState(() => {
     });
   }
 
+  function restoreArchivedTask(taskId: string) {
+  if (!activeList) return;
+
+  const taskToRestore = activeList.archivedTasks.find(
+    (task) => task.id === taskId
+  );
+
+  if (!taskToRestore) return;
+
+  const restoredTask: Task = {
+    ...taskToRestore,
+    completed: false,
+    archivedAt: undefined,
+    order: tasks.length + 1,
+  };
+
+  updateActiveList({
+    ...activeList,
+    tasks: [...tasks, restoredTask],
+    archivedTasks: activeList.archivedTasks.filter(
+      (task) => task.id !== taskId
+    ),
+  });
+}
+
   return (
     <main className="flex min-h-screen flex-col bg-[url('/default-img.jpg')] bg-cover bg-center text-slate-950">
       <Header />
@@ -249,7 +274,10 @@ const [activeListId, setActiveListId] = useState(() => {
               onDeleteTask={deleteTask}
               onReorderTasks={reorderTasks}
             />
-            <ArchivedTasks tasks={activeList?.archivedTasks ?? []} />
+            <ArchivedTasks
+              tasks={activeList?.archivedTasks ?? []}
+              onRestoreTask={restoreArchivedTask}
+            />
           </div>
         </div>
       </section>

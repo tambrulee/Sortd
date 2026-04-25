@@ -5,9 +5,13 @@ import { Task } from "@/lib/types";
 
 type ArchivedTasksProps = {
   tasks: Task[];
+  onRestoreTask: (taskId: string) => void;
 };
 
-export default function ArchivedTasks({ tasks }: ArchivedTasksProps) {
+export default function ArchivedTasks({
+  tasks,
+  onRestoreTask,
+}: ArchivedTasksProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   if (tasks.length === 0) return null;
@@ -35,9 +39,19 @@ export default function ArchivedTasks({ tasks }: ArchivedTasksProps) {
             {tasks.map((task) => (
               <div
                 key={task.id}
-                className="rounded-xl bg-white/70 px-3 py-2 text-sm text-slate-600 line-through"
+                className="flex items-center justify-between gap-3 rounded-xl bg-white/70 px-3 py-2 text-sm text-slate-600"
               >
-                {task.title || "Untitled task"}
+                <span className="line-through">
+                  {task.title || "Untitled task"}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => onRestoreTask(task.id)}
+                  className="rounded-lg px-2 py-1 text-xs font-medium text-[#1f0825] transition hover:bg-[#cdbfd1]"
+                >
+                  Restore
+                </button>
               </div>
             ))}
           </div>
