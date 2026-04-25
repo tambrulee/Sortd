@@ -4,7 +4,8 @@ type ControlPanelProps = {
   onAddTask: () => void;
   hideCompleted: boolean;
   onToggleHideCompleted: () => void;
-  onArchiveCompleted: () => void; // 👈 new prop
+  onArchiveCompleted: () => void;
+  hasCompleted: boolean; // 👈 ADD THIS
 };
 
 export default function ControlPanel({
@@ -12,6 +13,7 @@ export default function ControlPanel({
   hideCompleted,
   onToggleHideCompleted,
   onArchiveCompleted,
+  hasCompleted,
 }: ControlPanelProps) {
   return (
     <div className="mb-6 flex flex-wrap justify-center gap-2">
@@ -34,7 +36,8 @@ export default function ControlPanel({
       <button
         type="button"
         onClick={onArchiveCompleted}
-        className="rounded-xl border border-[#1f0825]/20 bg-white/70 px-4 py-2 text-sm font-medium text-[#1f0825] transition hover:bg-[#cdbfd1]"
+        disabled={!hasCompleted}
+        className="rounded-xl border border-[#1f0825]/20 bg-white/70 px-4 py-2 text-sm font-medium text-[#1f0825] transition hover:bg-[#cdbfd1] disabled:opacity-40 disabled:cursor-not-allowed"
       >
         Archive completed
       </button>

@@ -66,6 +66,8 @@ const [activeListId, setActiveListId] = useState(() => {
     return tasks.filter((task) => !task.completed);
   }, [tasks, hideCompleted]);
 
+  const hasCompleted = tasks.some(task => task.completed);
+
   useEffect(() => {
     saveLists(lists);
   }, [lists]);
@@ -237,6 +239,7 @@ const [activeListId, setActiveListId] = useState(() => {
               hideCompleted={hideCompleted}
               onToggleHideCompleted={() => setHideCompleted((current) => !current)}
               onArchiveCompleted={archiveCompletedTasks} // 👈 add this
+              hasCompleted={tasks.some(task => task.completed)}
             />
 
             <TaskList
