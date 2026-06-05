@@ -61,24 +61,25 @@ const [activeListId, setActiveListId] = useState(() => {
     return activeList?.tasks ?? [];
     }, [activeList]);
 
+const [taskFilter, setTaskFilter] = useState<"all" | "high" | "low-energy">(
+    "all"
+  );
+
 const visibleTasks = useMemo(() => {
-    const filteredTasks = hideCompleted
-      ? tasks.filter((task) => !task.completed)
-      : tasks;
+  let filteredTasks = hideCompleted
+    ? tasks.filter((task) => !task.completed)
+    : tasks;
 
-    const priorityOrder = {
-      high: 1,
-      medium: 2,
-      low: 3,
-    };
+  if (taskFilter === "high") {
+    filteredTasks = filteredTasks.filter((task) => task.priority === "high");
+  }
 
-    return [...filteredTasks].sort((a, b) => {
-      return (
-        priorityOrder[a.priority ?? "medium"] -
-        priorityOrder[b.priority ?? "medium"]
-      );
-    });
-  }, [tasks, hideCompleted]);
+  if (taskFilter === "low-energy") {
+    filteredTasks = filteredTasks.filter((task) => task.energy === "low");
+  }
+
+  return filteredTasks;
+}, [tasks, hideCompleted, taskFilter]);
 
   useEffect(() => {
     saveLists(lists);
@@ -306,6 +307,20 @@ const visibleTasks = useMemo(() => {
               onArchiveCompleted={archiveCompletedTasks} // 👈 add this
               hasCompleted={tasks.some(task => task.completed)}
             />
+
+            <div className="mb-4 flex flex-wrap gap-2">
+              <button onClick={() => setTaskFilter("all")} className="rounded-lg bg-slate-200 px-3 py-1">
+                All
+              </button>
+
+              <button onClick={() => setTaskFilter("high")} className="rounded-lg bg-slate-200 px-3 py-1">
+                High priority
+              </button>
+
+              <button onClick={() => setTaskFilter("low-energy")} className="rounded-lg bg-slate-200 px-3 py-1">
+                Low energy
+              </button>
+            </div>
 
             <TaskList
               tasks={visibleTasks}
