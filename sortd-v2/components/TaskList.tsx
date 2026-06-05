@@ -22,6 +22,10 @@ type TaskListProps = {
     id: string,
     priority: "low" | "medium" | "high"
   ) => void;
+  onUpdateTaskEnergy: (
+    id: string,
+    energy: "low" | "medium" | "high"
+  ) => void;
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onReorderTasks: (tasks: Task[]) => void;
@@ -31,6 +35,7 @@ export default function TaskList({
   tasks,
   onUpdateTask,
   onUpdateTaskPriority,
+  onUpdateTaskEnergy,
   onToggleTask,
   onDeleteTask,
   onReorderTasks,
@@ -74,6 +79,7 @@ export default function TaskList({
               task={task}
               onUpdateTask={onUpdateTask}
               onUpdateTaskPriority={onUpdateTaskPriority}
+              onUpdateTaskEnergy={onUpdateTaskEnergy}
               onToggleTask={onToggleTask}
               onDeleteTask={onDeleteTask}
             />

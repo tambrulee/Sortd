@@ -11,15 +11,20 @@ type TaskItemProps = {
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onUpdateTaskPriority: (
-  id: string,
-  priority: "low" | "medium" | "high"
-) => void;
+    id: string,
+    priority: "low" | "medium" | "high"
+  ) => void;
+  onUpdateTaskEnergy: (
+    id: string,
+    energy: "low" | "medium" | "high"
+  ) => void;
 };
 
 export default function TaskItem({
   task,
   onUpdateTask,
   onUpdateTaskPriority,
+  onUpdateTaskEnergy,
   onToggleTask,
   onDeleteTask,
 }: TaskItemProps) {
@@ -100,6 +105,21 @@ export default function TaskItem({
         <option value="low">Low</option>
         <option value="medium">Medium</option>
         <option value="high">High</option>
+      </select>
+
+      <select
+        value={task.energy ?? "medium"}
+        onChange={(e) =>
+          onUpdateTaskEnergy(
+            task.id,
+            e.target.value as "low" | "medium" | "high"
+          )
+        }
+        className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm"
+      >
+        <option value="low">Low energy</option>
+        <option value="medium">Medium energy</option>
+        <option value="high">High energy</option>
       </select>
 
       <button

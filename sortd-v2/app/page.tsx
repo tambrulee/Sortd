@@ -61,12 +61,24 @@ const [activeListId, setActiveListId] = useState(() => {
     return activeList?.tasks ?? [];
     }, [activeList]);
 
-  const visibleTasks = useMemo(() => {
-    if (!hideCompleted) return tasks;
-    return tasks.filter((task) => !task.completed);
-  }, [tasks, hideCompleted]);
+const visibleTasks = useMemo(() => {
+    const filteredTasks = hideCompleted
+      ? tasks.filter((task) => !task.completed)
+      : tasks;
 
-  const hasCompleted = tasks.some(task => task.completed);
+    const priorityOrder = {
+      high: 1,
+      medium: 2,
+      low: 3,
+    };
+
+    return [...filteredTasks].sort((a, b) => {
+      return (
+        priorityOrder[a.priority ?? "medium"] -
+        priorityOrder[b.priority ?? "medium"]
+      );
+    });
+  }, [tasks, hideCompleted]);
 
   useEffect(() => {
     saveLists(lists);
@@ -132,6 +144,20 @@ const [activeListId, setActiveListId] = useState(() => {
       ...activeList,
       tasks: tasks.map((task) =>
         task.id === id ? { ...task, priority } : task
+      ),
+    });
+  }
+
+  function updateTaskEnergy(
+    id: string,
+    energy: "low" | "medium" | "high"
+  ) {
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      tasks: tasks.map((task) =>
+        task.id === id ? { ...task, energy } : task
       ),
     });
   }
@@ -285,6 +311,7 @@ const [activeListId, setActiveListId] = useState(() => {
               tasks={visibleTasks}
               onUpdateTask={updateTask}
               onUpdateTaskPriority={updateTaskPriority}
+              onUpdateTaskEnergy={updateTaskEnergy}
               onToggleTask={toggleTask}
               onDeleteTask={deleteTask}
               onReorderTasks={reorderTasks}
