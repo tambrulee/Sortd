@@ -122,6 +122,20 @@ const [activeListId, setActiveListId] = useState(() => {
     });
   }
 
+  function updateTaskPriority(
+    id: string,
+    priority: "low" | "medium" | "high"
+  ) {
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      tasks: tasks.map((task) =>
+        task.id === id ? { ...task, priority } : task
+      ),
+    });
+  }
+
   function toggleTask(id: string) {
     if (!activeList) return;
 
@@ -270,6 +284,7 @@ const [activeListId, setActiveListId] = useState(() => {
             <TaskList
               tasks={visibleTasks}
               onUpdateTask={updateTask}
+              onUpdateTaskPriority={updateTaskPriority}
               onToggleTask={toggleTask}
               onDeleteTask={deleteTask}
               onReorderTasks={reorderTasks}

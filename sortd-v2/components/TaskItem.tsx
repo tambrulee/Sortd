@@ -10,11 +10,16 @@ type TaskItemProps = {
   onUpdateTask: (id: string, title: string) => void;
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
+  onUpdateTaskPriority: (
+  id: string,
+  priority: "low" | "medium" | "high"
+) => void;
 };
 
 export default function TaskItem({
   task,
   onUpdateTask,
+  onUpdateTaskPriority,
   onToggleTask,
   onDeleteTask,
 }: TaskItemProps) {
@@ -81,6 +86,21 @@ export default function TaskItem({
             : "bg-transparent text-slate-900"
         }`}
       />
+
+      <select
+        value={task.priority ?? "medium"}
+        onChange={(e) =>
+          onUpdateTaskPriority(
+            task.id,
+            e.target.value as "low" | "medium" | "high"
+          )
+        }
+        className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm"
+      >
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
 
       <button
         type="button"

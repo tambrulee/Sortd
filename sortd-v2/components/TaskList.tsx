@@ -18,6 +18,10 @@ import TaskItem from "./TaskItem";
 type TaskListProps = {
   tasks: Task[];
   onUpdateTask: (id: string, title: string) => void;
+  onUpdateTaskPriority: (
+    id: string,
+    priority: "low" | "medium" | "high"
+  ) => void;
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onReorderTasks: (tasks: Task[]) => void;
@@ -26,6 +30,7 @@ type TaskListProps = {
 export default function TaskList({
   tasks,
   onUpdateTask,
+  onUpdateTaskPriority,
   onToggleTask,
   onDeleteTask,
   onReorderTasks,
@@ -68,6 +73,7 @@ export default function TaskList({
               key={task.id}
               task={task}
               onUpdateTask={onUpdateTask}
+              onUpdateTaskPriority={onUpdateTaskPriority}
               onToggleTask={onToggleTask}
               onDeleteTask={onDeleteTask}
             />
