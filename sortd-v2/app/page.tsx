@@ -7,7 +7,8 @@ import ListTitle from "@/components/ListTitle";
 import ListSwitcher from "@/components/ListSwitcher";
 import TaskList from "@/components/TaskList";
 import Footer from "@/components/Footer";
-import { SortdList, Task } from "@/lib/types";
+import ProjectDetails from "@/components/ProjectDetails";
+import { ProjectStatus, SortdList, Task } from "@/lib/types";
 import {
   getStoredActiveListId,
   getStoredHideCompleted,
@@ -21,7 +22,9 @@ import ArchivedTasks from "@/components/ArchivedTasks";
 function createDefaultList(): SortdList {
   return {
     id: crypto.randomUUID(),
-    name: "My first list",
+    name: "My first project",
+    description: "",
+    status: "active",
     tasks: [],
     archivedTasks: [],
     createdAt: new Date().toISOString(),
@@ -114,6 +117,8 @@ const visibleTasks = useMemo(() => {
       id: crypto.randomUUID(),
       title: "",
       completed: false,
+      priority: "medium",
+      energy: "medium",
       createdAt: new Date().toISOString(),
       order: tasks.length + 1,
     };
@@ -201,10 +206,30 @@ const visibleTasks = useMemo(() => {
     });
   }
 
+  function updateProjectDescription(description: string) {
+  if (!activeList) return;
+
+  updateActiveList({
+    ...activeList,
+    description,
+  });
+}
+
+function updateProjectStatus(status: ProjectStatus) {
+  if (!activeList) return;
+
+  updateActiveList({
+    ...activeList,
+    status,
+  });
+}
+
   function createList() {
     const newList: SortdList = {
       id: crypto.randomUUID(),
-      name: "Untitled list",
+      name: "Untitled project",
+      description: "",
+      status: "active",
       tasks: [],
       archivedTasks: [],
       createdAt: new Date().toISOString(),
@@ -300,12 +325,21 @@ const visibleTasks = useMemo(() => {
               onChangeListName={updateListName}
             />
 
+            <ProjectDetails
+              description={activeList?.description ?? ""}
+              status={activeList?.status ?? "active"}
+              onChangeDescription={updateProjectDescription}
+              onChangeStatus={updateProjectStatus}
+            />
+
             <ControlPanel
               onAddTask={addTask}
               hideCompleted={hideCompleted}
-              onToggleHideCompleted={() => setHideCompleted((current) => !current)}
-              onArchiveCompleted={archiveCompletedTasks} // 👈 add this
-              hasCompleted={tasks.some(task => task.completed)}
+              onToggleHideCompleted={() =>
+                setHideCompleted((current) => !current)
+              }
+              onArchiveCompleted={archiveCompletedTasks}
+              hasCompleted={tasks.some((task) => task.completed)}
             />
 
             <div className="mb-4 flex flex-wrap gap-2">
