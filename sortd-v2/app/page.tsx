@@ -340,21 +340,9 @@ function updateProjectStatus(status: ProjectStatus) {
               }
               onArchiveCompleted={archiveCompletedTasks}
               hasCompleted={tasks.some((task) => task.completed)}
+              taskFilter={taskFilter}
+              onChangeTaskFilter={setTaskFilter}
             />
-
-            <div className="mb-4 flex flex-wrap gap-2">
-              <button onClick={() => setTaskFilter("all")} className="rounded-lg bg-slate-200 px-3 py-1">
-                All
-              </button>
-
-              <button onClick={() => setTaskFilter("high")} className="rounded-lg bg-slate-200 px-3 py-1">
-                High priority
-              </button>
-
-              <button onClick={() => setTaskFilter("low-energy")} className="rounded-lg bg-slate-200 px-3 py-1">
-                Low energy
-              </button>
-            </div>
 
             <TaskList
               tasks={visibleTasks}

@@ -53,6 +53,17 @@ function SortableListItem({
     transition,
   };
 
+  function getStatusColour(status: SortdList["status"]) {
+    switch (status) {
+      case "paused":
+        return "bg-amber-400";
+      case "completed":
+        return "bg-slate-400";
+      default:
+        return "bg-emerald-400";
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -74,11 +85,18 @@ function SortableListItem({
         ⋮⋮
       </button>
 
+      <span
+        title={list.status ?? "active"}
+        className={`h-2.5 w-2.5 shrink-0 rounded-full ${getStatusColour(
+          list.status
+        )}`}
+      />
+      
       <input
         value={list.name}
         onClick={() => onChangeList(list.id)}
         onChange={(e) => onRenameList(list.id, e.target.value)}
-        placeholder="Untitled list"
+        // placeholder="Untitled list"
         className={`min-w-0 flex-1 bg-transparent text-sm outline-none ${
           isActive ? "placeholder:text-white/60" : ""
         }`}
@@ -120,8 +138,8 @@ export default function ListSwitcher({
   return (
     <aside className="rounded-3xl bg-white/85 p-4 shadow-xl backdrop-blur-md">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-          Lists
+        <h2 className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
+          Projects
         </h2>
 
         <button
@@ -138,6 +156,7 @@ export default function ListSwitcher({
           items={lists.map((list) => list.id)}
           strategy={verticalListSortingStrategy}
         >
+          
           <div className="space-y-2">
             {lists.map((list) => (
               <SortableListItem

@@ -79,17 +79,11 @@ export default function TaskItem({
       <input
         ref={inputRef}
         value={task.title}
-        readOnly={!isEditing}
-        onChange={(e) => onUpdateTask(task.id, e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") setIsEditing(false);
-        }}
+        onChange={(event) =>
+          onUpdateTask(task.id, event.target.value)
+        }
         placeholder="Enter task..."
-        className={`flex-1 rounded-lg px-2 py-1 text-sm font-medium outline-none ${
-          isEditing
-            ? "bg-white ring-2 ring-[#cd6ce7]"
-            : "bg-transparent text-slate-900"
-        }`}
+        className="min-w-0 flex-1 rounded-lg bg-transparent px-2 py-1 text-sm font-medium text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-[#cd6ce7]"
       />
 
       <select
@@ -107,35 +101,15 @@ export default function TaskItem({
         <option value="high">High</option>
       </select>
 
-      <select
-        value={task.energy ?? "medium"}
-        onChange={(e) =>
-          onUpdateTaskEnergy(
-            task.id,
-            e.target.value as "low" | "medium" | "high"
-          )
-        }
-        className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm"
-      >
-        <option value="low">Low energy</option>
-        <option value="medium">Medium energy</option>
-        <option value="high">High energy</option>
-      </select>
-
-      <button
-        type="button"
-        onClick={() => setIsEditing((current) => !current)}
-        className="rounded-lg px-2 py-1 text-sm text-[#1f0825] transition hover:bg-[#cdbfd1]"
-      >
-        {isEditing ? "Save" : "Edit"}
-      </button>
 
       <button
         type="button"
         onClick={() => onDeleteTask(task.id)}
-        className="rounded-lg px-2 py-1 text-sm text-[#1f0825] transition hover:bg-[#cdbfd1]"
+        aria-label="Delete task"
+        title="Delete task"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-slate-400 transition hover:bg-red-100 hover:text-red-600"
       >
-        Delete
+        ×
       </button>
     </div>
   );
