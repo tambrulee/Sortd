@@ -29,6 +29,11 @@ type TaskListProps = {
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onReorderTasks: (tasks: Task[]) => void;
+  onUpdateTaskDueDate: (id: string, dueDate: string) => void;
+  onUpdateTaskDuration: (
+    id: string,
+    durationMinutes?: number
+  ) => void;
 };
 
 export default function TaskList({
@@ -36,6 +41,8 @@ export default function TaskList({
   onUpdateTask,
   onUpdateTaskPriority,
   onUpdateTaskEnergy,
+  onUpdateTaskDueDate,
+  onUpdateTaskDuration,
   onToggleTask,
   onDeleteTask,
   onReorderTasks,

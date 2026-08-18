@@ -22,6 +22,9 @@ export type Task = {
   priority?: Priority;
   energy?: Energy;
 
+  dueDate?: string;
+  durationMinutes?: number;
+
   archivedAt?: string;
 };
 
@@ -64,3 +67,4 @@ export interface SortdWorkspace {
   aspirations: Aspiration[];
   activeProjectId?: string;
 }
+

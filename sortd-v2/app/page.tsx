@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Header from "@/components/Header";
 import ControlPanel from "@/components/ControlPanel";
 import ListTitle from "@/components/ListTitle";
@@ -18,6 +23,10 @@ import {
   saveLists,
 } from "@/lib/storage";
 import ArchivedTasks from "@/components/ArchivedTasks";
+
+const subscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 function createDefaultList(): SortdList {
   return {
@@ -68,6 +77,12 @@ const [taskFilter, setTaskFilter] = useState<"all" | "high" | "low-energy">(
     "all"
   );
 
+const isHydrated = useSyncExternalStore(
+  subscribe,
+  getClientSnapshot,
+  getServerSnapshot
+);
+
 const visibleTasks = useMemo(() => {
   let filteredTasks = hideCompleted
     ? tasks.filter((task) => !task.completed)
@@ -83,6 +98,7 @@ const visibleTasks = useMemo(() => {
 
   return filteredTasks;
 }, [tasks, hideCompleted, taskFilter]);
+
 
   useEffect(() => {
     saveLists(lists);
@@ -167,6 +183,32 @@ const visibleTasks = useMemo(() => {
       ),
     });
   }
+
+  function updateTaskDueDate(id: string, dueDate: string) {
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      tasks: tasks.map((task) =>
+        task.id === id
+          ? { ...task, dueDate: dueDate || undefined }
+          : task
+      ),
+    });
+  }
+
+  function updateTaskDuration(id: string, durationMinutes?: number) {
+      if (!activeList) return;
+
+      updateActiveList({
+        ...activeList,
+        tasks: tasks.map((task) =>
+          task.id === id
+            ? { ...task, durationMinutes }
+            : task
+        ),
+      });
+    }
 
   function toggleTask(id: string) {
     if (!activeList) return;
@@ -279,32 +321,40 @@ function updateProjectStatus(status: ProjectStatus) {
   }
 
   function restoreArchivedTask(taskId: string) {
-  if (!activeList) return;
+    if (!activeList) return;
 
-  const taskToRestore = activeList.archivedTasks.find(
-    (task) => task.id === taskId
-  );
+    const taskToRestore = activeList.archivedTasks.find(
+      (task) => task.id === taskId
+    );
 
-  if (!taskToRestore) return;
+    if (!taskToRestore) return;
 
-  const restoredTask: Task = {
-    ...taskToRestore,
-    completed: false,
-    archivedAt: undefined,
-    order: tasks.length + 1,
-  };
+    const restoredTask: Task = {
+      ...taskToRestore,
+      completed: false,
+      archivedAt: undefined,
+      order: tasks.length + 1,
+    };
 
-  updateActiveList({
-    ...activeList,
-    tasks: [...tasks, restoredTask],
-    archivedTasks: activeList.archivedTasks.filter(
-      (task) => task.id !== taskId
-    ),
-  });
-}
+    updateActiveList({
+      ...activeList,
+      tasks: [...tasks, restoredTask],
+      archivedTasks: activeList.archivedTasks.filter(
+        (task) => task.id !== taskId
+      ),
+    });
+  }
+
+  if (!isHydrated) {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <Header />
+      </main>
+    );
+  }
 
   return (
-    <main className="flex min-h-screen flex-col bg-[url('/default-img.jpg')] bg-cover bg-center text-slate-950">
+    <main className="flex min-h-screen flex-col bg-slate-50 text-slate-950">
       <Header />
 
       <section className="flex flex-1 justify-center px-4 py-8">
@@ -349,10 +399,13 @@ function updateProjectStatus(status: ProjectStatus) {
               onUpdateTask={updateTask}
               onUpdateTaskPriority={updateTaskPriority}
               onUpdateTaskEnergy={updateTaskEnergy}
+              onUpdateTaskDueDate={updateTaskDueDate}
+              onUpdateTaskDuration={updateTaskDuration}
               onToggleTask={toggleTask}
               onDeleteTask={deleteTask}
               onReorderTasks={reorderTasks}
             />
+
             <ArchivedTasks
               tasks={activeList?.archivedTasks ?? []}
               onRestoreTask={restoreArchivedTask}
@@ -364,4 +417,4 @@ function updateProjectStatus(status: ProjectStatus) {
       <Footer />
     </main>
   );
-}
+  }
