@@ -13,7 +13,12 @@ import ListSwitcher from "@/components/ListSwitcher";
 import TaskList from "@/components/TaskList";
 import Footer from "@/components/Footer";
 import ProjectDetails from "@/components/ProjectDetails";
-import { ProjectStatus, SortdList, Task } from "@/lib/types";
+import {
+  AppView,
+  ProjectStatus,
+  SortdList,
+  Task,
+} from "@/lib/types";
 import {
   getStoredActiveListId,
   getStoredHideCompleted,
@@ -23,6 +28,7 @@ import {
   saveLists,
 } from "@/lib/storage";
 import ArchivedTasks from "@/components/ArchivedTasks";
+import WorkspaceNav from "@/components/WorkspaceNav";
 
 const subscribe = () => () => {};
 const getClientSnapshot = () => true;
@@ -39,6 +45,11 @@ function createDefaultList(): SortdList {
     createdAt: new Date().toISOString(),
   };
 }
+
+type TaskWithProject = Task & {
+  projectId: string;
+  projectName: string;
+};
 
 export default function Home() {
   const [lists, setLists] = useState<SortdList[]>(() => {
@@ -73,6 +84,16 @@ const [activeListId, setActiveListId] = useState(() => {
     return activeList?.tasks ?? [];
     }, [activeList]);
 
+  const allTasks = useMemo<TaskWithProject[]>(() => {
+    return lists.flatMap((project) =>
+      project.tasks.map((task) => ({
+        ...task,
+        projectId: project.id,
+        projectName: project.name,
+      }))
+    );
+  }, [lists]);
+
 const [taskFilter, setTaskFilter] = useState<"all" | "high" | "low-energy">(
     "all"
   );
@@ -82,6 +103,9 @@ const isHydrated = useSyncExternalStore(
   getClientSnapshot,
   getServerSnapshot
 );
+
+const [activeView, setActiveView] =
+  useState<AppView>("projects");
 
 const visibleTasks = useMemo(() => {
   let filteredTasks = hideCompleted
@@ -359,15 +383,25 @@ function updateProjectStatus(status: ProjectStatus) {
 
       <section className="flex flex-1 justify-center px-4 py-8">
         <div className="grid w-full max-w-6xl gap-4 md:grid-cols-[260px_1fr]">
-          <ListSwitcher
-            lists={lists}
-            activeListId={activeList?.id ?? ""}
-            onChangeList={setActiveListId}
-            onCreateList={createList}
-            onDeleteList={deleteActiveList}
-            onRenameList={renameList}
-            onReorderLists={reorderLists}
-          />
+          <div className="space-y-4">
+            <WorkspaceNav
+              activeView={activeView}
+              onChangeView={setActiveView}
+            />
+
+            <ListSwitcher
+              lists={lists}
+              activeListId={activeList?.id ?? ""}
+              onChangeList={(id) => {
+                setActiveListId(id);
+                setActiveView("projects");
+              }}
+              onCreateList={createList}
+              onDeleteList={deleteActiveList}
+              onRenameList={renameList}
+              onReorderLists={reorderLists}
+            />
+          </div>
 
           <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
             <ListTitle

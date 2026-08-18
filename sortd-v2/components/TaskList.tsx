@@ -87,6 +87,8 @@ export default function TaskList({
               onUpdateTask={onUpdateTask}
               onUpdateTaskPriority={onUpdateTaskPriority}
               onUpdateTaskEnergy={onUpdateTaskEnergy}
+              onUpdateTaskDueDate={onUpdateTaskDueDate}
+              onUpdateTaskDuration={onUpdateTaskDuration}
               onToggleTask={onToggleTask}
               onDeleteTask={onDeleteTask}
             />

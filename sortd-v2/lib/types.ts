@@ -68,3 +68,9 @@ export interface SortdWorkspace {
   activeProjectId?: string;
 }
 
+export type AppView =
+  | "my-day"
+  | "upcoming"
+  | "projects"
+  | "goals"
+  | "dreams";
