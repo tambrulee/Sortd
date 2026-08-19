@@ -152,6 +152,8 @@ const visibleTasks = useMemo(() => {
     );
   }
 
+
+
   function addTask() {
     if (!activeList) return;
 
@@ -169,6 +171,8 @@ const visibleTasks = useMemo(() => {
       ...activeList,
       tasks: [...tasks, newTask],
     });
+
+    setTaskFilter("all");
   }
 
   function updateTask(id: string, title: string) {
@@ -463,6 +467,7 @@ function updateProjectStatus(status: ProjectStatus) {
 
               <TaskList
                 tasks={visibleTasks}
+                onAddTask={addTask}
                 onUpdateTask={updateTask}
                 onUpdateTaskPriority={updateTaskPriority}
                 onUpdateTaskEnergy={updateTaskEnergy}

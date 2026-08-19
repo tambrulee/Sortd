@@ -7,6 +7,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 type TaskItemProps = {
   task: Task;
+  onAddTask: () => void;
   onUpdateTask: (id: string, title: string) => void;
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
@@ -30,6 +31,8 @@ type TaskItemProps = {
     id: string,
     durationMinutes?: number
   ) => void;
+
+
 };
 
 export default function TaskItem({
@@ -41,6 +44,7 @@ export default function TaskItem({
   onUpdateTaskDuration,
   onToggleTask,
   onDeleteTask,
+  onAddTask,
 }: TaskItemProps) {
   const [showDetails, setShowDetails] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -97,6 +101,13 @@ export default function TaskItem({
           onChange={(event) =>
             onUpdateTask(task.id, event.target.value)
           }
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            onAddTask();
+          }}
           placeholder="Enter task..."
           className={`min-w-[180px] flex-1 rounded-lg bg-transparent px-2 py-1 text-sm font-medium outline-none focus:bg-white focus:ring-2 focus:ring-[#cd6ce7] ${
             task.completed

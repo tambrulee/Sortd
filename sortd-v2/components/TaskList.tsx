@@ -34,10 +34,12 @@ type TaskListProps = {
     id: string,
     durationMinutes?: number
   ) => void;
+  onAddTask: () => void;
 };
 
 export default function TaskList({
   tasks,
+  onAddTask,
   onUpdateTask,
   onUpdateTaskPriority,
   onUpdateTaskEnergy,
@@ -84,6 +86,7 @@ export default function TaskList({
             <TaskItem
               key={task.id}
               task={task}
+              onAddTask={onAddTask}
               onUpdateTask={onUpdateTask}
               onUpdateTaskPriority={onUpdateTaskPriority}
               onUpdateTaskEnergy={onUpdateTaskEnergy}
