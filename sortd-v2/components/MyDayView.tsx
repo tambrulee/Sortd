@@ -217,6 +217,10 @@ const dayPlan = buildDayPlan(
   currentEnergy
 );
 
+
+const [startTime, setStartTime] = useState("09:00");
+const [showPlan, setShowPlan] = useState(false);
+
 const scheduleResult = dayPlan.reduce<{
   tasks: Array<
     TaskWithProject & {
@@ -269,8 +273,6 @@ const plannedMinutes = scheduleResult.elapsedMinutes;
     month: "long",
   }).format(new Date());
 
-  const [startTime, setStartTime] = useState("09:00");
-  const [showPlan, setShowPlan] = useState(false);
 
   function renderTask(task: TaskWithProject) {
     return (
