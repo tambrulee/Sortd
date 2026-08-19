@@ -30,6 +30,7 @@ import {
 import ArchivedTasks from "@/components/ArchivedTasks";
 import WorkspaceNav from "@/components/WorkspaceNav";
 import MyDayView from "@/components/MyDayView";
+import AuthPanel from "@/components/AuthPanel";
 
 const subscribe = () => () => {};
 const getClientSnapshot = () => true;
@@ -385,6 +386,7 @@ function updateProjectStatus(status: ProjectStatus) {
       <section className="flex flex-1 justify-center px-4 py-8">
         <div className="grid w-full max-w-6xl gap-4 md:grid-cols-[260px_1fr]">
           <div className="space-y-4">
+            <AuthPanel />
             <WorkspaceNav
               activeView={activeView}
               onChangeView={setActiveView}
