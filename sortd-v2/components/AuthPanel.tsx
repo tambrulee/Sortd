@@ -10,7 +10,12 @@ import { supabase } from "@/lib/supabase";
 
 type AuthMode = "login" | "signup";
 
-export default function AuthPanel() {
+type AuthPanelProps = {
+  onUserChange: (user: User | null) => void;
+};
+
+export default function AuthPanel({ onUserChange }: AuthPanelProps) {
+
   const [mode, setMode] =
     useState<AuthMode>("login");
 
@@ -27,13 +32,17 @@ export default function AuthPanel() {
     useState(false);
 
   const [message, setMessage] = useState("");
+  
 
   useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setUser(session?.user ?? null);
+        const nextUser = session?.user ?? null;
+
+        setUser(nextUser);
+        onUserChange(nextUser);
         setCheckingSession(false);
       }
     );
@@ -41,7 +50,7 @@ export default function AuthPanel() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [onUserChange]);
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>

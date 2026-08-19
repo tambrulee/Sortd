@@ -31,6 +31,7 @@ import ArchivedTasks from "@/components/ArchivedTasks";
 import WorkspaceNav from "@/components/WorkspaceNav";
 import MyDayView from "@/components/MyDayView";
 import AuthPanel from "@/components/AuthPanel";
+import type { User } from "@supabase/supabase-js";
 
 const subscribe = () => () => {};
 const getClientSnapshot = () => true;
@@ -54,22 +55,30 @@ type TaskWithProject = Task & {
 };
 
 export default function Home() {
-  const [lists, setLists] = useState<SortdList[]>(() => {
-    const storedLists = getStoredLists();
-    return storedLists.length > 0 ? storedLists : [createDefaultList()];
-  });
+  const [user, setUser] =
+    useState<User | null>(null);
 
-const [activeListId, setActiveListId] = useState(() => {
-  const stored = getStoredActiveListId();
-  if (stored) return stored;
+  const [lists, setLists] =
+    useState<SortdList[]>(() => {
+      const storedLists = getStoredLists();
 
-  const lists = getStoredLists();
-  return lists[0]?.id || "";
-});
+      return storedLists.length > 0
+        ? storedLists
+        : [createDefaultList()];
+    });
 
-  const [hideCompleted, setHideCompleted] = useState(() =>
-    getStoredHideCompleted()
-  );
+  const [activeListId, setActiveListId] =
+    useState(() => {
+      const stored = getStoredActiveListId();
+
+      if (stored) return stored;
+
+      const storedLists = getStoredLists();
+      return storedLists[0]?.id || "";
+    });
+
+  const [hideCompleted, setHideCompleted] =
+    useState(() => getStoredHideCompleted());
 
   const activeList = useMemo(() => {
     const foundList = lists.find((list) => list.id === activeListId) || lists[0];
@@ -411,7 +420,7 @@ function updateProjectStatus(status: ProjectStatus) {
       <section className="flex flex-1 justify-center px-4 py-8">
         <div className="grid w-full max-w-6xl gap-4 md:grid-cols-[260px_1fr]">
           <div className="space-y-4">
-            <AuthPanel />
+            <AuthPanel onUserChange={setUser} />
             <WorkspaceNav
               activeView={activeView}
               onChangeView={setActiveView}
