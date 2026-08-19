@@ -29,6 +29,7 @@ import {
 } from "@/lib/storage";
 import ArchivedTasks from "@/components/ArchivedTasks";
 import WorkspaceNav from "@/components/WorkspaceNav";
+import MyDayView from "@/components/MyDayView";
 
 const subscribe = () => () => {};
 const getClientSnapshot = () => true;
@@ -403,48 +404,68 @@ function updateProjectStatus(status: ProjectStatus) {
             />
           </div>
 
-          <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
-            <ListTitle
-              listName={activeList?.name ?? ""}
-              onChangeListName={updateListName}
+          {activeView === "my-day" ? (
+            <MyDayView
+              tasks={allTasks}
+              onOpenProject={(projectId) => {
+                setActiveListId(projectId);
+                setActiveView("projects");
+              }}
             />
+          ) : activeView === "projects" ? (
+            <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
+              <ListTitle
+                listName={activeList?.name ?? ""}
+                onChangeListName={updateListName}
+              />
 
-            <ProjectDetails
-              description={activeList?.description ?? ""}
-              status={activeList?.status ?? "active"}
-              onChangeDescription={updateProjectDescription}
-              onChangeStatus={updateProjectStatus}
-            />
+              <ProjectDetails
+                description={activeList?.description ?? ""}
+                status={activeList?.status ?? "active"}
+                onChangeDescription={updateProjectDescription}
+                onChangeStatus={updateProjectStatus}
+              />
 
-            <ControlPanel
-              onAddTask={addTask}
-              hideCompleted={hideCompleted}
-              onToggleHideCompleted={() =>
-                setHideCompleted((current) => !current)
-              }
-              onArchiveCompleted={archiveCompletedTasks}
-              hasCompleted={tasks.some((task) => task.completed)}
-              taskFilter={taskFilter}
-              onChangeTaskFilter={setTaskFilter}
-            />
+              <ControlPanel
+                onAddTask={addTask}
+                hideCompleted={hideCompleted}
+                onToggleHideCompleted={() =>
+                  setHideCompleted((current) => !current)
+                }
+                onArchiveCompleted={archiveCompletedTasks}
+                hasCompleted={tasks.some((task) => task.completed)}
+                taskFilter={taskFilter}
+                onChangeTaskFilter={setTaskFilter}
+              />
 
-            <TaskList
-              tasks={visibleTasks}
-              onUpdateTask={updateTask}
-              onUpdateTaskPriority={updateTaskPriority}
-              onUpdateTaskEnergy={updateTaskEnergy}
-              onUpdateTaskDueDate={updateTaskDueDate}
-              onUpdateTaskDuration={updateTaskDuration}
-              onToggleTask={toggleTask}
-              onDeleteTask={deleteTask}
-              onReorderTasks={reorderTasks}
-            />
+              <TaskList
+                tasks={visibleTasks}
+                onUpdateTask={updateTask}
+                onUpdateTaskPriority={updateTaskPriority}
+                onUpdateTaskEnergy={updateTaskEnergy}
+                onUpdateTaskDueDate={updateTaskDueDate}
+                onUpdateTaskDuration={updateTaskDuration}
+                onToggleTask={toggleTask}
+                onDeleteTask={deleteTask}
+                onReorderTasks={reorderTasks}
+              />
 
-            <ArchivedTasks
-              tasks={activeList?.archivedTasks ?? []}
-              onRestoreTask={restoreArchivedTask}
-            />
-          </div>
+              <ArchivedTasks
+                tasks={activeList?.archivedTasks ?? []}
+                onRestoreTask={restoreArchivedTask}
+              />
+            </div>
+          ) : (
+            <div className="rounded-3xl bg-white/85 p-8 shadow-xl backdrop-blur-md">
+              <h1 className="text-2xl font-bold capitalize">
+                {activeView.replace("-", " ")}
+              </h1>
+
+              <p className="mt-2 text-slate-500">
+                This workspace is coming next.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
