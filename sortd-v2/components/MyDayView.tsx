@@ -84,6 +84,64 @@ function getRecommendationReasons(
   return reasons;
 }
 
+
+function buildDayPlan(
+  tasks: TaskWithProject[],
+  today: string,
+  availableMinutes: number,
+  currentEnergy: Energy
+) {
+  let remainingMinutes = availableMinutes;
+
+  const rankedTasks = [...tasks]
+    .filter(
+      (task) =>
+        !task.completed &&
+        task.durationMinutes &&
+        task.durationMinutes <= availableMinutes
+    )
+    .sort(
+      (firstTask, secondTask) =>
+        scoreTask(
+          secondTask,
+          today,
+          availableMinutes,
+          currentEnergy
+        ) -
+        scoreTask(
+          firstTask,
+          today,
+          availableMinutes,
+          currentEnergy
+        )
+    );
+
+  return rankedTasks.filter((task) => {
+    const duration = task.durationMinutes ?? 0;
+
+    if (duration > remainingMinutes) {
+      return false;
+    }
+
+    remainingMinutes -= duration;
+    return true;
+  });
+}
+
+function addMinutesToTime(time: string, minutes: number) {
+  const [hours, currentMinutes] = time
+    .split(":")
+    .map(Number);
+
+  const date = new Date();
+  date.setHours(hours, currentMinutes + minutes, 0, 0);
+
+  return date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function formatDuration(minutes?: number) {
   if (!minutes) return "No estimate";
   if (minutes < 60) return `${minutes} min`;
@@ -152,11 +210,67 @@ const recommendationReasons = recommendedTask
     )
   : [];
 
+const dayPlan = buildDayPlan(
+  openTasks,
+  today,
+  availableMinutes,
+  currentEnergy
+);
+
+const scheduleResult = dayPlan.reduce<{
+  tasks: Array<
+    TaskWithProject & {
+      scheduledStart: string;
+      scheduledEnd: string;
+    }
+  >;
+  elapsedMinutes: number;
+}>(
+  (result, task) => {
+    const duration = task.durationMinutes ?? 0;
+
+    const scheduledStart = addMinutesToTime(
+      startTime,
+      result.elapsedMinutes
+    );
+
+    const nextElapsedMinutes =
+      result.elapsedMinutes + duration;
+
+    const scheduledEnd = addMinutesToTime(
+      startTime,
+      nextElapsedMinutes
+    );
+
+    return {
+      elapsedMinutes: nextElapsedMinutes,
+      tasks: [
+        ...result.tasks,
+        {
+          ...task,
+          scheduledStart,
+          scheduledEnd,
+        },
+      ],
+    };
+  },
+  {
+    tasks: [],
+    elapsedMinutes: 0,
+  }
+);
+
+const scheduledPlan = scheduleResult.tasks;
+const plannedMinutes = scheduleResult.elapsedMinutes;
+
   const formattedDate = new Intl.DateTimeFormat("en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
   }).format(new Date());
+
+  const [startTime, setStartTime] = useState("09:00");
+  const [showPlan, setShowPlan] = useState(false);
 
   function renderTask(task: TaskWithProject) {
     return (
@@ -265,6 +379,26 @@ const recommendationReasons = recommendedTask
                 <option value="high">High energy</option>
             </select>
             </label>
+
+            <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-slate-600">
+            When do you want to start?
+
+            <input
+                type="time"
+                value={startTime}
+                onChange={(event) =>
+                setStartTime(event.target.value)
+                }
+                className="rounded-xl border border-slate-200 bg-[#f8f5f5] px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
+            />
+            </label>
+            <button
+            type="button"
+            onClick={() => setShowPlan(true)}
+            className="mt-4 rounded-xl bg-[#1f0825] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#cd6ce7]"
+            >
+            Build my day
+            </button>
         </div>
         </section>
 
@@ -313,6 +447,78 @@ const recommendationReasons = recommendedTask
           </button>
         </section>
       )}
+
+      {showPlan && (
+        <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-5">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
+                Suggested schedule
+                </p>
+
+                <h2 className="mt-1 text-xl font-semibold">
+                Your draft day
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                {formatDuration(plannedMinutes)} planned from{" "}
+                {startTime}
+                </p>
+            </div>
+
+            <button
+                type="button"
+                onClick={() => setShowPlan(false)}
+                className="text-sm text-slate-500 transition hover:text-slate-900"
+            >
+                Clear plan
+            </button>
+            </div>
+
+            {scheduledPlan.length > 0 ? (
+            <div className="space-y-2">
+                {scheduledPlan.map((task) => (
+                <button
+                    key={`${task.projectId}-${task.id}`}
+                    type="button"
+                    onClick={() =>
+                    onOpenProject(task.projectId)
+                    }
+                    className="grid w-full gap-2 rounded-xl bg-[#f3eeee] px-4 py-3 text-left transition hover:bg-[#cdbfd1] sm:grid-cols-[130px_1fr_auto] sm:items-center"
+                >
+                    <span className="text-sm font-semibold text-[#1f0825]">
+                    {task.scheduledStart}–{task.scheduledEnd}
+                    </span>
+
+                    <span>
+                    <span className="block font-medium text-slate-900">
+                        {task.title || "Untitled task"}
+                    </span>
+
+                    <span className="block text-xs text-slate-500">
+                        {task.projectName}
+                    </span>
+                    </span>
+
+                    <span className="text-xs text-slate-500">
+                    {formatDuration(task.durationMinutes)}
+                    </span>
+                </button>
+                ))}
+            </div>
+            ) : (
+            <div className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center">
+                <p className="font-medium">
+                There aren’t any schedulable tasks yet.
+                </p>
+
+                <p className="mt-1 text-sm text-slate-500">
+                Add time estimates to some tasks and try again.
+                </p>
+            </div>
+            )}
+        </section>
+        )}
 
       <div className="grid gap-8 lg:grid-cols-2">
         <section>
