@@ -248,13 +248,25 @@ const visibleTasks = useMemo(() => {
   }
 
   function deleteTask(id: string) {
-    if (!activeList) return;
+  if (!activeList) return;
 
-    updateActiveList({
-      ...activeList,
-      tasks: tasks.filter((task) => task.id !== id),
-    });
-  }
+  const taskToDelete = tasks.find(
+    (task) => task.id === id
+  );
+
+  if (!taskToDelete) return;
+
+  const confirmed = window.confirm(
+    `Delete "${taskToDelete.title || "this task"}"?`
+  );
+
+  if (!confirmed) return;
+
+  updateActiveList({
+    ...activeList,
+    tasks: tasks.filter((task) => task.id !== id),
+  });
+}
 
   function reorderTasks(reorderedTasks: Task[]) {
     if (!activeList) return;
@@ -308,12 +320,21 @@ function updateProjectStatus(status: ProjectStatus) {
   }
 
   function deleteActiveList() {
-    if (lists.length === 1) return;
+  if (!activeList || lists.length === 1) return;
 
-    const remainingLists = lists.filter((list) => list.id !== activeList?.id);
-    setLists(remainingLists);
-    setActiveListId(remainingLists[0].id);
-  }
+  const confirmed = window.confirm(
+    `Delete the project "${activeList.name}" and all of its tasks? This cannot be undone.`
+  );
+
+  if (!confirmed) return;
+
+  const remainingLists = lists.filter(
+    (list) => list.id !== activeList.id
+  );
+
+  setLists(remainingLists);
+  setActiveListId(remainingLists[0].id);
+}
 
   function renameList(id: string, name: string) {
     setLists((currentLists) =>
