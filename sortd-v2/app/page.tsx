@@ -1,5 +1,6 @@
 "use client";
 
+// React imports
 import {
   useEffect,
   useMemo,
@@ -7,6 +8,8 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+
+// Components
 import Header from "@/components/Header";
 import ControlPanel from "@/components/ControlPanel";
 import ListTitle from "@/components/ListTitle";
@@ -14,13 +17,25 @@ import ListSwitcher from "@/components/ListSwitcher";
 import TaskList from "@/components/TaskList";
 import Footer from "@/components/Footer";
 import ProjectDetails from "@/components/ProjectDetails";
+import ArchivedTasks from "@/components/ArchivedTasks";
+import WorkspaceNav from "@/components/WorkspaceNav";
+import MyDayView from "@/components/MyDayView";
+import AuthPanel from "@/components/AuthPanel";
+import RoutinesView from "@/components/RoutinesView";
+import { createDefaultScheduleSettings } from "@/lib/schedule";
+import PlannerView from "@/components/PlannerView";
+
+// Types and storage utilities
 import {
   AppView,
   ProjectStatus,
+  RecurrenceUnit,
   Routine,
   SortdList,
   Task,
+  ScheduleSettings,
 } from "@/lib/types";
+
 import {
   getStoredActiveListId,
   getStoredHideCompleted,
@@ -29,16 +44,81 @@ import {
   saveHideCompleted,
   saveLists,
 } from "@/lib/storage";
-import ArchivedTasks from "@/components/ArchivedTasks";
-import WorkspaceNav from "@/components/WorkspaceNav";
-import MyDayView from "@/components/MyDayView";
-import AuthPanel from "@/components/AuthPanel";
+
+
+// Supabase client for cloud workspace storage
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 const subscribe = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
+
+function getLocalDateKey() {
+  const date = new Date();
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function parseLocalDateKey(dateKey: string) {
+  const [year, month, day] = dateKey
+    .split("-")
+    .map(Number);
+
+  return new Date(year, month - 1, day);
+}
+
+function toLocalDateKey(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function getNextRoutineDate(
+  dateKey: string,
+  interval: number,
+  unit: RecurrenceUnit
+) {
+  const date = parseLocalDateKey(dateKey);
+  const safeInterval = Math.max(1, interval);
+
+  if (unit === "day") {
+    date.setDate(date.getDate() + safeInterval);
+  }
+
+  if (unit === "week") {
+    date.setDate(
+      date.getDate() + safeInterval * 7
+    );
+  }
+
+  if (unit === "month") {
+    const originalDay = date.getDate();
+
+    date.setDate(1);
+    date.setMonth(
+      date.getMonth() + safeInterval
+    );
+
+    const finalDayOfMonth = new Date(
+      date.getFullYear(),
+      date.getMonth() + 1,
+      0
+    ).getDate();
+
+    date.setDate(
+      Math.min(originalDay, finalDayOfMonth)
+    );
+  }
+
+  return toLocalDateKey(date);
+}
 
 function createDefaultList(): SortdList {
   return {
@@ -61,12 +141,22 @@ type CloudWorkspaceData = {
   version: 1;
   lists: SortdList[];
   routines: Routine[];
+  scheduleSettings?: ScheduleSettings;
   activeListId: string;
   hideCompleted: boolean;
 };
 
 export default function Home() {
-  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [routines, setRoutines] =
+  useState<Routine[]>([]);
+
+  const [
+    scheduleSettings,
+    setScheduleSettings,
+  ] = useState<ScheduleSettings>(() =>
+    createDefaultScheduleSettings()
+  );
+
   const [user, setUser] =
     useState<User | null>(null);
 
@@ -190,6 +280,12 @@ const visibleTasks = useMemo(() => {
         getStoredActiveListId() ?? "",
       hideCompleted: getStoredHideCompleted(),
       routines: [],
+      scheduleSettings:
+        createDefaultScheduleSettings(
+          Intl.DateTimeFormat()
+            .resolvedOptions()
+            .timeZone || "Europe/London"
+        ),
     };
 
     if (
@@ -247,6 +343,15 @@ const visibleTasks = useMemo(() => {
         cloudWorkspace.routines ?? []
       );
 
+      setScheduleSettings(
+        cloudWorkspace.scheduleSettings ??
+          createDefaultScheduleSettings(
+            Intl.DateTimeFormat()
+              .resolvedOptions()
+              .timeZone || "Europe/London"
+          )
+      );
+
       return;
     }
 
@@ -264,6 +369,8 @@ const visibleTasks = useMemo(() => {
       hideCompleted:
         localWorkspace.hideCompleted,
       routines: [],
+      scheduleSettings:
+        localWorkspace.scheduleSettings,
     };
 
     const { error: uploadError } =
@@ -315,6 +422,7 @@ useEffect(() => {
         version: 1,
         lists,
         routines,
+        scheduleSettings,
         activeListId,
         hideCompleted,
       };
@@ -350,6 +458,7 @@ useEffect(() => {
   activeListId,
   hideCompleted,
   routines,
+  scheduleSettings,
   user,
 ]);
 
@@ -604,6 +713,47 @@ function updateProjectStatus(status: ProjectStatus) {
       ),
     });
   }
+
+  function completeRoutineTask(
+  routineId: string,
+  taskId: string
+) {
+  const completedAt = new Date().toISOString();
+  const today = getLocalDateKey();
+
+  setRoutines((currentRoutines) =>
+    currentRoutines.map((routine) => {
+      if (routine.id !== routineId) {
+        return routine;
+      }
+
+      return {
+        ...routine,
+        tasks: routine.tasks.map((task) => {
+          if (task.id !== taskId) {
+            return task;
+          }
+
+          return {
+            ...task,
+            lastCompletedAt: completedAt,
+            completionHistory: [
+              ...(task.completionHistory ?? []),
+              completedAt,
+            ],
+            nextDueDate: getNextRoutineDate(
+              today,
+              task.interval,
+              task.recurrenceUnit
+            ),
+          };
+        }),
+      };
+    })
+  );
+}
+
+
   if (!isHydrated) {
     return (
       <main className="min-h-screen bg-slate-50">
@@ -658,6 +808,8 @@ function updateProjectStatus(status: ProjectStatus) {
           {activeView === "my-day" ? (
             <MyDayView
               tasks={allTasks}
+              routines={routines}
+              onCompleteRoutineTask={completeRoutineTask}
               onOpenProject={(projectId) => {
                 setActiveListId(projectId);
                 setActiveView("projects");
@@ -707,7 +859,24 @@ function updateProjectStatus(status: ProjectStatus) {
                 onRestoreTask={restoreArchivedTask}
               />
             </div>
-          ) : (
+
+          ) : activeView === "planner" ? (
+          <PlannerView
+            tasks={allTasks}
+            routines={routines}
+            settings={scheduleSettings}
+            onChangeSettings={
+              setScheduleSettings
+            }
+          />
+          ) : 
+           activeView === "routines" ? (
+              <RoutinesView
+                routines={routines}
+                onChangeRoutines={setRoutines}
+              />
+            ) : 
+            (
             <div className="rounded-3xl bg-white/85 p-8 shadow-xl backdrop-blur-md">
               <h1 className="text-2xl font-bold capitalize">
                 {activeView.replace("-", " ")}

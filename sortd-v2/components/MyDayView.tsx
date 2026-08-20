@@ -1,16 +1,32 @@
 "use client";
 
+// Import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useState } from "react";
-import { Energy, Task } from "@/lib/types";
+import {
+  Energy,
+  Routine,
+  Task,
+} from "@/lib/types";
 
 type TaskWithProject = Task & {
   projectId: string;
   projectName: string;
 };
 
+type RoutineTaskForDay =
+  Routine["tasks"][number] & {
+    routineId: string;
+    routineName: string;
+  };
+
 type MyDayViewProps = {
   tasks: TaskWithProject[];
+  routines: Routine[];
   onOpenProject: (projectId: string) => void;
+  onCompleteRoutineTask: (
+    routineId: string,
+    taskId: string
+  ) => void;
 };
 
 function getLocalDateKey() {
@@ -154,7 +170,9 @@ function formatDuration(minutes?: number) {
 
 export default function MyDayView({
   tasks,
+  routines,
   onOpenProject,
+  onCompleteRoutineTask,
 }: MyDayViewProps) {
   const today = getLocalDateKey();
 
@@ -166,6 +184,34 @@ export default function MyDayView({
 
   const openTasks = tasks.filter((task) => !task.completed);
 
+  const openRoutineTasks =
+  routines
+    .filter((routine) => !routine.archived)
+    .flatMap((routine) =>
+      routine.tasks
+        .filter((task) => task.active)
+        .map((task) => ({
+          ...task,
+          routineId: routine.id,
+          routineName: routine.name,
+        }))
+    );
+
+const routineTasksDueToday =
+  openRoutineTasks.filter(
+    (task) => task.nextDueDate === today
+  );
+
+const overdueRoutineTasks =
+  openRoutineTasks.filter(
+    (task) => task.nextDueDate < today
+  );
+
+const actionableRoutineTasks = [
+  ...overdueRoutineTasks,
+  ...routineTasksDueToday,
+];
+
   const dueToday = openTasks.filter(
     (task) => task.dueDate === today
   );
@@ -174,10 +220,23 @@ export default function MyDayView({
     (task) => task.dueDate && task.dueDate < today
   );
 
-  const workloadMinutes = dueToday.reduce(
-    (total, task) => total + (task.durationMinutes ?? 0),
+  const projectWorkloadMinutes =
+  dueToday.reduce(
+    (total, task) =>
+      total + (task.durationMinutes ?? 0),
     0
   );
+
+const routineWorkloadMinutes =
+  routineTasksDueToday.reduce(
+    (total, task) =>
+      total + (task.durationMinutes ?? 0),
+    0
+  );
+
+const workloadMinutes =
+  projectWorkloadMinutes +
+  routineWorkloadMinutes;
 
 const tasksThatFit = openTasks.filter(
   (task) =>
@@ -305,6 +364,54 @@ const plannedMinutes = scheduleResult.elapsedMinutes;
     );
   }
 
+  function renderRoutineTask(
+  task: RoutineTaskForDay
+) {
+  const isOverdue =
+    task.nextDueDate < today;
+
+  return (
+    <div
+      key={`${task.routineId}-${task.id}`}
+      className="flex items-center gap-3 rounded-xl bg-[#eeeaea] px-4 py-3"
+    >
+      <button
+        type="button"
+        onClick={() =>
+          onCompleteRoutineTask(
+            task.routineId,
+            task.id
+          )
+        }
+        aria-label={`Complete ${task.title}`}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+      >
+        ✓
+      </button>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-slate-900">
+          {task.title || "Untitled routine task"}
+        </p>
+
+        <p className="mt-1 text-xs text-slate-500">
+          {task.routineName}
+        </p>
+      </div>
+
+      <span
+        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+          isOverdue
+            ? "bg-red-100 text-red-700"
+            : "bg-amber-100 text-amber-800"
+        }`}
+      >
+        {isOverdue ? "Overdue" : "Due today"}
+      </span>
+    </div>
+  );
+}
+
   return (
     <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
       <div className="mb-8">
@@ -323,13 +430,13 @@ const plannedMinutes = scheduleResult.elapsedMinutes;
 
       <div className="mb-8 grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl bg-[#f3eeee] p-4">
-          <p className="text-2xl font-bold">{dueToday.length}</p>
+          <p className="text-2xl font-bold">{dueToday.length + routineTasksDueToday.length}</p>
           <p className="text-sm text-slate-500">Due today</p>
         </div>
 
         <div className="rounded-2xl bg-[#f3eeee] p-4">
           <p className="text-2xl font-bold text-red-600">
-            {overdue.length}
+            {overdue.length + overdueRoutineTasks.length}
           </p>
           <p className="text-sm text-slate-500">Overdue</p>
         </div>
@@ -521,6 +628,38 @@ const plannedMinutes = scheduleResult.elapsedMinutes;
             )}
         </section>
         )}
+
+        <section className="mb-8">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">
+                Routines
+              </h2>
+
+              <p className="text-sm text-slate-500">
+                Repeating tasks ready to be completed.
+              </p>
+            </div>
+
+            {actionableRoutineTasks.length > 0 && (
+              <span className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-700">
+                {actionableRoutineTasks.length} ready
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            {actionableRoutineTasks.length > 0 ? (
+              actionableRoutineTasks.map(
+                renderRoutineTask
+              )
+            ) : (
+              <p className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center text-sm text-slate-500">
+                No routines need your attention today.
+              </p>
+            )}
+          </div>
+        </section>
 
       <div className="grid gap-8 lg:grid-cols-2">
         <section>

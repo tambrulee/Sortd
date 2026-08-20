@@ -26,6 +26,8 @@ export type Task = {
   durationMinutes?: number;
 
   archivedAt?: string;
+
+  scheduleContext?: ScheduleContext;
 };
 
 export type ProjectStatus = "active" | "paused" | "completed";
@@ -71,6 +73,7 @@ export interface SortdWorkspace {
 
 export type AppView =
   | "my-day"
+  | "planner"
   | "upcoming"
   | "projects"
   | "routines"
@@ -101,6 +104,8 @@ export type RoutineTask = {
 
   active: boolean;
   createdAt: string;
+
+  scheduleContext?: ScheduleContext;
 };
 
 export type Routine = {
@@ -110,4 +115,65 @@ export type Routine = {
   tasks: RoutineTask[];
   createdAt: string;
   archived: boolean;
+};
+
+//  ScheduledBlock type for representing scheduled tasks and routines in the calendar view
+
+export type ScheduleContext =
+  | "work"
+  | "personal"
+  | "any";
+
+export type Weekday =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+
+export type DayAvailability = {
+  enabled: boolean;
+  wakeTime: string;
+  bedTime: string;
+  workStart?: string;
+  workEnd?: string;
+};
+
+export type ScheduleSettings = {
+  timeZone: string;
+  planningHorizonDays: number;
+  bufferMinutes: number;
+  days: Record<
+    | "monday"
+    | "tuesday"
+    | "wednesday"
+    | "thursday"
+    | "friday"
+    | "saturday"
+    | "sunday",
+    DayAvailability
+  >;
+};
+
+export type ScheduledBlock = {
+  id: string;
+  sourceType: "task" | "routine";
+  sourceId: string;
+  parentId: string;
+  parentName: string;
+  title: string;
+
+  date: string;
+  startTime: string;
+  endTime: string;
+  timeZone: string;
+
+  durationMinutes: number;
+  usedDefaultDuration: boolean;
+  context: ScheduleContext;
+
+  dueDate?: string;
+  occurrenceDate?: string;
 };

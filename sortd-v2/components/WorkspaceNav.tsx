@@ -42,6 +42,11 @@ const navigationItems: {
     label: "Dreams",
     icon: "✦",
   },
+  {
+    id: "planner",
+    label: "Planner",
+    icon: "▦",
+  },
 ];
 
 export default function WorkspaceNav({
