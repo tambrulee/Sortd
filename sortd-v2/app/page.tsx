@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -32,6 +33,7 @@ import WorkspaceNav from "@/components/WorkspaceNav";
 import MyDayView from "@/components/MyDayView";
 import AuthPanel from "@/components/AuthPanel";
 import type { User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 
 const subscribe = () => () => {};
 const getClientSnapshot = () => true;
@@ -54,9 +56,19 @@ type TaskWithProject = Task & {
   projectName: string;
 };
 
+type CloudWorkspaceData = {
+  version: 1;
+  lists: SortdList[];
+  activeListId: string;
+  hideCompleted: boolean;
+};
+
 export default function Home() {
   const [user, setUser] =
     useState<User | null>(null);
+
+  const cloudReadyForUserRef =
+  useRef<string | null>(null);
 
   const [lists, setLists] =
     useState<SortdList[]>(() => {
@@ -136,22 +148,199 @@ const visibleTasks = useMemo(() => {
 
 
   useEffect(() => {
+  if (!user) return;
+
     saveLists(lists);
-  }, [lists]);
+  }, [lists, user]);
 
   useEffect(() => {
-    if (activeListId) {
-      saveActiveListId(activeListId);
-    }
-  }, [activeListId]);
+    if (!user || !activeListId) return;
+
+    saveActiveListId(activeListId);
+  }, [activeListId, user]);
 
   useEffect(() => {
+    if (!user) return;
+
     saveHideCompleted(hideCompleted);
-  }, [hideCompleted]);
+  }, [hideCompleted, user]);
 
   useEffect(() => {
     document.title = activeList?.name || "Sort'd";
   }, [activeList?.name]);
+
+  // Load cloud workspace for the user when they log in
+  useEffect(() => {
+  if (!user) {
+    cloudReadyForUserRef.current = null;
+    return;
+  }
+
+  const userId = user.id;
+  let cancelled = false;
+
+  async function loadCloudWorkspace() {
+    const localWorkspace: CloudWorkspaceData = {
+      version: 1,
+      lists: getStoredLists(),
+      activeListId:
+        getStoredActiveListId() ?? "",
+      hideCompleted: getStoredHideCompleted(),
+    };
+
+    if (
+      !localStorage.getItem(
+        "sortd-pre-cloud-backup"
+      )
+    ) {
+      localStorage.setItem(
+        "sortd-pre-cloud-backup",
+        JSON.stringify(localWorkspace)
+      );
+    }
+
+    const { data: workspaceRow, error } =
+      await supabase
+        .from("workspaces")
+        .select("data")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (cancelled) return;
+
+    if (error) {
+      console.error(
+        "Unable to load cloud workspace:",
+        error
+      );
+      return;
+    }
+
+    const cloudWorkspace =
+      workspaceRow?.data as
+        | CloudWorkspaceData
+        | undefined;
+
+    if (
+      cloudWorkspace &&
+      Array.isArray(cloudWorkspace.lists) &&
+      cloudWorkspace.lists.length > 0
+    ) {
+      cloudReadyForUserRef.current = userId;
+
+      setLists(cloudWorkspace.lists);
+
+      setActiveListId(
+        cloudWorkspace.activeListId ||
+          cloudWorkspace.lists[0].id
+      );
+
+      setHideCompleted(
+        cloudWorkspace.hideCompleted ?? false
+      );
+
+      return;
+    }
+
+    const listsToUpload =
+      localWorkspace.lists.length > 0
+        ? localWorkspace.lists
+        : [createDefaultList()];
+
+    const firstWorkspace: CloudWorkspaceData = {
+      version: 1,
+      lists: listsToUpload,
+      activeListId:
+        localWorkspace.activeListId ||
+        listsToUpload[0].id,
+      hideCompleted:
+        localWorkspace.hideCompleted,
+    };
+
+    const { error: uploadError } =
+      await supabase
+        .from("workspaces")
+        .upsert(
+          {
+            user_id: userId,
+            data: firstWorkspace,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "user_id",
+          }
+        );
+
+    if (cancelled) return;
+
+    if (uploadError) {
+      console.error(
+        "Unable to create cloud workspace:",
+        uploadError
+      );
+      return;
+    }
+
+    cloudReadyForUserRef.current = userId;
+  }
+
+  loadCloudWorkspace();
+
+  return () => {
+    cancelled = true;
+  };
+}, [user]);
+
+// Save cloud workspace when lists, activeListId, or hideCompleted changes
+useEffect(() => {
+  if (
+    !user ||
+    cloudReadyForUserRef.current !== user.id
+  ) {
+    return;
+  }
+
+  const saveTimer = window.setTimeout(
+    async () => {
+      const workspace: CloudWorkspaceData = {
+        version: 1,
+        lists,
+        activeListId,
+        hideCompleted,
+      };
+
+      const { error } = await supabase
+        .from("workspaces")
+        .upsert(
+          {
+            user_id: user.id,
+            data: workspace,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "user_id",
+          }
+        );
+
+      if (error) {
+        console.error(
+          "Unable to save cloud workspace:",
+          error
+        );
+      }
+    },
+    800
+  );
+
+  return () => {
+    window.clearTimeout(saveTimer);
+  };
+}, [
+  lists,
+  activeListId,
+  hideCompleted,
+  user,
+]);
 
   function updateActiveList(updatedList: SortdList) {
     setLists((currentLists) =>
@@ -404,11 +593,26 @@ function updateProjectStatus(status: ProjectStatus) {
       ),
     });
   }
-
   if (!isHydrated) {
     return (
       <main className="min-h-screen bg-slate-50">
         <Header />
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="flex min-h-screen flex-col bg-slate-50 text-slate-950">
+        <Header />
+
+        <section className="flex flex-1 items-center justify-center px-4 py-12">
+          <div className="w-full max-w-sm">
+            <AuthPanel onUserChange={setUser} />
+          </div>
+        </section>
+
+        <Footer />
       </main>
     );
   }

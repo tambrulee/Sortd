@@ -100,15 +100,21 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
   }
 
   async function handleSignOut() {
-    setMessage("");
+  setMessage("");
 
-    const { error } =
-      await supabase.auth.signOut();
+  const { error } =
+    await supabase.auth.signOut();
 
-    if (error) {
-      setMessage(error.message);
-    }
+  if (error) {
+    setMessage(error.message);
+    return;
   }
+
+  setUser(null);
+  onUserChange(null);
+  setEmail("");
+  setPassword("");
+}
 
   if (checkingSession) {
     return (
