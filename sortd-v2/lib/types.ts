@@ -59,6 +59,7 @@ export interface Goal {
   createdAt: string;
 }
 
+// Workspace structure for the Sortd app
 export interface SortdWorkspace {
   version: 1;
   projects: Project[];
@@ -72,5 +73,41 @@ export type AppView =
   | "my-day"
   | "upcoming"
   | "projects"
+  | "routines"
   | "goals"
   | "dreams";
+
+  // Routine and RoutineTask types for recurring tasks
+  export type RecurrenceUnit =
+  | "day"
+  | "week"
+  | "month";
+
+export type RoutineTask = {
+  id: string;
+  title: string;
+  order: number;
+
+  interval: number;
+  recurrenceUnit: RecurrenceUnit;
+  nextDueDate: string;
+
+  priority?: Priority;
+  energy?: Energy;
+  durationMinutes?: number;
+
+  lastCompletedAt?: string;
+  completionHistory: string[];
+
+  active: boolean;
+  createdAt: string;
+};
+
+export type Routine = {
+  id: string;
+  name: string;
+  description?: string;
+  tasks: RoutineTask[];
+  createdAt: string;
+  archived: boolean;
+};

@@ -23,6 +23,11 @@ const navigationItems: {
     icon: "◷",
   },
   {
+  id: "routines",
+  label: "Routines",
+  icon: "↻",
+},
+  {
     id: "projects",
     label: "Projects",
     icon: "□",

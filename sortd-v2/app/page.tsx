@@ -17,6 +17,7 @@ import ProjectDetails from "@/components/ProjectDetails";
 import {
   AppView,
   ProjectStatus,
+  Routine,
   SortdList,
   Task,
 } from "@/lib/types";
@@ -59,11 +60,13 @@ type TaskWithProject = Task & {
 type CloudWorkspaceData = {
   version: 1;
   lists: SortdList[];
+  routines: Routine[];
   activeListId: string;
   hideCompleted: boolean;
 };
 
 export default function Home() {
+  const [routines, setRoutines] = useState<Routine[]>([]);
   const [user, setUser] =
     useState<User | null>(null);
 
@@ -186,6 +189,7 @@ const visibleTasks = useMemo(() => {
       activeListId:
         getStoredActiveListId() ?? "",
       hideCompleted: getStoredHideCompleted(),
+      routines: [],
     };
 
     if (
@@ -239,6 +243,10 @@ const visibleTasks = useMemo(() => {
         cloudWorkspace.hideCompleted ?? false
       );
 
+      setRoutines(
+        cloudWorkspace.routines ?? []
+      );
+
       return;
     }
 
@@ -255,6 +263,7 @@ const visibleTasks = useMemo(() => {
         listsToUpload[0].id,
       hideCompleted:
         localWorkspace.hideCompleted,
+      routines: [],
     };
 
     const { error: uploadError } =
@@ -305,6 +314,7 @@ useEffect(() => {
       const workspace: CloudWorkspaceData = {
         version: 1,
         lists,
+        routines,
         activeListId,
         hideCompleted,
       };
@@ -339,6 +349,7 @@ useEffect(() => {
   lists,
   activeListId,
   hideCompleted,
+  routines,
   user,
 ]);
 
