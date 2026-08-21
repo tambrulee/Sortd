@@ -77,6 +77,7 @@ export type AppView =
   | "upcoming"
   | "projects"
   | "routines"
+  | "shopping"
   | "goals"
   | "dreams";
 
@@ -176,4 +177,36 @@ export type ScheduledBlock = {
 
   dueDate?: string;
   occurrenceDate?: string;
+};
+
+// Shopping list types for managing shopping items and categories
+
+export type ShoppingCategory =
+  | "food"
+  | "household"
+  | "health"
+  | "beauty"
+  | "clothing"
+  | "garden"
+  | "gifts"
+  | "other";
+
+export type ShoppingItem = {
+  id: string;
+  title: string;
+  quantity?: string;
+  shop?: string;
+  category: ShoppingCategory;
+  estimatedCost?: number;
+  purchased: boolean;
+  order: number;
+  createdAt: string;
+};
+
+export type ShoppingList = {
+  id: string;
+  name: string;
+  items: ShoppingItem[];
+  createdAt: string;
+  archived: boolean;
 };

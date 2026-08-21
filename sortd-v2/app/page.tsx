@@ -24,6 +24,7 @@ import AuthPanel from "@/components/AuthPanel";
 import RoutinesView from "@/components/RoutinesView";
 import { createDefaultScheduleSettings } from "@/lib/schedule";
 import PlannerView from "@/components/PlannerView";
+import ShoppingView from "@/components/ShoppingView";
 
 // Types and storage utilities
 import {
@@ -31,9 +32,10 @@ import {
   ProjectStatus,
   RecurrenceUnit,
   Routine,
+  ScheduleSettings,
+  ShoppingList,
   SortdList,
   Task,
-  ScheduleSettings,
 } from "@/lib/types";
 
 import {
@@ -141,6 +143,7 @@ type CloudWorkspaceData = {
   version: 1;
   lists: SortdList[];
   routines: Routine[];
+  shoppingLists?: ShoppingList[];
   scheduleSettings?: ScheduleSettings;
   activeListId: string;
   hideCompleted: boolean;
@@ -156,6 +159,11 @@ export default function Home() {
   ] = useState<ScheduleSettings>(() =>
     createDefaultScheduleSettings()
   );
+
+  const [
+  shoppingLists,
+  setShoppingLists,
+] = useState<ShoppingList[]>([]);
 
   const [user, setUser] =
     useState<User | null>(null);
@@ -286,6 +294,7 @@ const visibleTasks = useMemo(() => {
             .resolvedOptions()
             .timeZone || "Europe/London"
         ),
+      shoppingLists: [],
     };
 
     if (
@@ -343,6 +352,10 @@ const visibleTasks = useMemo(() => {
         cloudWorkspace.routines ?? []
       );
 
+      setShoppingLists(
+        cloudWorkspace.shoppingLists ?? []
+      );
+
       setScheduleSettings(
         cloudWorkspace.scheduleSettings ??
           createDefaultScheduleSettings(
@@ -371,6 +384,7 @@ const visibleTasks = useMemo(() => {
       routines: [],
       scheduleSettings:
         localWorkspace.scheduleSettings,
+      shoppingLists: [],
     };
 
     const { error: uploadError } =
@@ -422,6 +436,7 @@ useEffect(() => {
         version: 1,
         lists,
         routines,
+        shoppingLists,
         scheduleSettings,
         activeListId,
         hideCompleted,
@@ -458,6 +473,7 @@ useEffect(() => {
   activeListId,
   hideCompleted,
   routines,
+  shoppingLists,
   scheduleSettings,
   user,
 ]);
@@ -859,6 +875,14 @@ function updateProjectStatus(status: ProjectStatus) {
                 onRestoreTask={restoreArchivedTask}
               />
             </div>
+
+          ) : activeView === "shopping" ? (
+          <ShoppingView
+            shoppingLists={shoppingLists}
+            onChangeShoppingLists={
+              setShoppingLists
+            }
+          />
 
           ) : activeView === "planner" ? (
           <PlannerView
