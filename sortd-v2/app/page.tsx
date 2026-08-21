@@ -20,10 +20,15 @@ import RoutinesView from "@/components/RoutinesView";
 import { createDefaultScheduleSettings } from "@/lib/schedule";
 import PlannerView from "@/components/PlannerView";
 import ShoppingView from "@/components/ShoppingView";
+import GoalsView from "@/components/GoalsView";
+import DreamsView from "@/components/DreamsView";
+
 
 // Types and storage utilities
 import {
   AppView,
+  Dream,
+  Goal,
   ProjectStatus,
   RecurrenceUnit,
   Routine,
@@ -141,6 +146,8 @@ type CloudWorkspaceData = {
   version: 1;
   lists: SortdList[];
   routines: Routine[];
+  goals?: Goal[];
+  dreams?: Dream[];
   shoppingLists?: ShoppingList[];
   scheduleSettings?: ScheduleSettings;
   activeListId: string;
@@ -157,6 +164,9 @@ export default function Home() {
   ] = useState<ScheduleSettings>(() =>
     createDefaultScheduleSettings()
   );
+
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [dreams, setDreams] = useState<Dream[]>([]);
 
   const [
   shoppingLists,
@@ -298,6 +308,8 @@ const visibleTasks = useMemo(() => {
         getStoredActiveListId() ?? "",
       hideCompleted: getStoredHideCompleted(),
       routines: [],
+      goals: [],
+      dreams: [],
       scheduleSettings:
         createDefaultScheduleSettings(
           Intl.DateTimeFormat()
@@ -366,6 +378,14 @@ const visibleTasks = useMemo(() => {
         cloudWorkspace.shoppingLists ?? []
       );
 
+      setGoals(
+        cloudWorkspace.goals ?? []
+      );
+
+      setDreams(
+        cloudWorkspace.dreams ?? []
+      );
+
       setScheduleSettings(
         cloudWorkspace.scheduleSettings ??
           createDefaultScheduleSettings(
@@ -392,6 +412,8 @@ const visibleTasks = useMemo(() => {
       hideCompleted:
         localWorkspace.hideCompleted,
       routines: [],
+      goals: [],
+      dreams: [],
       scheduleSettings:
         localWorkspace.scheduleSettings,
       shoppingLists: [],
@@ -446,6 +468,8 @@ useEffect(() => {
         version: 1,
         lists,
         routines,
+        goals,
+        dreams,
         shoppingLists,
         scheduleSettings,
         activeListId,
@@ -483,6 +507,8 @@ useEffect(() => {
   activeListId,
   hideCompleted,
   routines,
+  goals,
+  dreams,
   shoppingLists,
   scheduleSettings,
   user,
@@ -1192,12 +1218,26 @@ function updateProjectPreferredPeriod(
               }
             />
 
+          ) : activeView === "goals" ? (
+          <GoalsView
+            goals={goals}
+            dreams={dreams}
+            projects={lists}
+            onChangeGoals={setGoals}
+          />
+
           ) : activeView === "shopping" ? (
           <ShoppingView
             shoppingLists={shoppingLists}
             onChangeShoppingLists={
               setShoppingLists
             }
+          />
+          ) : activeView === "dreams" ? (
+          <DreamsView
+            dreams={dreams}
+            goals={goals}
+            onChangeDreams={setDreams}
           />
 
           ) : activeView === "planner" ? (
@@ -1233,23 +1273,11 @@ function updateProjectPreferredPeriod(
               deleteRoutineTaskById
             }
           />
-          ) : 
-           activeView === "routines" ? (
-              <RoutinesView
-                routines={routines}
-                onChangeRoutines={setRoutines}
-              />
-            ) : 
-            (
-            <div className="rounded-3xl bg-white/85 p-8 shadow-xl backdrop-blur-md">
-              <h1 className="text-2xl font-bold capitalize">
-                {activeView.replace("-", " ")}
-              </h1>
-
-              <p className="mt-2 text-slate-500">
-                This workspace is coming next.
-              </p>
-            </div>
+          ) : (
+            <RoutinesView
+              routines={routines}
+              onChangeRoutines={setRoutines}
+            />
           )}
         </div>
       </section>

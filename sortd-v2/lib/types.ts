@@ -1,7 +1,7 @@
 export type Priority = "low" | "medium" | "high";
 export type Energy = "low" | "medium" | "high";
 
-export type Aspiration = {
+export type Dream = {
   id: string;
   title: string;
   description: string;
@@ -59,11 +59,17 @@ export interface Project {
   createdAt: string;
 }
 
+export type GoalStatus =
+  | "active"
+  | "paused"
+  | "completed";
+
 export interface Goal {
   id: string;
   title: string;
   description?: string;
-  aspirationId?: string;
+  dreamId?: string;
+  status: GoalStatus;
   createdAt: string;
 }
 
@@ -73,14 +79,13 @@ export interface SortdWorkspace {
   projects: Project[];
   tasks: Task[];
   goals: Goal[];
-  aspirations: Aspiration[];
+  dreams: Dream[];
   activeProjectId?: string;
 }
 
 export type AppView =
   | "my-day"
   | "planner"
-  | "upcoming"
   | "projects"
   | "routines"
   | "shopping"

@@ -18,15 +18,10 @@ const navigationItems: {
     icon: "☀",
   },
   {
-    id: "upcoming",
-    label: "Upcoming",
-    icon: "◷",
+    id: "routines",
+    label: "Routines",
+    icon: "↻",
   },
-  {
-  id: "routines",
-  label: "Routines",
-  icon: "↻",
-},
   {
     id: "projects",
     label: "Projects",
