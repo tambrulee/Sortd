@@ -16,12 +16,26 @@ import {
 } from "@/lib/scheduler";
 import ScheduleSettingsView from "@/components/ScheduleSettingsView";
 
+
 type PlannerViewProps = {
   tasks: SchedulableProjectTask[];
+
   routines: Routine[];
+
   settings: ScheduleSettings;
+
   onChangeSettings: (
     settings: ScheduleSettings
+  ) => void;
+
+  onCompleteProjectTask: (
+    projectId: string,
+    taskId: string
+  ) => void;
+
+  onCompleteRoutineTask: (
+    routineId: string,
+    taskId: string
   ) => void;
 };
 
@@ -121,6 +135,8 @@ export default function PlannerView({
   routines,
   settings,
   onChangeSettings,
+  onCompleteProjectTask,
+  onCompleteRoutineTask,
 }: PlannerViewProps) {
   const [clock, setClock] = useState(
     () => new Date()
@@ -285,49 +301,91 @@ export default function PlannerView({
               {blocks.length > 0 ? (
                 <div className="space-y-2">
                   {blocks.map((block) => (
-                    <div
-                      key={block.id}
-                      className="grid gap-3 rounded-2xl bg-[#f3eeee] px-4 py-3 sm:grid-cols-[130px_1fr_auto] sm:items-center"
+                  <div
+                    key={block.id}
+                    className="grid gap-3 rounded-2xl bg-[#f3eeee] px-4 py-3 sm:grid-cols-[44px_130px_1fr_auto] sm:items-center"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          block.sourceType ===
+                          "routine"
+                        ) {
+                          onCompleteRoutineTask(
+                            block.parentId,
+                            block.sourceId
+                          );
+
+                          return;
+                        }
+
+                        onCompleteProjectTask(
+                          block.parentId,
+                          block.sourceId
+                        );
+                      }}
+                      aria-label={`Complete ${block.title}`}
+                      title={
+                        block.sourceType ===
+                        "routine"
+                          ? "Complete routine task"
+                          : "Mark whole task complete"
+                      }
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
                     >
-                      <p className="font-semibold text-[#1f0825]">
-                        {block.startTime}–
-                        {block.endTime}
+                      ✓
+                    </button>
+
+                    <p className="font-semibold text-[#1f0825]">
+                      {block.startTime}–
+                      {block.endTime}
+                    </p>
+
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-slate-900">
+                        {block.title}
                       </p>
 
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-slate-900">
-                          {block.title}
-                        </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {block.parentName} ·{" "}
+                        {block.sourceType ===
+                        "routine"
+                          ? "Routine"
+                          : "Project task"}
 
-                        <p className="mt-1 text-xs text-slate-500">
-                          {block.parentName} ·{" "}
-                          {block.sourceType ===
-                          "routine"
-                            ? "Routine"
-                            : "Project task"}
-                        </p>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span
-                          className={`rounded-full px-2.5 py-1 ${
-                            block.context ===
-                            "work"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-purple-100 text-purple-700"
-                          }`}
-                        >
-                          {block.context}
-                        </span>
-
-                        {block.usedDefaultDuration && (
-                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
-                            30 min assumed
-                          </span>
-                        )}
-                      </div>
+                        {block.sessionIndex &&
+                          block.totalDurationMinutes &&
+                          block.totalDurationMinutes >
+                            block.durationMinutes && (
+                            <>
+                              {" "}
+                              · Session{" "}
+                              {block.sessionIndex}
+                            </>
+                          )}
+                      </p>
                     </div>
-                  ))}
+
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span
+                        className={`rounded-full px-2.5 py-1 ${
+                          block.context === "work"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-purple-100 text-purple-700"
+                        }`}
+                      >
+                        {block.context}
+                      </span>
+
+                      {block.usedDefaultDuration && (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
+                          30 min assumed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
                 </div>
               ) : (
                 <p className="rounded-2xl bg-[#f3eeee] px-4 py-7 text-center text-sm text-slate-500">

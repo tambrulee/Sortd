@@ -658,6 +658,33 @@ useEffect(() => {
     });
   }
 
+  function completeProjectTask(
+    projectId: string,
+    taskId: string
+  ) {
+    setLists((currentLists) =>
+      currentLists.map((project) => {
+        if (project.id !== projectId) {
+          return project;
+        }
+
+        return {
+          ...project,
+
+          tasks: project.tasks.map(
+            (task) =>
+              task.id === taskId
+                ? {
+                    ...task,
+                    completed: true,
+                  }
+                : task
+          ),
+        };
+      })
+    );
+  }
+
   function deleteTask(id: string) {
   if (!activeList) return;
 
@@ -920,7 +947,12 @@ function updateProjectPreferredPeriod(
             <MyDayView
               tasks={allTasks}
               routines={routines}
-              onCompleteRoutineTask={completeRoutineTask}
+              onCompleteProjectTask={
+                completeProjectTask
+              }
+              onCompleteRoutineTask={
+                completeRoutineTask
+              }
               onOpenProject={(projectId) => {
                 setActiveListId(projectId);
                 setActiveView("projects");
@@ -1025,6 +1057,12 @@ function updateProjectPreferredPeriod(
             settings={scheduleSettings}
             onChangeSettings={
               setScheduleSettings
+            }
+            onCompleteProjectTask={
+              completeProjectTask
+            }
+            onCompleteRoutineTask={
+              completeRoutineTask
             }
           />
           ) : 
