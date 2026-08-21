@@ -1,17 +1,14 @@
 "use client";
 
 import { useState } from "react";
+
 import {
-  Priority,
   RecurrenceUnit,
   Routine,
   RoutineTask,
-  ScheduleContext,
-  SchedulePeriod,
 } from "@/lib/types";
-import {
-  DURATION_OPTIONS,
-} from "@/lib/durations";
+
+import ItemDetailsModal from "@/components/ItemDetailsModal";
 
 type RoutinesViewProps = {
   routines: Routine[];
@@ -162,10 +159,21 @@ export default function RoutinesView({
   const [newDueDate, setNewDueDate] =
     useState(getTodayKey());
 
+  const [
+    editingRoutineTaskId,
+    setEditingRoutineTaskId,
+  ] = useState<string | null>(null);
+
   const activeRoutine =
     routines.find(
       (routine) => routine.id === activeRoutineId
     ) ?? routines[0];
+
+  const editingRoutineTask =
+    activeRoutine?.tasks.find(
+      (task) =>
+        task.id === editingRoutineTaskId
+    );
 
   function updateRoutine(updatedRoutine: Routine) {
     onChangeRoutines(
@@ -502,15 +510,20 @@ export default function RoutinesView({
               </div>
             ) : (
               [...activeRoutine.tasks]
-                .sort((firstTask, secondTask) =>
-                  firstTask.nextDueDate.localeCompare(
-                    secondTask.nextDueDate
-                  )
+                .sort(
+                  (
+                    firstTask,
+                    secondTask
+                  ) =>
+                    firstTask.nextDueDate.localeCompare(
+                      secondTask.nextDueDate
+                    )
                 )
                 .map((task) => {
-                  const dueStatus = getDueStatus(
-                    task.nextDueDate
-                  );
+                  const dueStatus =
+                    getDueStatus(
+                      task.nextDueDate
+                    );
 
                   return (
                     <div
@@ -521,47 +534,80 @@ export default function RoutinesView({
                           : "border-slate-100 bg-slate-50 opacity-60"
                       }`}
                     >
-                      <div className="flex flex-wrap items-start gap-3">
+                      <div className="flex items-start gap-3">
                         <button
                           type="button"
                           onClick={() =>
-                            completeRoutineTask(task.id)
+                            completeRoutineTask(
+                              task.id
+                            )
                           }
-                          disabled={!task.active}
+                          disabled={
+                            !task.active
+                          }
                           aria-label={`Complete ${task.title}`}
                           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] text-lg text-[#a93ac5] transition hover:bg-[#cd6ce7] hover:text-white disabled:cursor-not-allowed"
                         >
                           ✓
                         </button>
 
-                        <div className="min-w-[200px] flex-1">
-                          <input
-                            value={task.title}
-                            onChange={(event) =>
-                              updateRoutineTask(task.id, {
-                                title: event.target.value,
-                              })
-                            }
-                            className="w-full bg-transparent font-semibold text-slate-900 outline-none"
-                          />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold text-slate-900">
+                            {task.title ||
+                              "Untitled routine task"}
+                          </p>
 
                           <div className="mt-2 flex flex-wrap gap-2 text-xs">
                             <span
                               className={`rounded-full px-2.5 py-1 ${dueStatus.className}`}
                             >
-                              {dueStatus.label}
+                              {
+                                dueStatus.label
+                              }
                             </span>
 
                             <span className="rounded-full bg-purple-50 px-2.5 py-1 text-purple-700">
-                              {getFrequencyLabel(task)}
+                              {getFrequencyLabel(
+                                task
+                              )}
                             </span>
 
-                            {(task.completionHistory?.length ??
+                            {task.priority ===
+                              "high" && (
+                              <span className="rounded-full bg-red-100 px-2.5 py-1 text-red-700">
+                                High priority
+                              </span>
+                            )}
+
+                            {task.durationMinutes && (
+                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                                {task.durationMinutes <
+                                60
+                                  ? `${task.durationMinutes} min`
+                                  : `${Number(
+                                      (
+                                        task.durationMinutes /
+                                        60
+                                      ).toFixed(1)
+                                    )} hr`}
+                              </span>
+                            )}
+
+                            {!task.active && (
+                              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
+                                Paused
+                              </span>
+                            )}
+
+                            {(task
+                              .completionHistory
+                              ?.length ??
                               0) > 0 && (
                               <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
                                 Completed{" "}
                                 {
-                                  task.completionHistory
+                                  task
+                                    .completionHistory
                                     .length
                                 }{" "}
                                 times
@@ -570,241 +616,46 @@ export default function RoutinesView({
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
-                          <input
-                            type="number"
-                            min="1"
-                            value={task.interval}
-                            onChange={(event) =>
-                              updateRoutineTask(task.id, {
-                                interval: Math.max(
-                                  1,
-                                  Number(
-                                    event.target.value
-                                  )
-                                ),
-                              })
-                            }
-                            aria-label="Repeat interval"
-                            className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                          />
-
-                          <select
-                            value={task.recurrenceUnit}
-                            onChange={(event) =>
-                              updateRoutineTask(task.id, {
-                                recurrenceUnit:
-                                  event.target
-                                    .value as RecurrenceUnit,
-                              })
-                            }
-                            aria-label="Recurrence unit"
-                            className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                          >
-                            <option value="day">
-                              Days
-                            </option>
-                            <option value="week">
-                              Weeks
-                            </option>
-                            <option value="month">
-                              Months
-                            </option>
-                          </select>
-
-                          <input
-                            type="date"
-                            value={task.nextDueDate}
-                            onChange={(event) =>
-                              updateRoutineTask(task.id, {
-                                nextDueDate:
-                                  event.target.value,
-                              })
-                            }
-                            aria-label="Next due date"
-                            className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                          />
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateRoutineTask(task.id, {
-                                active: !task.active,
-                              })
-                            }
-                            className="rounded-lg px-2 py-1.5 text-sm text-slate-500 hover:bg-slate-100"
-                          >
-                            {task.active
-                              ? "Pause"
-                              : "Resume"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              deleteRoutineTask(task.id)
-                            }
-                            aria-label={`Delete ${task.title}`}
-                            title="Delete routine task"
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-lg text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                          >
-                            ×
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingRoutineTaskId(
+                              task.id
+                            )
+                          }
+                          aria-label={`Edit ${task.title}`}
+                          title="Routine task details"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                        >
+                          •••
+                        </button>
                       </div>
-                      <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 xl:grid-cols-4">
-  <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
-    Priority
-
-    <select
-      value={
-        task.priority ?? "medium"
-      }
-      onChange={(event) =>
-        updateRoutineTask(task.id, {
-          priority:
-            event.target
-              .value as Priority,
-        })
-      }
-      className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-900"
-    >
-      <option value="low">
-        Low priority
-      </option>
-
-      <option value="medium">
-        Medium priority
-      </option>
-
-      <option value="high">
-        High priority
-      </option>
-    </select>
-  </label>
-
-  <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
-    Estimated time
-
-    <select
-      value={task.durationMinutes ?? 30}
-      onChange={(event) =>
-        updateRoutineTask(task.id, {
-          durationMinutes: Number(
-            event.target.value
-          ),
-        })
-      }
-      className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-900"
-    >
-      {DURATION_OPTIONS.map((option) => (
-        <option
-          key={option.value}
-          value={option.value}
-        >
-          {option.label}
-        </option>
-      ))}
-    </select>
-  </label>
-
-  <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-    Maximum session
-
-    <select
-      value={task.maxSessionMinutes ?? 120}
-      onChange={(event) =>
-        updateRoutineTask(task.id, {
-          maxSessionMinutes: Number(
-            event.target.value
-          ),
-        })
-      }
-      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-    >
-      <option value="15">15 minutes</option>
-      <option value="30">30 minutes</option>
-      <option value="45">45 minutes</option>
-      <option value="60">1 hour</option>
-      <option value="90">1½ hours</option>
-      <option value="120">2 hours</option>
-      <option value="180">3 hours</option>
-      <option value="240">4 hours</option>
-      <option value="360">6 hours</option>
-      <option value="480">8 hours</option>
-    </select>
-  </label>
-
-  <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
-    Schedule during
-
-    <select
-      value={
-        task.scheduleContext ??
-        "personal"
-      }
-      onChange={(event) =>
-        updateRoutineTask(task.id, {
-          scheduleContext:
-            event.target
-              .value as ScheduleContext,
-        })
-      }
-      className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-900"
-    >
-      <option value="personal">
-        Personal hours
-      </option>
-
-      <option value="work">
-        Working hours
-      </option>
-
-      <option value="any">
-        Either
-      </option>
-    </select>
-  </label>
-
-  <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
-    Preferred time
-
-    <select
-      value={
-        task.preferredPeriod ?? "any"
-      }
-      onChange={(event) =>
-        updateRoutineTask(task.id, {
-          preferredPeriod:
-            event.target
-              .value as SchedulePeriod,
-        })
-      }
-      className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-900"
-    >
-      <option value="any">
-        Any time
-      </option>
-
-      <option value="morning">
-        Morning
-      </option>
-
-      <option value="afternoon">
-        Afternoon
-      </option>
-
-      <option value="evening">
-        Evening
-      </option>
-    </select>
-  </label>
-</div>
                     </div>
                   );
                 })
             )}
           </div>
+
+          {editingRoutineTask && (
+            <ItemDetailsModal
+              kind="routine"
+              item={editingRoutineTask}
+              onChange={(updates) =>
+                updateRoutineTask(
+                  editingRoutineTask.id,
+                  updates
+                )
+              }
+              onDelete={() =>
+                deleteRoutineTask(
+                  editingRoutineTask.id
+                )
+              }
+              onClose={() =>
+                setEditingRoutineTaskId(null)
+              }
+            />
+          )}
         </>
       )}
     </div>
