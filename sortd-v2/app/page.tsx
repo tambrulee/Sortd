@@ -11,13 +11,8 @@ import {
 
 // Components
 import Header from "@/components/Header";
-import ControlPanel from "@/components/ControlPanel";
-import ListTitle from "@/components/ListTitle";
-import ListSwitcher from "@/components/ListSwitcher";
-import TaskList from "@/components/TaskList";
+import ProjectsView from "@/components/ProjectsView";
 import Footer from "@/components/Footer";
-import ProjectDetails from "@/components/ProjectDetails";
-import ArchivedTasks from "@/components/ArchivedTasks";
 import WorkspaceNav from "@/components/WorkspaceNav";
 import MyDayView from "@/components/MyDayView";
 import AuthPanel from "@/components/AuthPanel";
@@ -923,23 +918,19 @@ function updateProjectPreferredPeriod(
       <section className="flex flex-1 justify-center px-4 py-8">
         <div className="grid w-full max-w-6xl gap-4 md:grid-cols-[260px_1fr]">
           <div className="space-y-4">
-            <AuthPanel onUserChange={setUser} />
-            <WorkspaceNav
-              activeView={activeView}
-              onChangeView={setActiveView}
+            <AuthPanel
+              onUserChange={
+                setUser
+              }
             />
 
-            <ListSwitcher
-              lists={lists}
-              activeListId={activeList?.id ?? ""}
-              onChangeList={(id) => {
-                setActiveListId(id);
-                setActiveView("projects");
-              }}
-              onCreateList={createList}
-              onDeleteList={deleteActiveList}
-              onRenameList={renameList}
-              onReorderLists={reorderLists}
+            <WorkspaceNav
+              activeView={
+                activeView
+              }
+              onChangeView={
+                setActiveView
+              }
             />
           </div>
 
@@ -959,88 +950,107 @@ function updateProjectPreferredPeriod(
               }}
             />
           ) : activeView === "projects" ? (
-            <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
-              <ListTitle
-                listName={activeList?.name ?? ""}
-                onChangeListName={updateListName}
-              />
-
-              <ProjectDetails
-                description={
-                  activeList?.description ?? ""
-                }
-                status={
-                  activeList?.status ?? "active"
-                }
-                scheduleContext={
-                  activeList?.scheduleContext ??
-                  "personal"
-                }
-                preferredPeriod={
-                  activeList?.preferredPeriod ??
-                  "any"
-                }
-                onChangeDescription={
-                  updateProjectDescription
-                }
-                onChangeStatus={
-                  updateProjectStatus
-                }
-                onChangeScheduleContext={
-                  updateProjectScheduleContext
-                }
-                onChangePreferredPeriod={
-                  updateProjectPreferredPeriod
-                }
-              />
-
-              <ControlPanel
-                onAddTask={addTask}
-                hideCompleted={hideCompleted}
-                onToggleHideCompleted={() =>
-                  setHideCompleted((current) => !current)
-                }
-                onArchiveCompleted={archiveCompletedTasks}
-                hasCompleted={tasks.some((task) => task.completed)}
-                taskFilter={taskFilter}
-                onChangeTaskFilter={setTaskFilter}
-              />
-
-              <TaskList
-                tasks={visibleTasks}
-                onAddTask={addTask}
-                onUpdateTask={updateTask}
-                onUpdateTaskPriority={
-                  updateTaskPriority
-                }
-                onUpdateTaskEnergy={
-                  updateTaskEnergy
-                }
-                onUpdateTaskDueDate={
-                  updateTaskDueDate
-                }
-                onUpdateTaskDuration={
-                  updateTaskDuration
-                }
-                onUpdateTaskScheduleContext={
-                  updateTaskScheduleContext
-                }
-                onUpdateTaskPreferredPeriod={
-                  updateTaskPreferredPeriod
-                }
-                onUpdateTaskMaxSession={
-                  updateTaskMaxSession
-                }
-                onToggleTask={toggleTask}
-                onDeleteTask={deleteTask}
-                onReorderTasks={reorderTasks}
-              />
-
-              <ArchivedTasks
-                tasks={activeList?.archivedTasks ?? []}
-                onRestoreTask={restoreArchivedTask}
-              />
-            </div>
+            <ProjectsView
+              projects={
+                lists
+              }
+              activeProject={
+                activeList
+              }
+              activeProjectId={
+                activeList?.id ?? ""
+              }
+              visibleTasks={
+                visibleTasks
+              }
+              hideCompleted={
+                hideCompleted
+              }
+              taskFilter={
+                taskFilter
+              }
+              onChangeProject={
+                setActiveListId
+              }
+              onCreateProject={
+                createList
+              }
+              onDeleteProject={
+                deleteActiveList
+              }
+              onRenameProject={
+                renameList
+              }
+              onReorderProjects={
+                reorderLists
+              }
+              onChangeProjectName={
+                updateListName
+              }
+              onChangeProjectDescription={
+                updateProjectDescription
+              }
+              onChangeProjectStatus={
+                updateProjectStatus
+              }
+              onChangeProjectScheduleContext={
+                updateProjectScheduleContext
+              }
+              onChangeProjectPreferredPeriod={
+                updateProjectPreferredPeriod
+              }
+              onAddTask={
+                addTask
+              }
+              onToggleHideCompleted={() =>
+                setHideCompleted(
+                  (current) =>
+                    !current
+                )
+              }
+              onArchiveCompleted={
+                archiveCompletedTasks
+              }
+              onChangeTaskFilter={
+                setTaskFilter
+              }
+              onUpdateTask={
+                updateTask
+              }
+              onUpdateTaskPriority={
+                updateTaskPriority
+              }
+              onUpdateTaskEnergy={
+                updateTaskEnergy
+              }
+              onUpdateTaskDueDate={
+                updateTaskDueDate
+              }
+              onUpdateTaskDuration={
+                updateTaskDuration
+              }
+              onUpdateTaskMaxSession={
+                updateTaskMaxSession
+              }
+              onUpdateTaskScheduleContext={
+                updateTaskScheduleContext
+              }
+              onUpdateTaskPreferredPeriod={
+                updateTaskPreferredPeriod
+              }
+              onToggleTask={
+                toggleTask
+              }
+              onDeleteTask={
+                deleteTask
+              }
+              onReorderTasks={
+                reorderTasks
+              }
+              onRestoreTask={
+                restoreArchivedTask
+              }
+            />
 
           ) : activeView === "shopping" ? (
           <ShoppingView
