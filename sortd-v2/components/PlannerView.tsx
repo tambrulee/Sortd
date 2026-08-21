@@ -5,17 +5,23 @@ import {
   useMemo,
   useState,
 } from "react";
+
 import {
   Routine,
+  RoutineTask,
+  ScheduledBlock,
   ScheduleSettings,
+  Task,
 } from "@/lib/types";
+
 import {
   buildRollingSchedule,
   getScheduleDateKeys,
   SchedulableProjectTask,
 } from "@/lib/scheduler";
-import ScheduleSettingsView from "@/components/ScheduleSettingsView";
 
+import ScheduleSettingsView from "@/components/ScheduleSettingsView";
+import ItemDetailsModal from "@/components/ItemDetailsModal";
 
 type PlannerViewProps = {
   tasks: SchedulableProjectTask[];
@@ -34,6 +40,28 @@ type PlannerViewProps = {
   ) => void;
 
   onCompleteRoutineTask: (
+    routineId: string,
+    taskId: string
+  ) => void;
+
+  onUpdateProjectTask: (
+    projectId: string,
+    taskId: string,
+    updates: Partial<Task>
+  ) => void;
+
+  onUpdateRoutineTask: (
+    routineId: string,
+    taskId: string,
+    updates: Partial<RoutineTask>
+  ) => void;
+
+  onDeleteProjectTask: (
+    projectId: string,
+    taskId: string
+  ) => void;
+
+  onDeleteRoutineTask: (
     routineId: string,
     taskId: string
   ) => void;
@@ -132,14 +160,31 @@ function formatMinutes(minutes: number) {
 
 export default function PlannerView({
   tasks,
+
   routines,
+
   settings,
+
   onChangeSettings,
+
   onCompleteProjectTask,
   onCompleteRoutineTask,
+
+  onUpdateProjectTask,
+  onUpdateRoutineTask,
+
+  onDeleteProjectTask,
+  onDeleteRoutineTask,
 }: PlannerViewProps) {
   const [clock, setClock] = useState(
     () => new Date()
+  );
+
+  const [
+    selectedBlock,
+    setSelectedBlock,
+  ] = useState<ScheduledBlock | null>(
+    null
   );
 
   useEffect(() => {
@@ -201,6 +246,33 @@ export default function PlannerView({
         total + block.durationMinutes,
       0
     );
+
+    const selectedProjectTask =
+  selectedBlock?.sourceType === "task"
+    ? tasks.find(
+        (task) =>
+          task.id ===
+            selectedBlock.sourceId &&
+          task.projectId ===
+            selectedBlock.parentId
+      )
+    : undefined;
+
+const selectedRoutineTask =
+  selectedBlock?.sourceType ===
+  "routine"
+    ? routines
+        .find(
+          (routine) =>
+            routine.id ===
+            selectedBlock.parentId
+        )
+        ?.tasks.find(
+          (task) =>
+            task.id ===
+            selectedBlock.sourceId
+        )
+    : undefined;
 
   return (
     <div className="space-y-5">
@@ -379,10 +451,24 @@ export default function PlannerView({
                       </span>
 
                       {block.usedDefaultDuration && (
+                        
                         <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
                           30 min assumed
                         </span>
+                        
                       )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedBlock(block)
+                        }
+                        aria-label={`Edit ${block.title}`}
+                        title="Edit task details"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-white hover:text-slate-900"
+                      >
+                        •••
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -429,6 +515,58 @@ export default function PlannerView({
           </div>
         </section>
       )}
+
+      {selectedBlock &&
+  selectedProjectTask && (
+    <ItemDetailsModal
+      kind="task"
+      item={
+        selectedProjectTask
+      }
+      onChange={(updates) =>
+        onUpdateProjectTask(
+          selectedBlock.parentId,
+          selectedProjectTask.id,
+          updates
+        )
+      }
+      onDelete={() =>
+        onDeleteProjectTask(
+          selectedBlock.parentId,
+          selectedProjectTask.id
+        )
+      }
+      onClose={() =>
+        setSelectedBlock(null)
+      }
+    />
+  )}
+
+{selectedBlock &&
+  selectedRoutineTask && (
+    <ItemDetailsModal
+      kind="routine"
+      item={
+        selectedRoutineTask
+      }
+      onChange={(updates) =>
+        onUpdateRoutineTask(
+          selectedBlock.parentId,
+          selectedRoutineTask.id,
+          updates
+        )
+      }
+      onDelete={() =>
+        onDeleteRoutineTask(
+          selectedBlock.parentId,
+          selectedRoutineTask.id
+        )
+      }
+      onClose={() =>
+        setSelectedBlock(null)
+      }
+    />
+  )}
     </div>
   );
 }

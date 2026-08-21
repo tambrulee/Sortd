@@ -27,6 +27,7 @@ import {
   ProjectStatus,
   RecurrenceUnit,
   Routine,
+  RoutineTask,
   ScheduleContext,
   SchedulePeriod,
   ScheduleSettings,
@@ -680,6 +681,145 @@ useEffect(() => {
     );
   }
 
+  function updateProjectTaskById(
+  projectId: string,
+  taskId: string,
+  updates: Partial<Task>
+) {
+  setLists((currentLists) =>
+    currentLists.map((project) => {
+      if (project.id !== projectId) {
+        return project;
+      }
+
+      return {
+        ...project,
+
+        tasks: project.tasks.map(
+          (task) =>
+            task.id === taskId
+              ? {
+                  ...task,
+                  ...updates,
+                }
+              : task
+        ),
+      };
+    })
+  );
+}
+
+function deleteProjectTaskById(
+  projectId: string,
+  taskId: string
+) {
+  const project = lists.find(
+    (item) => item.id === projectId
+  );
+
+  const task = project?.tasks.find(
+    (item) => item.id === taskId
+  );
+
+  if (!project || !task) return;
+
+  const confirmed = window.confirm(
+    `Delete "${task.title || "this task"}"?`
+  );
+
+  if (!confirmed) return;
+
+  setLists((currentLists) =>
+    currentLists.map((item) => {
+      if (item.id !== projectId) {
+        return item;
+      }
+
+      return {
+        ...item,
+        tasks: item.tasks.filter(
+          (projectTask) =>
+            projectTask.id !== taskId
+        ),
+      };
+    })
+  );
+}
+
+  function updateRoutineTaskById(
+  routineId: string,
+  taskId: string,
+  updates: Partial<RoutineTask>
+) {
+  setRoutines((currentRoutines) =>
+    currentRoutines.map((routine) => {
+      if (routine.id !== routineId) {
+        return routine;
+      }
+
+      return {
+        ...routine,
+
+        tasks: routine.tasks.map(
+          (task) =>
+            task.id === taskId
+              ? {
+                  ...task,
+                  ...updates,
+                }
+              : task
+        ),
+      };
+    })
+  );
+}
+
+  function deleteRoutineTaskById(
+    routineId: string,
+    taskId: string
+  ) {
+    const routine = routines.find(
+      (item) =>
+        item.id === routineId
+    );
+
+    const task = routine?.tasks.find(
+      (item) =>
+        item.id === taskId
+    );
+
+    if (!routine || !task) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete the routine task "${task.title}"?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRoutines((currentRoutines) =>
+      currentRoutines.map((item) => {
+        if (item.id !== routineId) {
+          return item;
+        }
+
+        return {
+          ...item,
+
+          tasks: item.tasks.filter(
+            (routineTask) =>
+              routineTask.id !== taskId
+          ),
+        };
+      })
+    );
+  }
+
+  
+
   function deleteTask(id: string) {
   if (!activeList) return;
 
@@ -1062,9 +1202,15 @@ function updateProjectPreferredPeriod(
 
           ) : activeView === "planner" ? (
           <PlannerView
-            tasks={allTasks}
-            routines={routines}
-            settings={scheduleSettings}
+            tasks={
+              allTasks
+            }
+            routines={
+              routines
+            }
+            settings={
+              scheduleSettings
+            }
             onChangeSettings={
               setScheduleSettings
             }
@@ -1073,6 +1219,18 @@ function updateProjectPreferredPeriod(
             }
             onCompleteRoutineTask={
               completeRoutineTask
+            }
+            onUpdateProjectTask={
+              updateProjectTaskById
+            }
+            onUpdateRoutineTask={
+              updateRoutineTaskById
+            }
+            onDeleteProjectTask={
+              deleteProjectTaskById
+            }
+            onDeleteRoutineTask={
+              deleteRoutineTaskById
             }
           />
           ) : 
