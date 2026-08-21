@@ -23,7 +23,9 @@ export type Task = {
   energy?: Energy;
 
   dueDate?: string;
+
   durationMinutes?: number;
+  maxSessionMinutes?: number;
 
   archivedAt?: string;
 
@@ -102,7 +104,9 @@ export type RoutineTask = {
 
   priority?: Priority;
   energy?: Energy;
+
   durationMinutes?: number;
+  maxSessionMinutes?: number;
 
   lastCompletedAt?: string;
   completionHistory: string[];
@@ -182,6 +186,9 @@ export type ScheduledBlock = {
 
   dueDate?: string;
   occurrenceDate?: string;
+
+  sessionIndex?: number;
+  totalDurationMinutes?: number;
 };
 
 export type SchedulePeriod =

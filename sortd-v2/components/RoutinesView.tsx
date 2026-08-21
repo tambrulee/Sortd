@@ -9,6 +9,9 @@ import {
   ScheduleContext,
   SchedulePeriod,
 } from "@/lib/types";
+import {
+  DURATION_OPTIONS,
+} from "@/lib/durations";
 
 type RoutinesViewProps = {
   routines: Routine[];
@@ -244,6 +247,8 @@ export default function RoutinesView({
 
     createdAt:
       new Date().toISOString(),
+
+    maxSessionMinutes: 120,
   };
 
     updateRoutine({
@@ -682,9 +687,7 @@ export default function RoutinesView({
     Estimated time
 
     <select
-      value={
-        task.durationMinutes ?? 30
-      }
+      value={task.durationMinutes ?? 30}
       onChange={(event) =>
         updateRoutineTask(task.id, {
           durationMinutes: Number(
@@ -694,37 +697,41 @@ export default function RoutinesView({
       }
       className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-900"
     >
-      <option value="5">
-        5 minutes
-      </option>
+      {DURATION_OPTIONS.map((option) => (
+        <option
+          key={option.value}
+          value={option.value}
+        >
+          {option.label}
+        </option>
+      ))}
+    </select>
+  </label>
 
-      <option value="10">
-        10 minutes
-      </option>
+  <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+    Maximum session
 
-      <option value="15">
-        15 minutes
-      </option>
-
-      <option value="30">
-        30 minutes
-      </option>
-
-      <option value="45">
-        45 minutes
-      </option>
-
-      <option value="60">
-        1 hour
-      </option>
-
-      <option value="90">
-        1½ hours
-      </option>
-
-      <option value="120">
-        2 hours
-      </option>
+    <select
+      value={task.maxSessionMinutes ?? 120}
+      onChange={(event) =>
+        updateRoutineTask(task.id, {
+          maxSessionMinutes: Number(
+            event.target.value
+          ),
+        })
+      }
+      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+    >
+      <option value="15">15 minutes</option>
+      <option value="30">30 minutes</option>
+      <option value="45">45 minutes</option>
+      <option value="60">1 hour</option>
+      <option value="90">1½ hours</option>
+      <option value="120">2 hours</option>
+      <option value="180">3 hours</option>
+      <option value="240">4 hours</option>
+      <option value="360">6 hours</option>
+      <option value="480">8 hours</option>
     </select>
   </label>
 

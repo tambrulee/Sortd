@@ -38,6 +38,10 @@ type TaskListProps = {
     id: string,
     durationMinutes?: number
   ) => void;
+  onUpdateTaskMaxSession: (
+  id: string,
+  maxSessionMinutes?: number
+) => void;
   onAddTask: () => void;
   onUpdateTaskScheduleContext: (
     id: string,
@@ -60,6 +64,7 @@ export default function TaskList({
   onUpdateTaskDuration,
   onUpdateTaskScheduleContext,
   onUpdateTaskPreferredPeriod,
+  onUpdateTaskMaxSession,
   onToggleTask,
   onDeleteTask,
   onReorderTasks,
@@ -99,31 +104,20 @@ export default function TaskList({
         <div className="space-y-3">
           {tasks.map((task) => (
             <TaskItem
-              key={task.id}
-              task={task}
-              onAddTask={onAddTask}
-              onUpdateTask={onUpdateTask}
-              onUpdateTaskPriority={
-                onUpdateTaskPriority
-              }
-              onUpdateTaskEnergy={
-                onUpdateTaskEnergy
-              }
-              onUpdateTaskDueDate={
-                onUpdateTaskDueDate
-              }
-              onUpdateTaskDuration={
-                onUpdateTaskDuration
-              }
-              onUpdateTaskScheduleContext={
-                onUpdateTaskScheduleContext
-              }
-              onUpdateTaskPreferredPeriod={
-                onUpdateTaskPreferredPeriod
-              }
-              onToggleTask={onToggleTask}
-              onDeleteTask={onDeleteTask}
-            />
+            key={task.id}
+            task={task}
+            onAddTask={onAddTask}
+            onUpdateTask={onUpdateTask}
+            onUpdateTaskPriority={onUpdateTaskPriority}
+            onUpdateTaskEnergy={onUpdateTaskEnergy}
+            onUpdateTaskDueDate={onUpdateTaskDueDate}
+            onUpdateTaskDuration={onUpdateTaskDuration}
+            onUpdateTaskMaxSession={onUpdateTaskMaxSession}
+            onUpdateTaskScheduleContext={onUpdateTaskScheduleContext}
+            onUpdateTaskPreferredPeriod={onUpdateTaskPreferredPeriod}
+            onToggleTask={onToggleTask}
+            onDeleteTask={onDeleteTask}
+          />
           ))}
         </div>
       </SortableContext>

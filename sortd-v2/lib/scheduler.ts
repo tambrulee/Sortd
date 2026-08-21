@@ -35,6 +35,7 @@ type ScheduleCandidate = {
   parentName: string;
   title: string;
   durationMinutes: number;
+  maxSessionMinutes: number;
   usedDefaultDuration: boolean;
   context: ScheduleContext;
   preferredPeriod: SchedulePeriod;
@@ -51,6 +52,8 @@ type TimeWindow = {
 };
 
 const DEFAULT_TASK_MINUTES = 30;
+const DEFAULT_MAX_SESSION_MINUTES = 120;
+const MINIMUM_SESSION_MINUTES = 15;
 
 const DAY_BY_NUMBER: Record<
   number,
@@ -352,25 +355,26 @@ function getPriorityValue(
   return 0;
 }
 
-function findAvailableStart(
+function findAvailableSession(
   dateKey: string,
   candidate: ScheduleCandidate,
+  remainingMinutes: number,
   settings: ScheduleSettings,
   scheduledBlocks: ScheduledBlock[],
   today: string,
   currentTime: string
 ) {
   const availableWindows =
-  getAvailableWindows(
-    dateKey,
-    candidate.context,
-    settings
-  );
+    getAvailableWindows(
+      dateKey,
+      candidate.context,
+      settings
+    );
 
-const windows = applyPreferredPeriod(
-  availableWindows,
-  candidate.preferredPeriod
-);
+  const windows = applyPreferredPeriod(
+    availableWindows,
+    candidate.preferredPeriod
+  );
 
   const blocksForDay = scheduledBlocks
     .filter(
@@ -383,24 +387,33 @@ const windows = applyPreferredPeriod(
         )
     );
 
-const currentMinute =
-  timeToMinutes(currentTime);
+  const roundedCurrentMinute =
+    Math.ceil(
+      timeToMinutes(currentTime) / 5
+    ) * 5;
 
-const roundedCurrentMinute =
-  Math.ceil(currentMinute / 5) * 5;
+  const maximumSessionMinutes = Math.min(
+    remainingMinutes,
+    candidate.maxSessionMinutes
+  );
 
-for (const window of windows) {
-  let cursor =
-    dateKey === today
-      ? Math.max(
-          window.start,
-          roundedCurrentMinute
-        )
-      : window.start;
+  const minimumSessionMinutes = Math.min(
+    MINIMUM_SESSION_MINUTES,
+    maximumSessionMinutes
+  );
 
-  if (cursor >= window.end) {
-    continue;
-  }
+  for (const window of windows) {
+    let cursor =
+      dateKey === today
+        ? Math.max(
+            window.start,
+            roundedCurrentMinute
+          )
+        : window.start;
+
+    if (cursor >= window.end) {
+      continue;
+    }
 
     for (const block of blocksForDay) {
       const blockStart = timeToMinutes(
@@ -411,7 +424,10 @@ for (const window of windows) {
         block.endTime
       );
 
-      if (blockEnd <= cursor) {
+      if (
+        blockEnd + settings.bufferMinutes <=
+        cursor
+      ) {
         continue;
       }
 
@@ -419,16 +435,26 @@ for (const window of windows) {
         break;
       }
 
-      const candidateEnd =
-        cursor +
-        candidate.durationMinutes;
+      const gapEnd = Math.min(
+        window.end,
+        blockStart -
+          settings.bufferMinutes
+      );
+
+      const availableGapMinutes =
+        gapEnd - cursor;
 
       if (
-        candidateEnd +
-          settings.bufferMinutes <=
-        blockStart
+        availableGapMinutes >=
+        minimumSessionMinutes
       ) {
-        return cursor;
+        return {
+          startMinutes: cursor,
+          durationMinutes: Math.min(
+            maximumSessionMinutes,
+            availableGapMinutes
+          ),
+        };
       }
 
       cursor = Math.max(
@@ -436,14 +462,26 @@ for (const window of windows) {
         blockEnd +
           settings.bufferMinutes
       );
+
+      if (cursor >= window.end) {
+        break;
+      }
     }
 
+    const remainingWindowMinutes =
+      window.end - cursor;
+
     if (
-      cursor +
-        candidate.durationMinutes <=
-      window.end
+      remainingWindowMinutes >=
+      minimumSessionMinutes
     ) {
-      return cursor;
+      return {
+        startMinutes: cursor,
+        durationMinutes: Math.min(
+          maximumSessionMinutes,
+          remainingWindowMinutes
+        ),
+      };
     }
   }
 
@@ -472,6 +510,11 @@ function buildProjectCandidates(
         durationMinutes:
           task.durationMinutes ??
           DEFAULT_TASK_MINUTES,
+        maxSessionMinutes: Math.max(
+          1,
+          task.maxSessionMinutes ??
+            DEFAULT_MAX_SESSION_MINUTES
+        ),
         usedDefaultDuration,
         context:
           task.scheduleContext ??
@@ -545,6 +588,11 @@ function buildRoutineCandidates(
               durationMinutes:
                 task.durationMinutes ??
                 DEFAULT_TASK_MINUTES,
+              maxSessionMinutes: Math.max(
+                1,
+                task.maxSessionMinutes ??
+                  DEFAULT_MAX_SESSION_MINUTES
+              ),
               usedDefaultDuration,
               context:
                 task.scheduleContext ??
@@ -636,79 +684,125 @@ export function buildRollingSchedule({
     [];
 
   for (const candidate of candidates) {
-    let scheduled = false;
+  let remainingMinutes =
+    candidate.durationMinutes;
 
-    for (
-      let dateKey =
-        candidate.earliestDate;
-      dateKey <= candidate.latestDate;
-      dateKey = addDaysToDateKey(
-        dateKey,
-        1
-      )
-    ) {
-      const startMinutes =
-        findAvailableStart(
+  let sessionIndex = 0;
+
+  for (
+    let dateKey =
+      candidate.earliestDate;
+
+    dateKey <= candidate.latestDate &&
+    remainingMinutes > 0;
+
+    dateKey = addDaysToDateKey(
+      dateKey,
+      1
+    )
+  ) {
+    while (remainingMinutes > 0) {
+      const session =
+        findAvailableSession(
           dateKey,
           candidate,
+          remainingMinutes,
           settings,
           blocks,
           today,
           currentTime
         );
 
-      if (
-        startMinutes === undefined
-      ) {
-        continue;
+      if (!session) {
+        break;
       }
 
+      sessionIndex += 1;
+
       const endMinutes =
-        startMinutes +
-        candidate.durationMinutes;
+        session.startMinutes +
+        session.durationMinutes;
 
       blocks.push({
-        id: candidate.id,
+        id: `${candidate.id}-session-${sessionIndex}`,
+
         sourceType:
           candidate.sourceType,
+
         sourceId: candidate.sourceId,
+
         parentId: candidate.parentId,
+
         parentName:
           candidate.parentName,
+
         title: candidate.title,
+
         date: dateKey,
-        startTime:
-          minutesToTime(startMinutes),
-        endTime:
-          minutesToTime(endMinutes),
-        timeZone: settings.timeZone,
+
+        startTime: minutesToTime(
+          session.startMinutes
+        ),
+
+        endTime: minutesToTime(
+          endMinutes
+        ),
+
+        timeZone:
+          settings.timeZone,
+
         durationMinutes:
-          candidate.durationMinutes,
+          session.durationMinutes,
+
         usedDefaultDuration:
           candidate.usedDefaultDuration,
+
         context: candidate.context,
+
         dueDate: candidate.dueDate,
+
         occurrenceDate:
           candidate.occurrenceDate,
+
+        sessionIndex,
+
+        totalDurationMinutes:
+          candidate.durationMinutes,
       });
 
-      scheduled = true;
-      break;
-    }
-
-    if (!scheduled) {
-      unscheduled.push({
-        id: candidate.id,
-        title: candidate.title,
-        sourceType:
-          candidate.sourceType,
-        reason:
-          candidate.context === "work"
-            ? "No suitable space in your work hours."
-            : "No suitable space before its due date.",
-      });
+      remainingMinutes -=
+        session.durationMinutes;
     }
   }
+
+  if (remainingMinutes > 0) {
+    const remainingHours =
+      remainingMinutes / 60;
+
+    const remainingLabel =
+      remainingMinutes < 60
+        ? `${remainingMinutes} minutes`
+        : `${Number(
+            remainingHours.toFixed(1)
+          )} hours`;
+
+    unscheduled.push({
+      id: candidate.id,
+
+      title: candidate.title,
+
+      sourceType:
+        candidate.sourceType,
+
+      reason:
+        sessionIndex > 0
+          ? `${remainingLabel} still need scheduling.`
+          : candidate.context === "work"
+            ? "No suitable space in your work hours."
+            : "No suitable space in your available hours.",
+    });
+  }
+}
 
   return {
     blocks: blocks.sort(

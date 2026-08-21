@@ -587,6 +587,25 @@ useEffect(() => {
         ),
       });
     }
+
+  function updateTaskMaxSession(
+    id: string,
+    maxSessionMinutes?: number
+  ) {
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      tasks: tasks.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              maxSessionMinutes,
+            }
+          : task
+      ),
+    });
+  }
   
   function updateTaskScheduleContext(
     id: string,
@@ -976,6 +995,9 @@ function updateProjectPreferredPeriod(
                 }
                 onUpdateTaskPreferredPeriod={
                   updateTaskPreferredPeriod
+                }
+                onUpdateTaskMaxSession={
+                  updateTaskMaxSession
                 }
                 onToggleTask={toggleTask}
                 onDeleteTask={deleteTask}

@@ -8,6 +8,9 @@ import {
 } from "@/lib/types";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import {
+  DURATION_OPTIONS,
+} from "@/lib/durations";
 
 type TaskItemProps = {
   task: Task;
@@ -36,6 +39,11 @@ type TaskItemProps = {
     durationMinutes?: number
   ) => void;
 
+  onUpdateTaskMaxSession: (
+    id: string,
+    maxSessionMinutes?: number
+  ) => void;
+
   onUpdateTaskScheduleContext: (
   id: string,
   context?: ScheduleContext
@@ -55,6 +63,7 @@ export default function TaskItem({
   onUpdateTaskEnergy,
   onUpdateTaskDueDate,
   onUpdateTaskDuration,
+  onUpdateTaskMaxSession,
   onUpdateTaskScheduleContext,
   onUpdateTaskPreferredPeriod,
   onToggleTask,
@@ -220,6 +229,29 @@ export default function TaskItem({
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
             >
               <option value="">Not estimated</option>
+              {DURATION_OPTIONS.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+            Maximum session length
+
+            <select
+              value={task.maxSessionMinutes ?? 120}
+              onChange={(event) =>
+                onUpdateTaskMaxSession(
+                  task.id,
+                  Number(event.target.value)
+                )
+              }
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
+            >
               <option value="15">15 minutes</option>
               <option value="30">30 minutes</option>
               <option value="45">45 minutes</option>
@@ -228,83 +260,85 @@ export default function TaskItem({
               <option value="120">2 hours</option>
               <option value="180">3 hours</option>
               <option value="240">4 hours</option>
+              <option value="360">6 hours</option>
+              <option value="480">8 hours</option>
             </select>
           </label>
           <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-  Schedule during
+          Schedule during
 
-  <select
-    value={
-      task.scheduleContext ?? ""
-    }
-    onChange={(event) =>
-      onUpdateTaskScheduleContext(
-        task.id,
-        event.target.value
-          ? (event.target
-              .value as ScheduleContext)
-          : undefined
-      )
-    }
-    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
-  >
-    <option value="">
-      Use project default
-    </option>
+          <select
+            value={
+              task.scheduleContext ?? ""
+            }
+            onChange={(event) =>
+              onUpdateTaskScheduleContext(
+                task.id,
+                event.target.value
+                  ? (event.target
+                      .value as ScheduleContext)
+                  : undefined
+              )
+            }
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
+          >
+            <option value="">
+              Use project default
+            </option>
 
-    <option value="personal">
-      Personal hours
-    </option>
+            <option value="personal">
+              Personal hours
+            </option>
 
-    <option value="work">
-      Working hours
-    </option>
+            <option value="work">
+              Working hours
+            </option>
 
-    <option value="any">
-      Either
-    </option>
-  </select>
-</label>
+            <option value="any">
+              Either
+            </option>
+          </select>
+        </label>
 
-<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-  Preferred time
+        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+          Preferred time
 
-  <select
-    value={
-      task.preferredPeriod ?? ""
-    }
-    onChange={(event) =>
-      onUpdateTaskPreferredPeriod(
-        task.id,
-        event.target.value
-          ? (event.target
-              .value as SchedulePeriod)
-          : undefined
-      )
-    }
-    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
-  >
-    <option value="">
-      Use project default
-    </option>
+          <select
+            value={
+              task.preferredPeriod ?? ""
+            }
+            onChange={(event) =>
+              onUpdateTaskPreferredPeriod(
+                task.id,
+                event.target.value
+                  ? (event.target
+                      .value as SchedulePeriod)
+                  : undefined
+              )
+            }
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
+          >
+            <option value="">
+              Use project default
+            </option>
 
-    <option value="any">
-      Any time
-    </option>
+            <option value="any">
+              Any time
+            </option>
 
-    <option value="morning">
-      Morning
-    </option>
+            <option value="morning">
+              Morning
+            </option>
 
-    <option value="afternoon">
-      Afternoon
-    </option>
+            <option value="afternoon">
+              Afternoon
+            </option>
 
-    <option value="evening">
-      Evening
-    </option>
-  </select>
-</label>
+            <option value="evening">
+              Evening
+            </option>
+          </select>
+        </label>
         </div>
       )}
     </div>
