@@ -2,6 +2,7 @@ import {
   RecurrenceUnit,
   Routine,
   ScheduleContext,
+  SchedulePeriod,
   ScheduledBlock,
   ScheduleSettings,
   Task,
@@ -36,6 +37,7 @@ type ScheduleCandidate = {
   durationMinutes: number;
   usedDefaultDuration: boolean;
   context: ScheduleContext;
+  preferredPeriod: SchedulePeriod;
   priority?: "low" | "medium" | "high";
   dueDate?: string;
   occurrenceDate?: string;
@@ -291,6 +293,55 @@ function getAvailableWindows(
   return personalWindows;
 }
 
+function applyPreferredPeriod(
+  windows: TimeWindow[],
+  preferredPeriod: SchedulePeriod
+): TimeWindow[] {
+  if (preferredPeriod === "any") {
+    return windows;
+  }
+
+  const periodWindows: Record<
+    Exclude<SchedulePeriod, "any">,
+    TimeWindow
+  > = {
+    morning: {
+      start: 5 * 60,
+      end: 12 * 60,
+    },
+
+    afternoon: {
+      start: 12 * 60,
+      end: 17 * 60,
+    },
+
+    evening: {
+      start: 17 * 60,
+      end: 24 * 60,
+    },
+  };
+
+  const preferredWindow =
+    periodWindows[preferredPeriod];
+
+  return windows
+    .map((window) => ({
+      start: Math.max(
+        window.start,
+        preferredWindow.start
+      ),
+
+      end: Math.min(
+        window.end,
+        preferredWindow.end
+      ),
+    }))
+    .filter(
+      (window) =>
+        window.start < window.end
+    );
+}
+
 function getPriorityValue(
   priority?: "low" | "medium" | "high"
 ) {
@@ -309,11 +360,17 @@ function findAvailableStart(
   today: string,
   currentTime: string
 ) {
-  const windows = getAvailableWindows(
+  const availableWindows =
+  getAvailableWindows(
     dateKey,
     candidate.context,
     settings
   );
+
+const windows = applyPreferredPeriod(
+  availableWindows,
+  candidate.preferredPeriod
+);
 
   const blocksForDay = scheduledBlocks
     .filter(
@@ -419,6 +476,9 @@ function buildProjectCandidates(
         context:
           task.scheduleContext ??
           "personal",
+        preferredPeriod:
+          task.preferredPeriod ??
+          "any",
         priority: task.priority,
         dueDate: task.dueDate,
         earliestDate: today,
@@ -489,6 +549,9 @@ function buildRoutineCandidates(
               context:
                 task.scheduleContext ??
                 "personal",
+              preferredPeriod:
+                task.preferredPeriod ??
+                "any",
               priority: task.priority,
               dueDate: occurrenceDate,
               occurrenceDate,

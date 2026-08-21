@@ -28,6 +28,7 @@ export type Task = {
   archivedAt?: string;
 
   scheduleContext?: ScheduleContext;
+  preferredPeriod?: SchedulePeriod;
 };
 
 export type ProjectStatus = "active" | "paused" | "completed";
@@ -42,6 +43,9 @@ export type SortdList = {
   tasks: Task[];
   archivedTasks: Task[];
   createdAt: string;
+
+  scheduleContext?: ScheduleContext;
+  preferredPeriod?: SchedulePeriod;
 };
 
 export interface Project {
@@ -107,6 +111,7 @@ export type RoutineTask = {
   createdAt: string;
 
   scheduleContext?: ScheduleContext;
+  preferredPeriod?: SchedulePeriod;
 };
 
 export type Routine = {
@@ -178,6 +183,12 @@ export type ScheduledBlock = {
   dueDate?: string;
   occurrenceDate?: string;
 };
+
+export type SchedulePeriod =
+  | "any"
+  | "morning"
+  | "afternoon"
+  | "evening";
 
 // Shopping list types for managing shopping items and categories
 

@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Task } from "@/lib/types";
+import {
+  ScheduleContext,
+  SchedulePeriod,
+  Task,
+} from "@/lib/types";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -32,6 +36,15 @@ type TaskItemProps = {
     durationMinutes?: number
   ) => void;
 
+  onUpdateTaskScheduleContext: (
+  id: string,
+  context?: ScheduleContext
+) => void;
+
+  onUpdateTaskPreferredPeriod: (
+    id: string,
+    period?: SchedulePeriod
+  ) => void;
 
 };
 
@@ -42,6 +55,8 @@ export default function TaskItem({
   onUpdateTaskEnergy,
   onUpdateTaskDueDate,
   onUpdateTaskDuration,
+  onUpdateTaskScheduleContext,
+  onUpdateTaskPreferredPeriod,
   onToggleTask,
   onDeleteTask,
   onAddTask,
@@ -215,6 +230,81 @@ export default function TaskItem({
               <option value="240">4 hours</option>
             </select>
           </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+  Schedule during
+
+  <select
+    value={
+      task.scheduleContext ?? ""
+    }
+    onChange={(event) =>
+      onUpdateTaskScheduleContext(
+        task.id,
+        event.target.value
+          ? (event.target
+              .value as ScheduleContext)
+          : undefined
+      )
+    }
+    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
+  >
+    <option value="">
+      Use project default
+    </option>
+
+    <option value="personal">
+      Personal hours
+    </option>
+
+    <option value="work">
+      Working hours
+    </option>
+
+    <option value="any">
+      Either
+    </option>
+  </select>
+</label>
+
+<label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+  Preferred time
+
+  <select
+    value={
+      task.preferredPeriod ?? ""
+    }
+    onChange={(event) =>
+      onUpdateTaskPreferredPeriod(
+        task.id,
+        event.target.value
+          ? (event.target
+              .value as SchedulePeriod)
+          : undefined
+      )
+    }
+    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
+  >
+    <option value="">
+      Use project default
+    </option>
+
+    <option value="any">
+      Any time
+    </option>
+
+    <option value="morning">
+      Morning
+    </option>
+
+    <option value="afternoon">
+      Afternoon
+    </option>
+
+    <option value="evening">
+      Evening
+    </option>
+  </select>
+</label>
         </div>
       )}
     </div>

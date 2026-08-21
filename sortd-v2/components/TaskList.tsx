@@ -12,7 +12,11 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 
-import { Task } from "@/lib/types";
+import {
+  ScheduleContext,
+  SchedulePeriod,
+  Task,
+} from "@/lib/types";
 import TaskItem from "./TaskItem";
 
 type TaskListProps = {
@@ -35,6 +39,15 @@ type TaskListProps = {
     durationMinutes?: number
   ) => void;
   onAddTask: () => void;
+  onUpdateTaskScheduleContext: (
+    id: string,
+    context?: ScheduleContext
+  ) => void;
+
+  onUpdateTaskPreferredPeriod: (
+    id: string,
+    period?: SchedulePeriod
+  ) => void;
 };
 
 export default function TaskList({
@@ -45,6 +58,8 @@ export default function TaskList({
   onUpdateTaskEnergy,
   onUpdateTaskDueDate,
   onUpdateTaskDuration,
+  onUpdateTaskScheduleContext,
+  onUpdateTaskPreferredPeriod,
   onToggleTask,
   onDeleteTask,
   onReorderTasks,
@@ -88,10 +103,24 @@ export default function TaskList({
               task={task}
               onAddTask={onAddTask}
               onUpdateTask={onUpdateTask}
-              onUpdateTaskPriority={onUpdateTaskPriority}
-              onUpdateTaskEnergy={onUpdateTaskEnergy}
-              onUpdateTaskDueDate={onUpdateTaskDueDate}
-              onUpdateTaskDuration={onUpdateTaskDuration}
+              onUpdateTaskPriority={
+                onUpdateTaskPriority
+              }
+              onUpdateTaskEnergy={
+                onUpdateTaskEnergy
+              }
+              onUpdateTaskDueDate={
+                onUpdateTaskDueDate
+              }
+              onUpdateTaskDuration={
+                onUpdateTaskDuration
+              }
+              onUpdateTaskScheduleContext={
+                onUpdateTaskScheduleContext
+              }
+              onUpdateTaskPreferredPeriod={
+                onUpdateTaskPreferredPeriod
+              }
               onToggleTask={onToggleTask}
               onDeleteTask={onDeleteTask}
             />

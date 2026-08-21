@@ -32,6 +32,8 @@ import {
   ProjectStatus,
   RecurrenceUnit,
   Routine,
+  ScheduleContext,
+  SchedulePeriod,
   ScheduleSettings,
   ShoppingList,
   SortdList,
@@ -208,15 +210,27 @@ export default function Home() {
     return activeList?.tasks ?? [];
     }, [activeList]);
 
-  const allTasks = useMemo<TaskWithProject[]>(() => {
-    return lists.flatMap((project) =>
-      project.tasks.map((task) => ({
-        ...task,
-        projectId: project.id,
-        projectName: project.name,
-      }))
-    );
-  }, [lists]);
+  const allTasks =
+    useMemo<TaskWithProject[]>(() => {
+      return lists.flatMap((project) =>
+        project.tasks.map((task) => ({
+          ...task,
+
+          projectId: project.id,
+          projectName: project.name,
+
+          scheduleContext:
+            task.scheduleContext ??
+            project.scheduleContext ??
+            "personal",
+
+          preferredPeriod:
+            task.preferredPeriod ??
+            project.preferredPeriod ??
+            "any",
+        }))
+      );
+    }, [lists]);
 
 const [taskFilter, setTaskFilter] = useState<"all" | "high" | "low-energy">(
     "all"
@@ -573,6 +587,46 @@ useEffect(() => {
         ),
       });
     }
+  
+  function updateTaskScheduleContext(
+    id: string,
+    scheduleContext?: ScheduleContext
+  ) {
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+
+      tasks: tasks.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              scheduleContext,
+            }
+          : task
+      ),
+    });
+  }
+
+  function updateTaskPreferredPeriod(
+    id: string,
+    preferredPeriod?: SchedulePeriod
+  ) {
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+
+      tasks: tasks.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              preferredPeriod,
+            }
+          : task
+      ),
+    });
+  }
 
   function toggleTask(id: string) {
     if (!activeList) return;
@@ -639,6 +693,28 @@ function updateProjectStatus(status: ProjectStatus) {
   updateActiveList({
     ...activeList,
     status,
+  });
+}
+
+function updateProjectScheduleContext(
+  scheduleContext: ScheduleContext
+) {
+  if (!activeList) return;
+
+  updateActiveList({
+    ...activeList,
+    scheduleContext,
+  });
+}
+
+function updateProjectPreferredPeriod(
+  preferredPeriod: SchedulePeriod
+) {
+  if (!activeList) return;
+
+  updateActiveList({
+    ...activeList,
+    preferredPeriod,
   });
 }
 
@@ -839,10 +915,32 @@ function updateProjectStatus(status: ProjectStatus) {
               />
 
               <ProjectDetails
-                description={activeList?.description ?? ""}
-                status={activeList?.status ?? "active"}
-                onChangeDescription={updateProjectDescription}
-                onChangeStatus={updateProjectStatus}
+                description={
+                  activeList?.description ?? ""
+                }
+                status={
+                  activeList?.status ?? "active"
+                }
+                scheduleContext={
+                  activeList?.scheduleContext ??
+                  "personal"
+                }
+                preferredPeriod={
+                  activeList?.preferredPeriod ??
+                  "any"
+                }
+                onChangeDescription={
+                  updateProjectDescription
+                }
+                onChangeStatus={
+                  updateProjectStatus
+                }
+                onChangeScheduleContext={
+                  updateProjectScheduleContext
+                }
+                onChangePreferredPeriod={
+                  updateProjectPreferredPeriod
+                }
               />
 
               <ControlPanel
@@ -861,10 +959,24 @@ function updateProjectStatus(status: ProjectStatus) {
                 tasks={visibleTasks}
                 onAddTask={addTask}
                 onUpdateTask={updateTask}
-                onUpdateTaskPriority={updateTaskPriority}
-                onUpdateTaskEnergy={updateTaskEnergy}
-                onUpdateTaskDueDate={updateTaskDueDate}
-                onUpdateTaskDuration={updateTaskDuration}
+                onUpdateTaskPriority={
+                  updateTaskPriority
+                }
+                onUpdateTaskEnergy={
+                  updateTaskEnergy
+                }
+                onUpdateTaskDueDate={
+                  updateTaskDueDate
+                }
+                onUpdateTaskDuration={
+                  updateTaskDuration
+                }
+                onUpdateTaskScheduleContext={
+                  updateTaskScheduleContext
+                }
+                onUpdateTaskPreferredPeriod={
+                  updateTaskPreferredPeriod
+                }
                 onToggleTask={toggleTask}
                 onDeleteTask={deleteTask}
                 onReorderTasks={reorderTasks}

@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import {
+  Priority,
   RecurrenceUnit,
   Routine,
   RoutineTask,
+  ScheduleContext,
+  SchedulePeriod,
 } from "@/lib/types";
 
 type RoutinesViewProps = {
@@ -217,16 +220,31 @@ export default function RoutinesView({
     if (!title) return;
 
     const newTask: RoutineTask = {
-      id: crypto.randomUUID(),
-      title,
-      order: activeRoutine.tasks.length + 1,
-      interval: Math.max(1, newInterval),
-      recurrenceUnit: newUnit,
-      nextDueDate: newDueDate || getTodayKey(),
-      completionHistory: [],
-      active: true,
-      createdAt: new Date().toISOString(),
-    };
+    id: crypto.randomUUID(),
+    title,
+
+    order:
+      activeRoutine.tasks.length + 1,
+
+    interval:
+      Math.max(1, newInterval),
+
+    recurrenceUnit: newUnit,
+
+    nextDueDate:
+      newDueDate || getTodayKey(),
+
+    priority: "medium",
+    durationMinutes: 30,
+    scheduleContext: "personal",
+    preferredPeriod: "any",
+
+    completionHistory: [],
+    active: true,
+
+    createdAt:
+      new Date().toISOString(),
+  };
 
     updateRoutine({
       ...activeRoutine,
@@ -629,6 +647,152 @@ export default function RoutinesView({
                           </button>
                         </div>
                       </div>
+                      <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 xl:grid-cols-4">
+  <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+    Priority
+
+    <select
+      value={
+        task.priority ?? "medium"
+      }
+      onChange={(event) =>
+        updateRoutineTask(task.id, {
+          priority:
+            event.target
+              .value as Priority,
+        })
+      }
+      className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-900"
+    >
+      <option value="low">
+        Low priority
+      </option>
+
+      <option value="medium">
+        Medium priority
+      </option>
+
+      <option value="high">
+        High priority
+      </option>
+    </select>
+  </label>
+
+  <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+    Estimated time
+
+    <select
+      value={
+        task.durationMinutes ?? 30
+      }
+      onChange={(event) =>
+        updateRoutineTask(task.id, {
+          durationMinutes: Number(
+            event.target.value
+          ),
+        })
+      }
+      className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-900"
+    >
+      <option value="5">
+        5 minutes
+      </option>
+
+      <option value="10">
+        10 minutes
+      </option>
+
+      <option value="15">
+        15 minutes
+      </option>
+
+      <option value="30">
+        30 minutes
+      </option>
+
+      <option value="45">
+        45 minutes
+      </option>
+
+      <option value="60">
+        1 hour
+      </option>
+
+      <option value="90">
+        1½ hours
+      </option>
+
+      <option value="120">
+        2 hours
+      </option>
+    </select>
+  </label>
+
+  <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+    Schedule during
+
+    <select
+      value={
+        task.scheduleContext ??
+        "personal"
+      }
+      onChange={(event) =>
+        updateRoutineTask(task.id, {
+          scheduleContext:
+            event.target
+              .value as ScheduleContext,
+        })
+      }
+      className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-900"
+    >
+      <option value="personal">
+        Personal hours
+      </option>
+
+      <option value="work">
+        Working hours
+      </option>
+
+      <option value="any">
+        Either
+      </option>
+    </select>
+  </label>
+
+  <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+    Preferred time
+
+    <select
+      value={
+        task.preferredPeriod ?? "any"
+      }
+      onChange={(event) =>
+        updateRoutineTask(task.id, {
+          preferredPeriod:
+            event.target
+              .value as SchedulePeriod,
+        })
+      }
+      className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm text-slate-900"
+    >
+      <option value="any">
+        Any time
+      </option>
+
+      <option value="morning">
+        Morning
+      </option>
+
+      <option value="afternoon">
+        Afternoon
+      </option>
+
+      <option value="evening">
+        Evening
+      </option>
+    </select>
+  </label>
+</div>
                     </div>
                   );
                 })
