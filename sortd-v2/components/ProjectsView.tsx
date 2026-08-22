@@ -1,8 +1,8 @@
 "use client";
 
 import ArchivedTasks from "@/components/ArchivedTasks";
+import CollectionSwitcher from "@/components/CollectionSwitcher";
 import ControlPanel from "@/components/ControlPanel";
-import ListSwitcher from "@/components/ListSwitcher";
 import ProjectDetails from "@/components/ProjectDetails";
 import TaskList from "@/components/TaskList";
 
@@ -21,7 +21,6 @@ type TaskFilter =
 
 type ProjectsViewProps = {
   projects: SortdList[];
-
   goals: Goal[];
 
   activeProject:
@@ -29,15 +28,11 @@ type ProjectsViewProps = {
     | undefined;
 
   activeProjectId: string;
-
   visibleTasks: Task[];
-
   hideCompleted: boolean;
-
   taskFilter: TaskFilter;
 
   onCreateProject: () => void;
-
   onDeleteProject: () => void;
 
   onRenameProject: (
@@ -82,9 +77,7 @@ type ProjectsViewProps = {
   ) => void;
 
   onAddTask: () => void;
-
   onToggleHideCompleted: () => void;
-
   onArchiveCompleted: () => void;
 
   onChangeTaskFilter: (
@@ -149,24 +142,42 @@ type ProjectsViewProps = {
   ) => void;
 };
 
+function getProjectStatusColour(
+  project: SortdList
+) {
+  switch (project.status) {
+    case "paused":
+      return "bg-amber-400";
+
+    case "completed":
+      return "bg-slate-400";
+
+    default:
+      return "bg-emerald-400";
+  }
+}
+
+function getOpenTaskCount(
+  project: SortdList
+) {
+  return project.tasks.filter(
+    (task) => !task.completed
+  ).length;
+}
+
 export default function ProjectsView({
   projects,
   goals,
-
   activeProject,
   activeProjectId,
-
   visibleTasks,
-
   hideCompleted,
   taskFilter,
-
   onChangeProject,
   onCreateProject,
   onDeleteProject,
   onRenameProject,
   onReorderProjects,
-
   onChangeProjectName,
   onChangeProjectDescription,
   onChangeProjectStatus,
@@ -174,12 +185,10 @@ export default function ProjectsView({
   onChangeProjectScheduleContext,
   onChangeProjectEarliestStartTime,
   onChangeProjectLatestEndTime,
-
   onAddTask,
   onToggleHideCompleted,
   onArchiveCompleted,
   onChangeTaskFilter,
-
   onUpdateTask,
   onUpdateTaskPriority,
   onUpdateTaskEnergy,
@@ -187,328 +196,361 @@ export default function ProjectsView({
   onUpdateTaskDuration,
   onUpdateTaskMaxSession,
   onUpdateTaskScheduleContext,
-
   onToggleTask,
   onDeleteTask,
   onReorderTasks,
   onRestoreTask,
 }: ProjectsViewProps) {
-  const openTaskCount = projects.reduce(
-    (total, project) =>
-      total +
-      project.tasks.filter(
-        (task) => !task.completed
-      ).length,
-
-    0
-  );
+  const openTaskCount =
+    projects.reduce(
+      (total, project) =>
+        total +
+        getOpenTaskCount(
+          project
+        ),
+      0
+    );
 
   const activeTasks =
     activeProject?.tasks ?? [];
 
   return (
-  <div className="min-w-0 rounded-3xl bg-white/90 p-5 shadow-xl backdrop-blur-md md:p-7">
-    <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-          Projects
-        </h1>
+    <div className="min-w-0 rounded-3xl bg-white/90 p-5 shadow-xl backdrop-blur-md md:p-7">
+      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+            Projects
+          </h1>
 
-        <p className="mt-1 text-sm text-slate-500">
-          Everything you’re working on,
-          in one place.
-        </p>
-      </div>
+          <p className="mt-1 text-sm text-slate-500">
+            Everything you’re working on, in one place.
+          </p>
+        </div>
 
-      <div className="flex items-center gap-3 pt-1 text-sm text-slate-500">
-        <span>
-          <span className="font-semibold text-slate-900">
-            {projects.length}
-          </span>{" "}
-          {projects.length === 1
-            ? "project"
-            : "projects"}
-        </span>
+        <div className="flex items-center gap-3 pt-1 text-sm text-slate-500">
+          <span>
+            <span className="font-semibold text-slate-900">
+              {projects.length}
+            </span>{" "}
+            {projects.length === 1
+              ? "project"
+              : "projects"}
+          </span>
 
-        <span
-          aria-hidden="true"
-          className="text-slate-300"
-        >
-          ·
-        </span>
+          <span
+            aria-hidden="true"
+            className="text-slate-300"
+          >
+            ·
+          </span>
 
-        <span>
-          <span className="font-semibold text-slate-900">
-            {openTaskCount}
-          </span>{" "}
-          open
-        </span>
-      </div>
-    </header>
+          <span>
+            <span className="font-semibold text-slate-900">
+              {openTaskCount}
+            </span>{" "}
+            open
+          </span>
+        </div>
+      </header>
 
-    <ListSwitcher
-      lists={projects}
-      activeListId={
-        activeProjectId
-      }
-      onChangeList={
-        onChangeProject
-      }
-      onCreateList={
-        onCreateProject
-      }
-      onDeleteList={
-        onDeleteProject
-      }
-      onRenameList={
-        onRenameProject
-      }
-      onReorderLists={
-        onReorderProjects
-      }
-    />
+      <CollectionSwitcher
+        items={projects}
+        activeItemId={
+          activeProjectId
+        }
+        label="Current project"
+        placeholder="Select a project"
+        itemPluralLabel="Projects"
+        createLabel="+ New"
+        deleteLabel="Delete project"
+        onChangeItem={
+          onChangeProject
+        }
+        onCreateItem={
+          onCreateProject
+        }
+        onDeleteItem={
+          onDeleteProject
+        }
+        onRenameItem={
+          onRenameProject
+        }
+        onReorderItems={
+          onReorderProjects
+        }
+        getCount={
+          getOpenTaskCount
+        }
+        getStatusColour={
+          getProjectStatusColour
+        }
+        getStatusLabel={(
+          project
+        ) =>
+          project.status ??
+          "active"
+        }
+        canDelete={
+          projects.length > 1
+        }
+      />
 
-    {activeProject ? (
-      <>
-        <details className="group mt-5 border-b border-slate-100 pb-4">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 py-2 text-sm text-slate-600 transition hover:text-slate-900 [&::-webkit-details-marker]:hidden">
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">
-                Project settings
-              </span>
+      {activeProject ? (
+        <>
+          <details className="group mt-5 border-b border-slate-100 pb-4">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 py-2 text-sm text-slate-600 transition hover:text-slate-900 [&::-webkit-details-marker]:hidden">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">
+                  Project settings
+                </span>
 
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs ${
-                  activeProject.status ===
-                  "paused"
-                    ? "bg-amber-50 text-amber-700"
-                    : activeProject.status ===
-                        "completed"
-                      ? "bg-slate-100 text-slate-600"
-                      : "bg-emerald-50 text-emerald-700"
-                }`}
-              >
-                {activeProject.status ??
-                  "active"}
-              </span>
-            </span>
-
-            <span className="text-slate-400 transition group-open:rotate-180">
-              ▾
-            </span>
-          </summary>
-
-          <div className="pt-4">
-            <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-slate-600">
-              Project name
-
-              <input
-                value={activeProject.name}
-                onChange={(event) =>
-                  onChangeProjectName(
-                    event.target.value
-                  )
-                }
-                placeholder="Project name"
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#cd6ce7] focus:ring-2 focus:ring-[#cd6ce7]/20"
-              />
-            </label>
-
-            <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-slate-600">
-              Supports goal
-
-              <select
-                value={activeProject.goalId ?? ""}
-                onChange={(event) =>
-                  onChangeProjectGoal(
-                    event.target.value || undefined
-                  )
-                }
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#cd6ce7] focus:ring-2 focus:ring-[#cd6ce7]/20"
-              >
-                <option value="">
-                  No linked goal
-                </option>
-
-                {goals
-                  .filter(
-                    (goal) =>
-                      goal.status !== "completed"
-                  )
-                  .map((goal) => (
-                    <option
-                      key={goal.id}
-                      value={goal.id}
-                    >
-                      {goal.title}
-                    </option>
-                  ))}
-              </select>
-            </label>
-
-            <ProjectDetails
-              description={
-                activeProject.description ?? ""
-              }
-              status={
-                activeProject.status ?? "active"
-              }
-              scheduleContext={
-                activeProject.scheduleContext ??
-                "personal"
-              }
-              earliestStartTime={
-                activeProject.earliestStartTime
-              }
-              latestEndTime={
-                activeProject.latestEndTime
-              }
-              onChangeDescription={
-                onChangeProjectDescription
-              }
-              onChangeStatus={
-                onChangeProjectStatus
-              }
-              onChangeScheduleContext={
-                onChangeProjectScheduleContext
-              }
-              onChangeEarliestStartTime={
-                onChangeProjectEarliestStartTime
-              }
-              onChangeLatestEndTime={
-                onChangeProjectLatestEndTime
-              }
-            />
-            </div>
-            </details>
-
-            <section className="mt-5">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-slate-900">
-              Tasks
-            </h2>
-
-            <span className="text-xs text-slate-500">
-              {
-                visibleTasks.length
-              }{" "}
-              {visibleTasks.length === 1
-                ? "item"
-                : "items"}
-            </span>
-          </div>
-
-          <ControlPanel
-            onAddTask={
-              onAddTask
-            }
-            hideCompleted={
-              hideCompleted
-            }
-            onToggleHideCompleted={
-              onToggleHideCompleted
-            }
-            onArchiveCompleted={
-              onArchiveCompleted
-            }
-            hasCompleted={
-              activeTasks.some(
-                (task) =>
-                  task.completed
-              )
-            }
-            taskFilter={
-              taskFilter
-            }
-            onChangeTaskFilter={
-              onChangeTaskFilter
-            }
-          />
-
-          <div className="max-h-[52vh] overflow-y-auto overscroll-contain pr-1">
-            <TaskList
-              tasks={visibleTasks}
-              onAddTask={onAddTask}
-              onUpdateTask={onUpdateTask}
-              onUpdateTaskPriority={
-                onUpdateTaskPriority
-              }
-              onUpdateTaskEnergy={
-                onUpdateTaskEnergy
-              }
-              onUpdateTaskDueDate={
-                onUpdateTaskDueDate
-              }
-              onUpdateTaskDuration={
-                onUpdateTaskDuration
-              }
-              onUpdateTaskMaxSession={
-                onUpdateTaskMaxSession
-              }
-              onUpdateTaskScheduleContext={
-                onUpdateTaskScheduleContext
-              }
-              onToggleTask={
-                onToggleTask
-              }
-              onDeleteTask={
-                onDeleteTask
-              }
-              onReorderTasks={
-                onReorderTasks
-              }
-            />
-          </div>
-        </section>
-
-        {(activeProject.archivedTasks
-          ?.length ?? 0) > 0 && (
-          <details className="group mt-5 border-t border-slate-100 pt-4">
-            <summary className="flex cursor-pointer list-none items-center justify-between text-sm text-slate-500 transition hover:text-slate-800 [&::-webkit-details-marker]:hidden">
-              <span>
-                Archived tasks{" "}
-                <span className="text-slate-400">
-                  (
-                  {
-                    activeProject
-                      .archivedTasks
-                      .length
-                  }
-                  )
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs ${
+                    activeProject.status ===
+                    "paused"
+                      ? "bg-amber-50 text-amber-700"
+                      : activeProject.status ===
+                          "completed"
+                        ? "bg-slate-100 text-slate-600"
+                        : "bg-emerald-50 text-emerald-700"
+                  }`}
+                >
+                  {activeProject.status ??
+                    "active"}
                 </span>
               </span>
 
-              <span className="transition group-open:rotate-180">
+              <span className="text-slate-400 transition group-open:rotate-180">
                 ▾
               </span>
             </summary>
 
-            <div className="mt-3">
-              <ArchivedTasks
-                tasks={
-                  activeProject.archivedTasks ??
-                  []
+            <div className="pt-4">
+              <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-slate-600">
+                Project name
+
+                <input
+                  value={
+                    activeProject.name
+                  }
+                  onChange={(event) =>
+                    onChangeProjectName(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Project name"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#cd6ce7] focus:ring-2 focus:ring-[#cd6ce7]/20"
+                />
+              </label>
+
+              <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-slate-600">
+                Supports goal
+
+                <select
+                  value={
+                    activeProject.goalId ??
+                    ""
+                  }
+                  onChange={(event) =>
+                    onChangeProjectGoal(
+                      event.target.value ||
+                        undefined
+                    )
+                  }
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#cd6ce7] focus:ring-2 focus:ring-[#cd6ce7]/20"
+                >
+                  <option value="">
+                    No linked goal
+                  </option>
+
+                  {goals
+                    .filter(
+                      (goal) =>
+                        goal.status !==
+                        "completed"
+                    )
+                    .map((goal) => (
+                      <option
+                        key={goal.id}
+                        value={goal.id}
+                      >
+                        {goal.title}
+                      </option>
+                    ))}
+                </select>
+              </label>
+
+              <ProjectDetails
+                description={
+                  activeProject.description ??
+                  ""
                 }
-                onRestoreTask={
-                  onRestoreTask
+                status={
+                  activeProject.status ??
+                  "active"
+                }
+                scheduleContext={
+                  activeProject.scheduleContext ??
+                  "personal"
+                }
+                earliestStartTime={
+                  activeProject.earliestStartTime
+                }
+                latestEndTime={
+                  activeProject.latestEndTime
+                }
+                onChangeDescription={
+                  onChangeProjectDescription
+                }
+                onChangeStatus={
+                  onChangeProjectStatus
+                }
+                onChangeScheduleContext={
+                  onChangeProjectScheduleContext
+                }
+                onChangeEarliestStartTime={
+                  onChangeProjectEarliestStartTime
+                }
+                onChangeLatestEndTime={
+                  onChangeProjectLatestEndTime
                 }
               />
             </div>
           </details>
-        )}
-      </>
-    ) : (
-      <div className="mt-8 px-5 py-10 text-center">
-        <p className="font-medium text-slate-700">
-          No project selected.
-        </p>
 
-        <p className="mt-1 text-sm text-slate-500">
-          Create a project to get
-          started.
-        </p>
-      </div>
-    )}
-  </div>
-);
+          <section className="mt-5">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-slate-900">
+                Tasks
+              </h2>
+
+              <span className="text-xs text-slate-500">
+                {
+                  visibleTasks.length
+                }{" "}
+                {visibleTasks.length ===
+                1
+                  ? "item"
+                  : "items"}
+              </span>
+            </div>
+
+            <ControlPanel
+              onAddTask={
+                onAddTask
+              }
+              hideCompleted={
+                hideCompleted
+              }
+              onToggleHideCompleted={
+                onToggleHideCompleted
+              }
+              onArchiveCompleted={
+                onArchiveCompleted
+              }
+              hasCompleted={
+                activeTasks.some(
+                  (task) =>
+                    task.completed
+                )
+              }
+              taskFilter={
+                taskFilter
+              }
+              onChangeTaskFilter={
+                onChangeTaskFilter
+              }
+            />
+
+            <div className="max-h-[52vh] overflow-y-auto overscroll-contain pr-1">
+              <TaskList
+                tasks={
+                  visibleTasks
+                }
+                onAddTask={
+                  onAddTask
+                }
+                onUpdateTask={
+                  onUpdateTask
+                }
+                onUpdateTaskPriority={
+                  onUpdateTaskPriority
+                }
+                onUpdateTaskEnergy={
+                  onUpdateTaskEnergy
+                }
+                onUpdateTaskDueDate={
+                  onUpdateTaskDueDate
+                }
+                onUpdateTaskDuration={
+                  onUpdateTaskDuration
+                }
+                onUpdateTaskMaxSession={
+                  onUpdateTaskMaxSession
+                }
+                onUpdateTaskScheduleContext={
+                  onUpdateTaskScheduleContext
+                }
+                onToggleTask={
+                  onToggleTask
+                }
+                onDeleteTask={
+                  onDeleteTask
+                }
+                onReorderTasks={
+                  onReorderTasks
+                }
+              />
+            </div>
+          </section>
+
+          {(activeProject.archivedTasks
+            ?.length ?? 0) > 0 && (
+            <details className="group mt-5 border-t border-slate-100 pt-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm text-slate-500 transition hover:text-slate-800 [&::-webkit-details-marker]:hidden">
+                <span>
+                  Archived tasks{" "}
+                  <span className="text-slate-400">
+                    (
+                    {
+                      activeProject
+                        .archivedTasks
+                        .length
+                    }
+                    )
+                  </span>
+                </span>
+
+                <span className="transition group-open:rotate-180">
+                  ▾
+                </span>
+              </summary>
+
+              <div className="mt-3">
+                <ArchivedTasks
+                  tasks={
+                    activeProject.archivedTasks ??
+                    []
+                  }
+                  onRestoreTask={
+                    onRestoreTask
+                  }
+                />
+              </div>
+            </details>
+          )}
+        </>
+      ) : (
+        <div className="mt-8 px-5 py-10 text-center">
+          <p className="font-medium text-slate-700">
+            No project selected.
+          </p>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Create a project to get started.
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
