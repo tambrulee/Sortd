@@ -34,7 +34,6 @@ import {
   Routine,
   RoutineTask,
   ScheduleContext,
-  SchedulePeriod,
   ScheduleSettings,
   ShoppingList,
   SortdList,
@@ -479,7 +478,29 @@ useEffect(() => {
         hideCompleted,
       };
 
-      const { error } = await supabase
+      try {
+
+  console.log(
+  "Saving time windows:",
+  lists.map((project) => ({
+    project: project.name,
+    earliestStartTime:
+      project.earliestStartTime,
+    latestEndTime:
+      project.latestEndTime,
+    tasks: project.tasks.map(
+      (task) => ({
+        title: task.title,
+        earliestStartTime:
+          task.earliestStartTime,
+        latestEndTime:
+          task.latestEndTime,
+      })
+    ),
+  }))
+);
+
+  const { data, error } = await supabase
         .from("workspaces")
         .upsert(
           {
@@ -490,14 +511,28 @@ useEffect(() => {
           {
             onConflict: "user_id",
           }
-        );
+        )
+        .select();
 
       if (error) {
         console.error(
           "Unable to save cloud workspace:",
           error
         );
+
+        return;
       }
+
+      console.log(
+        "Cloud workspace saved:",
+        data
+      );
+    } catch (error) {
+      console.error(
+        "Cloud workspace save request failed:",
+        error
+      );
+    }
     },
     800
   );
@@ -646,26 +681,6 @@ useEffect(() => {
           ? {
               ...task,
               scheduleContext,
-            }
-          : task
-      ),
-    });
-  }
-
-  function updateTaskPreferredPeriod(
-    id: string,
-    preferredPeriod?: SchedulePeriod
-  ) {
-    if (!activeList) return;
-
-    updateActiveList({
-      ...activeList,
-
-      tasks: tasks.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              preferredPeriod,
             }
           : task
       ),

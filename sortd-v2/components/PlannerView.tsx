@@ -9,7 +9,6 @@ import {
 import {
   Routine,
   RoutineTask,
-  ScheduledBlock,
   ScheduleSettings,
   Task,
 } from "@/lib/types";

@@ -5,6 +5,8 @@ import {
   ScheduleContext,
 } from "@/lib/types";
 
+import TimeWindowInput from "@/components/TimeWindowInput";
+
 type ProjectDetailsProps = {
   description: string;
   status: ProjectStatus;
@@ -114,34 +116,31 @@ export default function ProjectDetails({
           </select>
         </label>
 
+        {/* Time Restrictions */}
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-600">
             Earliest start
 
-            <input
-              type="time"
-              value={earliestStartTime ?? ""}
-              onChange={(event) =>
-                onChangeEarliestStartTime(
-                  event.target.value || undefined
-                )
+            <TimeWindowInput
+              value={
+                earliestStartTime
               }
-              className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900"
+              onChange={
+                onChangeEarliestStartTime
+              }
             />
           </label>
 
           <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-600">
             Must finish by
 
-            <input
-              type="time"
-              value={latestEndTime ?? ""}
-              onChange={(event) =>
-                onChangeLatestEndTime(
-                  event.target.value || undefined
-                )
+            <TimeWindowInput
+              value={
+                latestEndTime
               }
-              className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900"
+              onChange={
+                onChangeLatestEndTime
+              }
             />
           </label>
         </div>

@@ -14,6 +14,8 @@ import {
 
 import { DURATION_OPTIONS } from "@/lib/durations";
 
+import TimeWindowInput from "@/components/TimeWindowInput";
+
 type SharedItemUpdates = Partial<
   Pick<
     Task,
@@ -339,37 +341,38 @@ export default function ItemDetailsModal(
                 </option>
               </select>
             </label>
-
-            <div className="grid gap-3 sm:grid-cols-2">
+            
+            {/* Time Restrictions */}
+            <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
               <label className={labelClassName}>
                 Earliest start
 
-                <input
-                  type="time"
-                  value={item.earliestStartTime ?? ""}
-                  onChange={(event) =>
+                <TimeWindowInput
+                  value={
+                    item.earliestStartTime
+                  }
+                  onChange={(value) =>
                     updateSharedItem({
                       earliestStartTime:
-                        event.target.value || undefined,
+                        value,
                     })
                   }
-                  className={fieldClassName}
                 />
               </label>
 
               <label className={labelClassName}>
                 Must finish by
 
-                <input
-                  type="time"
-                  value={item.latestEndTime ?? ""}
-                  onChange={(event) =>
+                <TimeWindowInput
+                  value={
+                    item.latestEndTime
+                  }
+                  onChange={(value) =>
                     updateSharedItem({
                       latestEndTime:
-                        event.target.value || undefined,
+                        value,
                     })
                   }
-                  className={fieldClassName}
                 />
               </label>
             </div>
