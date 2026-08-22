@@ -858,6 +858,97 @@ export default function RoutinesView({
     });
   }
 
+
+  function moveRoutineTask(
+    taskId: string,
+    destinationRoutineId: string
+  ) {
+    if (
+      !activeRoutine ||
+      destinationRoutineId ===
+        activeRoutine.id
+    ) {
+      return;
+    }
+
+    const taskToMove =
+      activeRoutine.tasks.find(
+        (task) =>
+          task.id === taskId
+      );
+
+    const destinationRoutine =
+      routines.find(
+        (routine) =>
+          routine.id ===
+          destinationRoutineId
+      );
+
+    if (
+      !taskToMove ||
+      !destinationRoutine
+    ) {
+      return;
+    }
+
+    const destinationOrder =
+      destinationRoutine.tasks.length > 0
+        ? Math.max(
+            ...destinationRoutine.tasks.map(
+              (task) =>
+                task.order ?? 0
+            )
+          ) + 1
+        : 1;
+
+    const movedTask = {
+      ...taskToMove,
+      order: destinationOrder,
+    };
+
+    onChangeRoutines(
+      routines.map((routine) => {
+        if (
+          routine.id ===
+          activeRoutine.id
+        ) {
+          return {
+            ...routine,
+            tasks:
+              routine.tasks.filter(
+                (task) =>
+                  task.id !==
+                  taskId
+              ),
+          };
+        }
+
+        if (
+          routine.id ===
+          destinationRoutineId
+        ) {
+          return {
+            ...routine,
+            tasks: [
+              ...routine.tasks,
+              movedTask,
+            ],
+          };
+        }
+
+        return routine;
+      })
+    );
+
+    setEditingRoutineTaskId(
+      null
+    );
+
+    setActiveRoutineId(
+      destinationRoutineId
+    );
+  }
+
   function handleTaskDragEnd(
     event: DragEndEvent
   ) {
@@ -1398,6 +1489,24 @@ export default function RoutinesView({
               kind="routine"
               item={
                 editingRoutineTask
+              }
+              containerLabel="Routine"
+              currentContainerId={
+                activeRoutine.id
+              }
+              containerOptions={routines.map(
+                (routine) => ({
+                  id: routine.id,
+                  name:
+                    routine.name ||
+                    "Untitled routine",
+                })
+              )}
+              onMove={(destinationRoutineId) =>
+                moveRoutineTask(
+                  editingRoutineTask.id,
+                  destinationRoutineId
+                )
               }
               onChange={(
                 updates

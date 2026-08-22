@@ -16,6 +16,11 @@ import { DURATION_OPTIONS } from "@/lib/durations";
 
 import TimeWindowInput from "@/components/TimeWindowInput";
 
+export type ItemContainerOption = {
+  id: string;
+  name: string;
+};
+
 type SharedItemUpdates = Partial<
   Pick<
     Task,
@@ -36,6 +41,11 @@ type ProjectTaskModalProps = {
   onChange: (updates: Partial<Task>) => void;
   onDelete: () => void;
   onClose: () => void;
+
+  containerLabel?: string;
+  currentContainerId?: string;
+  containerOptions?: ItemContainerOption[];
+  onMove?: (containerId: string) => void;
 };
 
 type RoutineTaskModalProps = {
@@ -44,6 +54,11 @@ type RoutineTaskModalProps = {
   onChange: (updates: Partial<RoutineTask>) => void;
   onDelete: () => void;
   onClose: () => void;
+
+  containerLabel?: string;
+  currentContainerId?: string;
+  containerOptions?: ItemContainerOption[];
+  onMove?: (containerId: string) => void;
 };
 
 type ItemDetailsModalProps =
@@ -176,6 +191,50 @@ export default function ItemDetailsModal(
               className={fieldClassName}
             />
           </label>
+
+          {props.containerOptions &&
+            props.currentContainerId &&
+            props.onMove && (
+              <label className={labelClassName}>
+                {props.containerLabel ??
+                  (props.kind === "routine"
+                    ? "Routine"
+                    : "Project")}
+
+                <select
+                  value={props.currentContainerId}
+                  onChange={(event) => {
+                    const nextContainerId =
+                      event.target.value;
+
+                    if (
+                      nextContainerId !==
+                      props.currentContainerId
+                    ) {
+                      props.onMove(
+                        nextContainerId
+                      );
+                    }
+                  }}
+                  className={fieldClassName}
+                >
+                  {props.containerOptions.map(
+                    (option) => (
+                      <option
+                        key={option.id}
+                        value={option.id}
+                      >
+                        {option.name}
+                      </option>
+                    )
+                  )}
+                </select>
+
+                <span className="text-[11px] font-normal text-slate-400">
+                  Moving this task keeps its details and scheduling settings.
+                </span>
+              </label>
+            )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={labelClassName}>

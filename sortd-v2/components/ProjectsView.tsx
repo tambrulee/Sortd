@@ -125,6 +125,16 @@ type ProjectsViewProps = {
     context?: ScheduleContext
   ) => void;
 
+  onUpdateTaskEarliestStartTime?: (
+    id: string,
+    earliestStartTime?: string
+  ) => void;
+
+  onUpdateTaskLatestEndTime?: (
+    id: string,
+    latestEndTime?: string
+  ) => void;
+
   onToggleTask: (
     id: string
   ) => void;
@@ -196,6 +206,8 @@ export default function ProjectsView({
   onUpdateTaskDuration,
   onUpdateTaskMaxSession,
   onUpdateTaskScheduleContext,
+  onUpdateTaskEarliestStartTime,
+  onUpdateTaskLatestEndTime,
   onToggleTask,
   onDeleteTask,
   onReorderTasks,
@@ -213,6 +225,184 @@ export default function ProjectsView({
 
   const activeTasks =
     activeProject?.tasks ?? [];
+
+  function changeTask(
+    taskId: string,
+    updates: Partial<Task>
+  ) {
+    if (
+      updates.title !== undefined
+    ) {
+      onUpdateTask(
+        taskId,
+        updates.title
+      );
+    }
+
+    if (
+      updates.priority !== undefined
+    ) {
+      onUpdateTaskPriority(
+        taskId,
+        updates.priority
+      );
+    }
+
+    if (
+      updates.energy !== undefined
+    ) {
+      onUpdateTaskEnergy(
+        taskId,
+        updates.energy
+      );
+    }
+
+    if (
+      "dueDate" in updates
+    ) {
+      onUpdateTaskDueDate(
+        taskId,
+        updates.dueDate ?? ""
+      );
+    }
+
+    if (
+      "durationMinutes" in updates
+    ) {
+      onUpdateTaskDuration(
+        taskId,
+        updates.durationMinutes
+      );
+    }
+
+    if (
+      "maxSessionMinutes" in updates
+    ) {
+      onUpdateTaskMaxSession(
+        taskId,
+        updates.maxSessionMinutes
+      );
+    }
+
+    if (
+      "scheduleContext" in updates
+    ) {
+      onUpdateTaskScheduleContext(
+        taskId,
+        updates.scheduleContext
+      );
+    }
+
+    if (
+      "earliestStartTime" in updates
+    ) {
+      onUpdateTaskEarliestStartTime?.(
+        taskId,
+        updates.earliestStartTime
+      );
+    }
+
+    if (
+      "latestEndTime" in updates
+    ) {
+      onUpdateTaskLatestEndTime?.(
+        taskId,
+        updates.latestEndTime
+      );
+    }
+  }
+
+  function moveTaskToProject(
+    taskId: string,
+    destinationProjectId: string
+  ) {
+    if (
+      !activeProject ||
+      destinationProjectId ===
+        activeProject.id
+    ) {
+      return;
+    }
+
+    const taskToMove =
+      activeProject.tasks.find(
+        (task) =>
+          task.id === taskId
+      );
+
+    const destinationProject =
+      projects.find(
+        (project) =>
+          project.id ===
+          destinationProjectId
+      );
+
+    if (
+      !taskToMove ||
+      !destinationProject
+    ) {
+      return;
+    }
+
+    const destinationOrder =
+      destinationProject.tasks.length >
+      0
+        ? Math.max(
+            ...destinationProject.tasks.map(
+              (task) =>
+                task.order ?? 0
+            )
+          ) + 1
+        : 1;
+
+    const movedTask = {
+      ...taskToMove,
+      order: destinationOrder,
+    };
+
+    const updatedProjects =
+      projects.map(
+        (project) => {
+          if (
+            project.id ===
+            activeProject.id
+          ) {
+            return {
+              ...project,
+              tasks:
+                project.tasks.filter(
+                  (task) =>
+                    task.id !==
+                    taskId
+                ),
+            };
+          }
+
+          if (
+            project.id ===
+            destinationProjectId
+          ) {
+            return {
+              ...project,
+              tasks: [
+                ...project.tasks,
+                movedTask,
+              ],
+            };
+          }
+
+          return project;
+        }
+      );
+
+    onReorderProjects(
+      updatedProjects
+    );
+
+    onChangeProject(
+      destinationProjectId
+    );
+  }
 
   return (
     <div className="min-w-0 rounded-3xl bg-white/90 p-5 shadow-xl backdrop-blur-md md:p-7">
@@ -467,29 +657,22 @@ export default function ProjectsView({
                 tasks={
                   visibleTasks
                 }
+                currentProjectId={
+                  activeProject.id
+                }
+                projectOptions={projects.map(
+                  (project) => ({
+                    id: project.id,
+                    name:
+                      project.name ||
+                      "Untitled project",
+                  })
+                )}
                 onAddTask={
                   onAddTask
                 }
-                onUpdateTask={
-                  onUpdateTask
-                }
-                onUpdateTaskPriority={
-                  onUpdateTaskPriority
-                }
-                onUpdateTaskEnergy={
-                  onUpdateTaskEnergy
-                }
-                onUpdateTaskDueDate={
-                  onUpdateTaskDueDate
-                }
-                onUpdateTaskDuration={
-                  onUpdateTaskDuration
-                }
-                onUpdateTaskMaxSession={
-                  onUpdateTaskMaxSession
-                }
-                onUpdateTaskScheduleContext={
-                  onUpdateTaskScheduleContext
+                onChangeTask={
+                  changeTask
                 }
                 onToggleTask={
                   onToggleTask
@@ -499,6 +682,9 @@ export default function ProjectsView({
                 }
                 onReorderTasks={
                   onReorderTasks
+                }
+                onMoveTask={
+                  moveTaskToProject
                 }
               />
             </div>

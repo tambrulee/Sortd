@@ -7,8 +7,6 @@ import {
 } from "react";
 
 import {
-  ScheduleContext,
-  SchedulePeriod,
   Task,
 } from "@/lib/types";
 
@@ -22,14 +20,23 @@ import {
 
 import ItemDetailsModal from "@/components/ItemDetailsModal";
 
+type ProjectOption = {
+  id: string;
+  name: string;
+};
+
 type TaskItemProps = {
   task: Task;
 
+  currentProjectId: string;
+
+  projectOptions: ProjectOption[];
+
   onAddTask: () => void;
 
-  onUpdateTask: (
+  onChangeTask: (
     id: string,
-    title: string
+    updates: Partial<Task>
   ) => void;
 
   onToggleTask: (
@@ -40,77 +47,70 @@ type TaskItemProps = {
     id: string
   ) => void;
 
-  onUpdateTaskPriority: (
-    id: string,
-    priority:
-      | "low"
-      | "medium"
-      | "high"
+  onMoveTask: (
+    taskId: string,
+    destinationProjectId: string
   ) => void;
-
-  onUpdateTaskEnergy: (
-    id: string,
-    energy:
-      | "low"
-      | "medium"
-      | "high"
-  ) => void;
-
-  onUpdateTaskDueDate: (
-    id: string,
-    dueDate: string
-  ) => void;
-
-  onUpdateTaskDuration: (
-    id: string,
-    durationMinutes?: number
-  ) => void;
-
-  onUpdateTaskMaxSession: (
-    id: string,
-    maxSessionMinutes?: number
-  ) => void;
-
-  onUpdateTaskScheduleContext: (
-    id: string,
-    context?: ScheduleContext
-  ) => void;
-
 };
 
 function formatDuration(
   minutes?: number
 ) {
-  if (!minutes) return "";
+  if (!minutes) {
+    return null;
+  }
 
   if (minutes < 60) {
     return `${minutes} min`;
   }
 
-  const hours = minutes / 60;
+  const hours =
+    minutes / 60;
 
-  return Number.isInteger(hours)
+  return Number.isInteger(
+    hours
+  )
     ? `${hours} hr`
     : `${hours.toFixed(1)} hrs`;
 }
 
+function getPriorityLabel(
+  priority?: Task["priority"]
+) {
+  if (priority === "high") {
+    return "High priority";
+  }
+
+  if (priority === "low") {
+    return "Low priority";
+  }
+
+  return "Medium priority";
+}
+
+function getEnergyLabel(
+  energy?: Task["energy"]
+) {
+  if (energy === "high") {
+    return "High energy";
+  }
+
+  if (energy === "low") {
+    return "Low energy";
+  }
+
+  return "Medium energy";
+}
+
 export default function TaskItem({
   task,
-
+  currentProjectId,
+  projectOptions,
   onAddTask,
-
-  onUpdateTask,
-  onUpdateTaskPriority,
-  onUpdateTaskEnergy,
-
-  onUpdateTaskDueDate,
-  onUpdateTaskDuration,
-  onUpdateTaskMaxSession,
-
-  onUpdateTaskScheduleContext,
-
+  onChangeTask,
   onToggleTask,
   onDeleteTask,
+  onMoveTask,
 }: TaskItemProps) {
   const [
     showDetails,
@@ -118,7 +118,9 @@ export default function TaskItem({
   ] = useState(false);
 
   const inputRef =
-    useRef<HTMLInputElement>(null);
+    useRef<HTMLInputElement>(
+      null
+    );
 
   const {
     attributes,
@@ -136,7 +138,6 @@ export default function TaskItem({
       CSS.Transform.toString(
         transform
       ),
-
     transition,
   };
 
@@ -144,78 +145,19 @@ export default function TaskItem({
     if (task.title === "") {
       inputRef.current?.focus();
     }
-  }, [task.id, task.title]);
-
-  function handleUpdateTask(
-    updates: Partial<Task>
-  ) {
-    if (
-      typeof updates.title ===
-      "string"
-    ) {
-      onUpdateTask(
-        task.id,
-        updates.title
-      );
-    }
-
-    if (updates.priority) {
-      onUpdateTaskPriority(
-        task.id,
-        updates.priority
-      );
-    }
-
-    if (updates.energy) {
-      onUpdateTaskEnergy(
-        task.id,
-        updates.energy
-      );
-    }
-
-    if ("dueDate" in updates) {
-      onUpdateTaskDueDate(
-        task.id,
-        updates.dueDate ?? ""
-      );
-    }
-
-    if (
-      "durationMinutes" in updates
-    ) {
-      onUpdateTaskDuration(
-        task.id,
-        updates.durationMinutes
-      );
-    }
-
-    if (
-      "maxSessionMinutes" in updates
-    ) {
-      onUpdateTaskMaxSession(
-        task.id,
-        updates.maxSessionMinutes
-      );
-    }
-
-    if (
-      "scheduleContext" in updates
-    ) {
-      onUpdateTaskScheduleContext(
-        task.id,
-        updates.scheduleContext
-      );
-    }
-  }
+  }, [
+    task.id,
+    task.title,
+  ]);
 
   return (
     <>
       <div
         ref={setNodeRef}
         style={style}
-        className={`rounded-2xl bg-[#eeeaea] p-3 shadow-sm ${
+        className={`rounded-2xl border border-slate-200 bg-white p-3 transition ${
           isDragging
-            ? "z-50 opacity-60"
+            ? "z-50 opacity-60 shadow-lg"
             : ""
         }`}
       >
@@ -224,17 +166,22 @@ export default function TaskItem({
             type="button"
             {...attributes}
             {...listeners}
-            className="cursor-grab rounded-lg px-2 py-1 text-slate-500 active:cursor-grabbing"
-            aria-label="Drag task"
+            className="cursor-grab rounded-lg px-1.5 py-1 text-slate-400 active:cursor-grabbing"
+            aria-label={`Reorder ${task.title}`}
+            title="Drag to reorder"
           >
             ⋮⋮
           </button>
 
           <input
             type="checkbox"
-            checked={task.completed}
+            checked={
+              task.completed
+            }
             onChange={() =>
-              onToggleTask(task.id)
+              onToggleTask(
+                task.id
+              )
             }
             className="h-5 w-5 shrink-0 accent-[#cd6ce7]"
           />
@@ -243,59 +190,103 @@ export default function TaskItem({
             <input
               ref={inputRef}
               value={task.title}
-              onChange={(event) =>
-                onUpdateTask(
+              onChange={(
+                event
+              ) =>
+                onChangeTask(
                   task.id,
-                  event.target.value
+                  {
+                    title:
+                      event.target
+                        .value,
+                  }
                 )
               }
-              onKeyDown={(event) => {
+              onKeyDown={(
+                event
+              ) => {
                 if (
-                  event.key !== "Enter"
+                  event.key !==
+                  "Enter"
                 ) {
                   return;
                 }
 
                 event.preventDefault();
                 event.stopPropagation();
-
                 onAddTask();
               }}
               placeholder="Enter task..."
-              className={`w-full rounded-lg bg-transparent px-2 py-1 text-sm font-medium outline-none focus:bg-white focus:ring-2 focus:ring-[#cd6ce7] ${
+              className={`w-full rounded-lg bg-transparent px-1 py-1 text-sm font-medium outline-none transition focus:bg-slate-50 focus:ring-2 focus:ring-[#cd6ce7]/20 ${
                 task.completed
                   ? "text-slate-400 line-through"
                   : "text-slate-900"
               }`}
             />
 
-            <div className="mt-1 flex flex-wrap gap-2 px-2">
-              {task.priority ===
-                "high" && (
-                <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                  High priority
-                </span>
-              )}
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-slate-500">
+              <span>
+                {getPriorityLabel(
+                  task.priority
+                )}
+              </span>
 
-              {task.energy ===
-                "low" && (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                  Low energy
-                </span>
-              )}
+              <span
+                aria-hidden="true"
+                className="text-slate-300"
+              >
+                ·
+              </span>
 
-              {task.durationMinutes && (
-                <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs text-slate-600">
-                  {formatDuration(
-                    task.durationMinutes
-                  )}
-                </span>
+              <span>
+                {getEnergyLabel(
+                  task.energy
+                )}
+              </span>
+
+              {formatDuration(
+                task.durationMinutes
+              ) && (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="text-slate-300"
+                  >
+                    ·
+                  </span>
+
+                  <span>
+                    {formatDuration(
+                      task.durationMinutes
+                    )}
+                  </span>
+                </>
               )}
 
               {task.dueDate && (
-                <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">
-                  Due {task.dueDate}
-                </span>
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="text-slate-300"
+                  >
+                    ·
+                  </span>
+
+                  <span>
+                    Due{" "}
+                    {new Intl.DateTimeFormat(
+                      "en-GB",
+                      {
+                        day: "numeric",
+                        month: "short",
+                      }
+                    ).format(
+                      new Date(
+                        `${task.dueDate}T12:00:00`
+                      )
+                    )}
+                  </span>
+                </>
               )}
             </div>
           </div>
@@ -303,11 +294,13 @@ export default function TaskItem({
           <button
             type="button"
             onClick={() =>
-              setShowDetails(true)
+              setShowDetails(
+                true
+              )
             }
-            aria-label="Open task details"
+            aria-label={`Edit ${task.title}`}
             title="Task details"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-white hover:text-slate-900"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
           >
             •••
           </button>
@@ -318,12 +311,46 @@ export default function TaskItem({
         <ItemDetailsModal
           kind="task"
           item={task}
-          onChange={handleUpdateTask}
-          onDelete={() =>
-            onDeleteTask(task.id)
+          containerLabel="Project"
+          currentContainerId={
+            currentProjectId
           }
+          containerOptions={
+            projectOptions
+          }
+          onMove={(
+            destinationProjectId
+          ) => {
+            onMoveTask(
+              task.id,
+              destinationProjectId
+            );
+
+            setShowDetails(
+              false
+            );
+          }}
+          onChange={(
+            updates
+          ) =>
+            onChangeTask(
+              task.id,
+              updates
+            )
+          }
+          onDelete={() => {
+            onDeleteTask(
+              task.id
+            );
+
+            setShowDetails(
+              false
+            );
+          }}
           onClose={() =>
-            setShowDetails(false)
+            setShowDetails(
+              false
+            )
           }
         />
       )}
