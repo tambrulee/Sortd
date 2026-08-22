@@ -47,6 +47,12 @@ const navigationItems: {
     label: "Shopping",
     icon: "🛒",
   },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: "⚙",
+  },
+
 ];
 
 export default function WorkspaceNav({

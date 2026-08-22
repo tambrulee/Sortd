@@ -22,6 +22,7 @@ import PlannerView from "@/components/PlannerView";
 import ShoppingView from "@/components/ShoppingView";
 import GoalsView from "@/components/GoalsView";
 import DreamsView from "@/components/DreamsView";
+import SettingsControlPanel from "@/components/SettingsControlPanel";
 
 
 // Types and storage utilities
@@ -1285,6 +1286,12 @@ function updateProjectLatestEndTime(
             onChangeDreams={setDreams}
           />
 
+          ) : activeView === "settings" ? (
+          <SettingsControlPanel
+            settings={scheduleSettings}
+            onChangeSettings={setScheduleSettings}
+          />
+
           ) : activeView === "planner" ? (
           <PlannerView
             tasks={
@@ -1323,6 +1330,8 @@ function updateProjectLatestEndTime(
               routines={routines}
               onChangeRoutines={setRoutines}
             />
+
+           
           )}
         </div>
       </section>

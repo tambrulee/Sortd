@@ -1,12 +1,7 @@
 "use client";
 
-// Import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useState } from "react";
-import {
-  Energy,
-  Routine,
-  Task,
-} from "@/lib/types";
+import { Routine, Task } from "@/lib/types";
 import { createPortal } from "react-dom";
 
 type TaskWithProject = Task & {
@@ -22,7 +17,6 @@ type RoutineTaskForDay =
 
 type MyDayViewProps = {
   tasks: TaskWithProject[];
-
   routines: Routine[];
 
   onOpenProject: (
@@ -42,131 +36,12 @@ type MyDayViewProps = {
 
 function getLocalDateKey() {
   const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
 
-  return `${year}-${month}-${day}`;
-}
-
-function scoreTask(
-  task: TaskWithProject,
-  today: string,
-  availableMinutes: number,
-  currentEnergy: Energy
-) {
-  let score = 0;
-
-  if (task.dueDate && task.dueDate < today) score += 100;
-  if (task.dueDate === today) score += 75;
-
-  if (task.priority === "high") score += 30;
-  if (task.priority === "medium") score += 15;
-
-  if (task.energy === currentEnergy) {
-    score += 25;
-  } else if (task.energy) {
-    score -= 10;
-  }
-
-  if (
-    task.durationMinutes &&
-    task.durationMinutes <= availableMinutes
-  ) {
-    score += 20;
-  }
-
-  return score;
-}
-
-function getRecommendationReasons(
-  task: TaskWithProject,
-  today: string,
-  availableMinutes: number,
-  currentEnergy: Energy
-) {
-  const reasons: string[] = [];
-
-  if (task.dueDate && task.dueDate < today) {
-    reasons.push("overdue");
-  } else if (task.dueDate === today) {
-    reasons.push("due today");
-  }
-
-  if (task.priority === "high") {
-    reasons.push("high priority");
-  }
-
-  if (task.energy === currentEnergy) {
-    reasons.push(`matches ${currentEnergy} energy`);
-  }
-
-  if (
-    task.durationMinutes &&
-    task.durationMinutes <= availableMinutes
-  ) {
-    reasons.push("fits your available time");
-  }
-
-  return reasons;
-}
-
-
-function buildDayPlan(
-  tasks: TaskWithProject[],
-  today: string,
-  availableMinutes: number,
-  currentEnergy: Energy
-) {
-  let remainingMinutes = availableMinutes;
-
-  const rankedTasks = [...tasks]
-    .filter(
-      (task) =>
-        !task.completed &&
-        task.durationMinutes &&
-        task.durationMinutes <= availableMinutes
-    )
-    .sort(
-      (firstTask, secondTask) =>
-        scoreTask(
-          secondTask,
-          today,
-          availableMinutes,
-          currentEnergy
-        ) -
-        scoreTask(
-          firstTask,
-          today,
-          availableMinutes,
-          currentEnergy
-        )
-    );
-
-  return rankedTasks.filter((task) => {
-    const duration = task.durationMinutes ?? 0;
-
-    if (duration > remainingMinutes) {
-      return false;
-    }
-
-    remainingMinutes -= duration;
-    return true;
-  });
-}
-
-function addMinutesToTime(time: string, minutes: number) {
-  const [hours, currentMinutes] = time
-    .split(":")
-    .map(Number);
-
-  const date = new Date();
-  date.setHours(hours, currentMinutes + minutes, 0, 0);
-
-  return date.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 function formatDuration(minutes?: number) {
@@ -174,6 +49,7 @@ function formatDuration(minutes?: number) {
   if (minutes < 60) return `${minutes} min`;
 
   const hours = minutes / 60;
+
   return Number.isInteger(hours)
     ? `${hours} hr`
     : `${hours.toFixed(1)} hrs`;
@@ -188,12 +64,6 @@ export default function MyDayView({
 }: MyDayViewProps) {
   const today = getLocalDateKey();
 
-  const [availableMinutes, setAvailableMinutes] =
-  useState(60);
-
-  const [currentEnergy, setCurrentEnergy] =
-  useState<Energy>("medium");
-
   const [
     activeSummary,
     setActiveSummary,
@@ -204,10 +74,11 @@ export default function MyDayView({
     | null
   >(null);
 
-  const openTasks = tasks.filter((task) => !task.completed);
+  const openTasks = tasks.filter(
+    (task) => !task.completed
+  );
 
-  const openRoutineTasks =
-  routines
+  const openRoutineTasks = routines
     .filter((routine) => !routine.archived)
     .flatMap((routine) =>
       routine.tasks
@@ -219,165 +90,83 @@ export default function MyDayView({
         }))
     );
 
-const routineTasksDueToday =
-  openRoutineTasks.filter(
-    (task) => task.nextDueDate === today
-  );
+  const routineTasksDueToday =
+    openRoutineTasks.filter(
+      (task) =>
+        task.nextDueDate === today
+    );
 
-const overdueRoutineTasks =
-  openRoutineTasks.filter(
-    (task) => task.nextDueDate < today
-  );
+  const overdueRoutineTasks =
+    openRoutineTasks.filter(
+      (task) =>
+        task.nextDueDate < today
+    );
 
-const actionableRoutineTasks = [
-  ...overdueRoutineTasks,
-  ...routineTasksDueToday,
-];
+  const actionableRoutineTasks = [
+    ...overdueRoutineTasks,
+    ...routineTasksDueToday,
+  ];
 
   const dueToday = openTasks.filter(
     (task) => task.dueDate === today
   );
 
   const overdue = openTasks.filter(
-    (task) => task.dueDate && task.dueDate < today
+    (task) =>
+      task.dueDate &&
+      task.dueDate < today
   );
 
   const projectWorkloadMinutes =
-  dueToday.reduce(
-    (total, task) =>
-      total + (task.durationMinutes ?? 0),
-    0
-  );
-
-const routineWorkloadMinutes =
-  routineTasksDueToday.reduce(
-    (total, task) =>
-      total + (task.durationMinutes ?? 0),
-    0
-  );
-
-const workloadMinutes =
-  projectWorkloadMinutes +
-  routineWorkloadMinutes;
-
-const summaryProjectTasks =
-  activeSummary === "overdue"
-    ? overdue
-    : dueToday;
-
-const summaryRoutineTasks =
-  activeSummary === "overdue"
-    ? overdueRoutineTasks
-    : routineTasksDueToday;
-
-const summaryTitle =
-  activeSummary === "overdue"
-    ? "Overdue items"
-    : activeSummary === "workload"
-      ? "Today’s workload"
-      : "Due today";
-
-const summaryDescription =
-  activeSummary === "overdue"
-    ? "Items that still need your attention."
-    : activeSummary === "workload"
-      ? "Tasks and routines contributing to today’s workload."
-      : "Everything due today across your projects and routines.";
-
-const tasksThatFit = openTasks.filter(
-  (task) =>
-    !task.durationMinutes ||
-    task.durationMinutes <= availableMinutes
-);
-
-const recommendedTask = [...tasksThatFit].sort(
-  (firstTask, secondTask) =>
-    scoreTask(
-      secondTask,
-      today,
-      availableMinutes,
-      currentEnergy
-    ) -
-    scoreTask(
-      firstTask,
-      today,
-      availableMinutes,
-      currentEnergy
-    )
-)[0];
-
-const recommendationReasons = recommendedTask
-  ? getRecommendationReasons(
-      recommendedTask,
-      today,
-      availableMinutes,
-      currentEnergy
-    )
-  : [];
-
-const dayPlan = buildDayPlan(
-  openTasks,
-  today,
-  availableMinutes,
-  currentEnergy
-);
-
-
-const [startTime, setStartTime] = useState("09:00");
-const [showPlan, setShowPlan] = useState(false);
-
-const scheduleResult = dayPlan.reduce<{
-  tasks: Array<
-    TaskWithProject & {
-      scheduledStart: string;
-      scheduledEnd: string;
-    }
-  >;
-  elapsedMinutes: number;
-}>(
-  (result, task) => {
-    const duration = task.durationMinutes ?? 0;
-
-    const scheduledStart = addMinutesToTime(
-      startTime,
-      result.elapsedMinutes
+    dueToday.reduce(
+      (total, task) =>
+        total +
+        (task.durationMinutes ?? 0),
+      0
     );
 
-    const nextElapsedMinutes =
-      result.elapsedMinutes + duration;
-
-    const scheduledEnd = addMinutesToTime(
-      startTime,
-      nextElapsedMinutes
+  const routineWorkloadMinutes =
+    routineTasksDueToday.reduce(
+      (total, task) =>
+        total +
+        (task.durationMinutes ?? 0),
+      0
     );
 
-    return {
-      elapsedMinutes: nextElapsedMinutes,
-      tasks: [
-        ...result.tasks,
-        {
-          ...task,
-          scheduledStart,
-          scheduledEnd,
-        },
-      ],
-    };
-  },
-  {
-    tasks: [],
-    elapsedMinutes: 0,
-  }
-);
+  const workloadMinutes =
+    projectWorkloadMinutes +
+    routineWorkloadMinutes;
 
-const scheduledPlan = scheduleResult.tasks;
-const plannedMinutes = scheduleResult.elapsedMinutes;
+  const summaryProjectTasks =
+    activeSummary === "overdue"
+      ? overdue
+      : dueToday;
 
-  const formattedDate = new Intl.DateTimeFormat("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(new Date());
+  const summaryRoutineTasks =
+    activeSummary === "overdue"
+      ? overdueRoutineTasks
+      : routineTasksDueToday;
 
+  const summaryTitle =
+    activeSummary === "overdue"
+      ? "Overdue items"
+      : activeSummary === "workload"
+        ? "Today’s workload"
+        : "Due today";
+
+  const summaryDescription =
+    activeSummary === "overdue"
+      ? "Items that still need your attention."
+      : activeSummary === "workload"
+        ? "Tasks and routines contributing to today’s workload."
+        : "Everything due today across your projects and routines.";
+
+  const formattedDate =
+    new Intl.DateTimeFormat("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(new Date());
 
   function renderTask(
     task: TaskWithProject
@@ -439,52 +228,55 @@ const plannedMinutes = scheduleResult.elapsedMinutes;
   }
 
   function renderRoutineTask(
-  task: RoutineTaskForDay
-) {
-  const isOverdue =
-    task.nextDueDate < today;
+    task: RoutineTaskForDay
+  ) {
+    const isOverdue =
+      task.nextDueDate < today;
 
-  return (
-    <div
-      key={`${task.routineId}-${task.id}`}
-      className="flex items-center gap-3 rounded-xl bg-[#eeeaea] px-4 py-3"
-    >
-      <button
-        type="button"
-        onClick={() =>
-          onCompleteRoutineTask(
-            task.routineId,
-            task.id
-          )
-        }
-        aria-label={`Complete ${task.title}`}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+    return (
+      <div
+        key={`${task.routineId}-${task.id}`}
+        className="flex items-center gap-3 rounded-xl bg-[#eeeaea] px-4 py-3"
       >
-        ✓
-      </button>
+        <button
+          type="button"
+          onClick={() =>
+            onCompleteRoutineTask(
+              task.routineId,
+              task.id
+            )
+          }
+          aria-label={`Complete ${task.title}`}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+        >
+          ✓
+        </button>
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-slate-900">
-          {task.title || "Untitled routine task"}
-        </p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-slate-900">
+            {task.title ||
+              "Untitled routine task"}
+          </p>
 
-        <p className="mt-1 text-xs text-slate-500">
-          {task.routineName}
-        </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {task.routineName}
+          </p>
+        </div>
+
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+            isOverdue
+              ? "bg-red-100 text-red-700"
+              : "bg-amber-100 text-amber-800"
+          }`}
+        >
+          {isOverdue
+            ? "Overdue"
+            : "Due today"}
+        </span>
       </div>
-
-      <span
-        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-          isOverdue
-            ? "bg-red-100 text-red-700"
-            : "bg-amber-100 text-amber-800"
-        }`}
-      >
-        {isOverdue ? "Overdue" : "Due today"}
-      </span>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
@@ -498,7 +290,7 @@ const plannedMinutes = scheduleResult.elapsedMinutes;
         </h1>
 
         <p className="mt-2 text-sm text-slate-500">
-          Here’s what deserves your attention today.
+          Here’s what needs your attention today.
         </p>
       </div>
 
@@ -568,215 +360,42 @@ const plannedMinutes = scheduleResult.elapsedMinutes;
         </button>
       </div>
 
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="flex flex-wrap items-end gap-4">
-            <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-slate-600">
-            How much time do you have?
+      <section className="mb-8">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">
+              Routines
+            </h2>
 
-            <select
-                value={availableMinutes}
-                onChange={(event) =>
-                setAvailableMinutes(Number(event.target.value))
-                }
-                className="rounded-xl border border-slate-200 bg-[#f8f5f5] px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
-            >
-                <option value="15">15 minutes</option>
-                <option value="30">30 minutes</option>
-                <option value="45">45 minutes</option>
-                <option value="60">1 hour</option>
-                <option value="90">1½ hours</option>
-                <option value="120">2 hours</option>
-                <option value="240">Half a day</option>
-            </select>
-            </label>
+            <p className="text-sm text-slate-500">
+              Repeating things that are ready today.
+            </p>
+          </div>
 
-            <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-slate-600">
-            What’s your energy like?
-
-            <select
-                value={currentEnergy}
-                onChange={(event) =>
-                setCurrentEnergy(event.target.value as Energy)
-                }
-                className="rounded-xl border border-slate-200 bg-[#f8f5f5] px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
-            >
-                <option value="low">Low energy</option>
-                <option value="medium">Medium energy</option>
-                <option value="high">High energy</option>
-            </select>
-            </label>
-
-            <label className="flex flex-1 flex-col gap-1 text-xs font-medium text-slate-600">
-            When do you want to start?
-
-            <input
-                type="time"
-                value={startTime}
-                onChange={(event) =>
-                setStartTime(event.target.value)
-                }
-                className="rounded-xl border border-slate-200 bg-[#f8f5f5] px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#cd6ce7]"
-            />
-            </label>
-            <button
-            type="button"
-            onClick={() => setShowPlan(true)}
-            className="mt-4 rounded-xl bg-[#1f0825] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#cd6ce7]"
-            >
-            Build my day
-            </button>
+          {actionableRoutineTasks.length >
+            0 && (
+            <span className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-700">
+              {
+                actionableRoutineTasks.length
+              }{" "}
+              ready
+            </span>
+          )}
         </div>
-        </section>
 
-      {recommendedTask && (
-        <section className="mb-8 rounded-2xl bg-[#1f0825] p-5 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#e3a6f3]">
-            Best next move
-          </p>
-
-          <h2 className="mt-2 text-xl font-semibold">
-            {recommendedTask.title || "Untitled task"}
-          </h2>
-
-          <p className="mt-1 text-sm text-white/65">
-            {recommendedTask.projectName} ·{" "}
-            {formatDuration(recommendedTask.durationMinutes)}
-          </p>
-
-            {recommendationReasons.length > 0 && (
-          <p className="mt-3 text-sm text-[#e3a6f3]">
-                Suggested because it’s{" "}
-                {recommendationReasons.join(", ")}.
-          </p>
-            )}
-
-        {!recommendedTask && (
-        <section className="mb-8 rounded-2xl bg-[#f3eeee] p-5 text-center">
-            <p className="font-medium">
-            Nothing fits that window.
+        <div className="space-y-2">
+          {actionableRoutineTasks.length >
+          0 ? (
+            actionableRoutineTasks.map(
+              renderRoutineTask
+            )
+          ) : (
+            <p className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center text-sm text-slate-500">
+              No routines need your attention today.
             </p>
-
-            <p className="mt-1 text-sm text-slate-500">
-            Try allowing more time or add estimates to your tasks.
-            </p>
-        </section>
-        )}
-
-          <button
-            type="button"
-            onClick={() =>
-              onOpenProject(recommendedTask.projectId)
-            }
-            className="mt-4 rounded-xl bg-white px-4 py-2 text-sm font-medium text-[#1f0825]"
-          >
-            Open task
-          </button>
-        </section>
-      )}
-
-      {showPlan && (
-        <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
-                Suggested schedule
-                </p>
-
-                <h2 className="mt-1 text-xl font-semibold">
-                Your draft day
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-500">
-                {formatDuration(plannedMinutes)} planned from{" "}
-                {startTime}
-                </p>
-            </div>
-
-            <button
-                type="button"
-                onClick={() => setShowPlan(false)}
-                className="text-sm text-slate-500 transition hover:text-slate-900"
-            >
-                Clear plan
-            </button>
-            </div>
-
-            {scheduledPlan.length > 0 ? (
-            <div className="space-y-2">
-                {scheduledPlan.map((task) => (
-                <button
-                    key={`${task.projectId}-${task.id}`}
-                    type="button"
-                    onClick={() =>
-                    onOpenProject(task.projectId)
-                    }
-                    className="grid w-full gap-2 rounded-xl bg-[#f3eeee] px-4 py-3 text-left transition hover:bg-[#cdbfd1] sm:grid-cols-[130px_1fr_auto] sm:items-center"
-                >
-                    <span className="text-sm font-semibold text-[#1f0825]">
-                    {task.scheduledStart}–{task.scheduledEnd}
-                    </span>
-
-                    <span>
-                    <span className="block font-medium text-slate-900">
-                        {task.title || "Untitled task"}
-                    </span>
-
-                    <span className="block text-xs text-slate-500">
-                        {task.projectName}
-                    </span>
-                    </span>
-
-                    <span className="text-xs text-slate-500">
-                    {formatDuration(task.durationMinutes)}
-                    </span>
-                </button>
-                ))}
-            </div>
-            ) : (
-            <div className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center">
-                <p className="font-medium">
-                There aren’t any schedulable tasks yet.
-                </p>
-
-                <p className="mt-1 text-sm text-slate-500">
-                Add time estimates to some tasks and try again.
-                </p>
-            </div>
-            )}
-        </section>
-        )}
-
-        <section className="mb-8">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">
-                Routines
-              </h2>
-
-              <p className="text-sm text-slate-500">
-                Repeating tasks ready to be completed.
-              </p>
-            </div>
-
-            {actionableRoutineTasks.length > 0 && (
-              <span className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-700">
-                {actionableRoutineTasks.length} ready
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            {actionableRoutineTasks.length > 0 ? (
-              actionableRoutineTasks.map(
-                renderRoutineTask
-              )
-            ) : (
-              <p className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center text-sm text-slate-500">
-                No routines need your attention today.
-              </p>
-            )}
-          </div>
-        </section>
+          )}
+        </div>
+      </section>
 
       <div className="grid gap-8 lg:grid-cols-2">
         <section>
@@ -811,141 +430,141 @@ const plannedMinutes = scheduleResult.elapsedMinutes;
           </div>
         </section>
       </div>
+
       {activeSummary &&
-  createPortal(
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"
-      onMouseDown={(event) => {
-        if (
-          event.target ===
-          event.currentTarget
-        ) {
-          setActiveSummary(null);
-        }
-      }}
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="my-day-summary-title"
-        className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl md:p-7"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
-              My Day
-            </p>
-
-            <h2
-              id="my-day-summary-title"
-              className="mt-1 text-2xl font-semibold text-slate-950"
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"
+            onMouseDown={(event) => {
+              if (
+                event.target ===
+                event.currentTarget
+              ) {
+                setActiveSummary(null);
+              }
+            }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="my-day-summary-title"
+              className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl md:p-7"
             >
-              {summaryTitle}
-            </h2>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
+                    My Day
+                  </p>
 
-            <p className="mt-1 text-sm text-slate-500">
-              {summaryDescription}
-            </p>
-          </div>
+                  <h2
+                    id="my-day-summary-title"
+                    className="mt-1 text-2xl font-semibold text-slate-950"
+                  >
+                    {summaryTitle}
+                  </h2>
 
-          <button
-            type="button"
-            onClick={() =>
-              setActiveSummary(null)
-            }
-            aria-label="Close summary"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
-          >
-            ×
-          </button>
-        </div>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {
+                      summaryDescription
+                    }
+                  </p>
+                </div>
 
-        {activeSummary ===
-          "workload" && (
-          <div className="mt-5 rounded-2xl bg-purple-50 px-4 py-3">
-            <p className="text-sm text-purple-800">
-              Estimated total:{" "}
-              <span className="font-semibold">
-                {formatDuration(
-                  workloadMinutes
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveSummary(null)
+                  }
+                  aria-label="Close summary"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
+                >
+                  ×
+                </button>
+              </div>
+
+              {activeSummary ===
+                "workload" && (
+                <div className="mt-5 rounded-2xl bg-purple-50 px-4 py-3">
+                  <p className="text-sm text-purple-800">
+                    Estimated total:{" "}
+                    <span className="font-semibold">
+                      {formatDuration(
+                        workloadMinutes
+                      )}
+                    </span>
+                  </p>
+
+                  <p className="mt-1 text-xs text-purple-600">
+                    Items without an estimate are listed but do not add to the total.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-6 space-y-6">
+                {summaryProjectTasks.length >
+                  0 && (
+                  <section>
+                    <h3 className="mb-3 text-sm font-semibold text-slate-900">
+                      Project tasks
+                    </h3>
+
+                    <div className="space-y-2">
+                      {summaryProjectTasks.map(
+                        renderTask
+                      )}
+                    </div>
+                  </section>
                 )}
-              </span>
-            </p>
 
-            <p className="mt-1 text-xs text-purple-600">
-              Items without an estimate
-              are listed but do not add
-              to the total.
-            </p>
-          </div>
+                {summaryRoutineTasks.length >
+                  0 && (
+                  <section>
+                    <h3 className="mb-3 text-sm font-semibold text-slate-900">
+                      Routine tasks
+                    </h3>
+
+                    <div className="space-y-2">
+                      {summaryRoutineTasks.map(
+                        renderRoutineTask
+                      )}
+                    </div>
+                  </section>
+                )}
+
+                {summaryProjectTasks.length ===
+                  0 &&
+                  summaryRoutineTasks.length ===
+                    0 && (
+                    <div className="rounded-2xl bg-slate-50 px-5 py-10 text-center">
+                      <p className="font-medium text-slate-700">
+                        Nothing here.
+                      </p>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        {activeSummary ===
+                        "overdue"
+                          ? "You have no overdue items."
+                          : "There are no items due today."}
+                      </p>
+                    </div>
+                  )}
+              </div>
+
+              <div className="mt-7 flex justify-end border-t border-slate-100 pt-5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveSummary(null)
+                  }
+                  className="rounded-xl bg-[#1f0825] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3b0842]"
+                >
+                  Done
+                </button>
+              </div>
+            </section>
+          </div>,
+          document.body
         )}
-
-        <div className="mt-6 space-y-6">
-          {summaryProjectTasks.length >
-            0 && (
-            <section>
-              <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                Project tasks
-              </h3>
-
-              <div className="space-y-2">
-                {summaryProjectTasks.map(
-                  renderTask
-                )}
-              </div>
-            </section>
-          )}
-
-          {summaryRoutineTasks.length >
-            0 && (
-            <section>
-              <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                Routine tasks
-              </h3>
-
-              <div className="space-y-2">
-                {summaryRoutineTasks.map(
-                  renderRoutineTask
-                )}
-              </div>
-            </section>
-          )}
-
-          {summaryProjectTasks.length ===
-            0 &&
-            summaryRoutineTasks.length ===
-              0 && (
-              <div className="rounded-2xl bg-slate-50 px-5 py-10 text-center">
-                <p className="font-medium text-slate-700">
-                  Nothing here.
-                </p>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  {activeSummary ===
-                  "overdue"
-                    ? "You have no overdue items."
-                    : "There are no items due today."}
-                </p>
-              </div>
-            )}
-        </div>
-
-        <div className="mt-7 flex justify-end border-t border-slate-100 pt-5">
-          <button
-            type="button"
-            onClick={() =>
-              setActiveSummary(null)
-            }
-            className="rounded-xl bg-[#1f0825] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3b0842]"
-          >
-            Done
-          </button>
-        </div>
-      </section>
-    </div>,
-
-    document.body
-  )}
     </div>
   );
 }

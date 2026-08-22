@@ -19,7 +19,6 @@ import {
   SchedulableProjectTask,
 } from "@/lib/scheduler";
 
-import ScheduleSettingsView from "@/components/ScheduleSettingsView";
 import ItemDetailsModal from "@/components/ItemDetailsModal";
 
 type PlannerViewProps = {
@@ -163,8 +162,6 @@ export default function PlannerView({
   routines,
 
   settings,
-
-  onChangeSettings,
 
   onCompleteProjectTask,
   onCompleteRoutineTask,
@@ -312,21 +309,6 @@ export default function PlannerView({
           </div>
         </div>
 
-        <details className="mt-6 rounded-2xl border border-slate-200 bg-slate-50">
-          <summary className="cursor-pointer px-4 py-3 font-medium text-slate-700">
-            Edit availability and working
-            hours
-          </summary>
-
-          <div className="border-t border-slate-200 p-3">
-            <ScheduleSettingsView
-              settings={settings}
-              onChangeSettings={
-                onChangeSettings
-              }
-            />
-          </div>
-        </details>
       </div>
 
       <div className="space-y-4">

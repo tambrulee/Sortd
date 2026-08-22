@@ -89,6 +89,7 @@ export interface SortdWorkspace {
 export type AppView =
   | "my-day"
   | "planner"
+  | "settings"
   | "projects"
   | "routines"
   | "shopping"
@@ -161,20 +162,17 @@ export type DayAvailability = {
   workEnd?: string;
 };
 
+export type EnergyPattern =
+  | "morning"
+  | "balanced"
+  | "evening";
+
 export type ScheduleSettings = {
   timeZone: string;
   planningHorizonDays: number;
   bufferMinutes: number;
-  days: Record<
-    | "monday"
-    | "tuesday"
-    | "wednesday"
-    | "thursday"
-    | "friday"
-    | "saturday"
-    | "sunday",
-    DayAvailability
-  >;
+  energyPattern?: EnergyPattern;
+  days: Record<Weekday, DayAvailability>;
 };
 
 export type ScheduledBlock = {

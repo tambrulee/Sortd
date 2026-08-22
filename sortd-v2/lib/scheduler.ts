@@ -1,4 +1,5 @@
 import {
+  Energy,
   RecurrenceUnit,
   Routine,
   ScheduleContext,
@@ -34,6 +35,16 @@ export type ScheduleResult = {
   unscheduled: UnscheduledItem[];
 };
 
+type EnergyPattern =
+  | "morning"
+  | "balanced"
+  | "evening";
+
+type SchedulerSettings =
+  ScheduleSettings & {
+    energyPattern?: EnergyPattern;
+  };
+
 type ScheduleCandidate = {
   id: string;
   sourceType: "task" | "routine";
@@ -48,6 +59,7 @@ type ScheduleCandidate = {
   earliestStartTime?: string;
   latestEndTime?: string;
   priority?: "low" | "medium" | "high";
+  energy?: Energy;
   dueDate?: string;
   occurrenceDate?: string;
   earliestDate: string;
@@ -59,9 +71,16 @@ type TimeWindow = {
   end: number;
 };
 
+type SessionOption = {
+  startMinutes: number;
+  durationMinutes: number;
+  score: number;
+};
+
 const DEFAULT_TASK_MINUTES = 30;
 const DEFAULT_MAX_SESSION_MINUTES = 120;
 const MINIMUM_SESSION_MINUTES = 30;
+const SLOT_STEP_MINUTES = 30;
 
 const DAY_BY_NUMBER: Record<
   number,
@@ -74,6 +93,12 @@ const DAY_BY_NUMBER: Record<
   4: "thursday",
   5: "friday",
   6: "saturday",
+};
+
+const ENERGY_VALUE: Record<Energy, number> = {
+  low: 1,
+  medium: 2,
+  high: 3,
 };
 
 function parseDateKey(dateKey: string) {
@@ -209,7 +234,7 @@ function addRecurrence(
 function getAvailableWindows(
   dateKey: string,
   context: ScheduleContext,
-  settings: ScheduleSettings
+  settings: SchedulerSettings
 ): TimeWindow[] {
   const weekday = getWeekday(dateKey);
   const day = settings.days[weekday];
@@ -353,11 +378,251 @@ function getPriorityValue(
   return 0;
 }
 
+function getItemEnergy(
+  item: unknown
+): Energy | undefined {
+  if (
+    !item ||
+    typeof item !== "object"
+  ) {
+    return undefined;
+  }
+
+  const value = (
+    item as {
+      energy?: unknown;
+    }
+  ).energy;
+
+  if (
+    value === "low" ||
+    value === "medium" ||
+    value === "high"
+  ) {
+    return value;
+  }
+
+  return undefined;
+}
+
+/**
+ * Returns the user's expected energy at a point in the day.
+ *
+ * This is deliberately a preference curve rather than a hard rule.
+ * Availability, working hours and explicit task windows are applied first.
+ */
+function getExpectedEnergy(
+  minute: number,
+  pattern: EnergyPattern
+): Energy {
+  const hour = minute / 60;
+
+  if (pattern === "morning") {
+    if (hour < 11) return "high";
+    if (hour < 17) return "medium";
+    return "low";
+  }
+
+  if (pattern === "evening") {
+    if (hour < 11) return "low";
+    if (hour < 17) return "medium";
+    return "high";
+  }
+
+  // Balanced users peak through the main daytime period,
+  // with gentler energy either side.
+  if (hour < 9) return "medium";
+  if (hour < 17) return "high";
+  if (hour < 21) return "medium";
+
+  return "low";
+}
+
+function getEnergyMatchScore(
+  taskEnergy: Energy | undefined,
+  startMinutes: number,
+  durationMinutes: number,
+  pattern: EnergyPattern
+) {
+  if (!taskEnergy) {
+    return 0;
+  }
+
+  const midpoint =
+    startMinutes +
+    durationMinutes / 2;
+
+  const expectedEnergy =
+    getExpectedEnergy(
+      midpoint,
+      pattern
+    );
+
+  const difference = Math.abs(
+    ENERGY_VALUE[taskEnergy] -
+      ENERGY_VALUE[expectedEnergy]
+  );
+
+  if (difference === 0) {
+    return 30;
+  }
+
+  if (difference === 1) {
+    return 10;
+  }
+
+  return -20;
+}
+
+function getUrgencyScore(
+  candidate: ScheduleCandidate,
+  dateKey: string,
+  startMinutes: number,
+  earliestPossibleMinute: number
+) {
+  if (
+    !candidate.dueDate ||
+    candidate.dueDate > dateKey
+  ) {
+    return 0;
+  }
+
+  // When something is already due, earlier still matters.
+  // This prevents energy preference from endlessly pushing urgent work later.
+  const delayMinutes = Math.max(
+    0,
+    startMinutes -
+      earliestPossibleMinute
+  );
+
+  return Math.max(
+    0,
+    24 -
+      Math.floor(
+        delayMinutes / 60
+      ) * 4
+  );
+}
+
+function getCandidateGaps(
+  windows: TimeWindow[],
+  blocksForDay: ScheduledBlock[],
+  settings: SchedulerSettings,
+  dateKey: string,
+  today: string,
+  currentTime: string
+): TimeWindow[] {
+  const gaps: TimeWindow[] = [];
+
+  const roundedCurrentMinute =
+    Math.ceil(
+      timeToMinutes(currentTime) / 5
+    ) * 5;
+
+  for (const window of windows) {
+    let cursor =
+      dateKey === today
+        ? Math.max(
+            window.start,
+            roundedCurrentMinute
+          )
+        : window.start;
+
+    if (cursor >= window.end) {
+      continue;
+    }
+
+    for (const block of blocksForDay) {
+      const blockStart =
+        timeToMinutes(
+          block.startTime
+        );
+
+      const blockEnd =
+        timeToMinutes(
+          block.endTime
+        );
+
+      if (
+        blockEnd +
+          settings.bufferMinutes <=
+        cursor
+      ) {
+        continue;
+      }
+
+      if (blockStart >= window.end) {
+        break;
+      }
+
+      const gapEnd = Math.min(
+        window.end,
+        blockStart -
+          settings.bufferMinutes
+      );
+
+      if (cursor < gapEnd) {
+        gaps.push({
+          start: cursor,
+          end: gapEnd,
+        });
+      }
+
+      cursor = Math.max(
+        cursor,
+        blockEnd +
+          settings.bufferMinutes
+      );
+
+      if (cursor >= window.end) {
+        break;
+      }
+    }
+
+    if (cursor < window.end) {
+      gaps.push({
+        start: cursor,
+        end: window.end,
+      });
+    }
+  }
+
+  return gaps;
+}
+
+function getPossibleStarts(
+  gap: TimeWindow
+) {
+  const starts = new Set<number>();
+
+  starts.add(gap.start);
+
+  const firstRoundedStart =
+    Math.ceil(
+      gap.start /
+        SLOT_STEP_MINUTES
+    ) * SLOT_STEP_MINUTES;
+
+  for (
+    let minute =
+      firstRoundedStart;
+    minute < gap.end;
+    minute += SLOT_STEP_MINUTES
+  ) {
+    starts.add(minute);
+  }
+
+  return [...starts].sort(
+    (first, second) =>
+      first - second
+  );
+}
+
 function findAvailableSession(
   dateKey: string,
   candidate: ScheduleCandidate,
   remainingMinutes: number,
-  settings: ScheduleSettings,
+  settings: SchedulerSettings,
   scheduledBlocks: ScheduledBlock[],
   today: string,
   currentTime: string
@@ -377,7 +642,8 @@ function findAvailableSession(
 
   const blocksForDay = scheduledBlocks
     .filter(
-      (block) => block.date === dateKey
+      (block) =>
+        block.date === dateKey
     )
     .sort(
       (firstBlock, secondBlock) =>
@@ -386,121 +652,132 @@ function findAvailableSession(
         )
     );
 
-  const roundedCurrentMinute =
-    Math.ceil(
-      timeToMinutes(currentTime) / 5
-    ) * 5;
+  const gaps = getCandidateGaps(
+    windows,
+    blocksForDay,
+    settings,
+    dateKey,
+    today,
+    currentTime
+  );
 
   const taskIsSplittable =
-  candidate.durationMinutes >
-  candidate.maxSessionMinutes;
+    candidate.durationMinutes >
+    candidate.maxSessionMinutes;
 
-const targetSessionMinutes =
-  taskIsSplittable
-    ? Math.min(
-        remainingMinutes,
-        candidate.maxSessionMinutes
-      )
-    : remainingMinutes;
+  const targetSessionMinutes =
+    taskIsSplittable
+      ? Math.min(
+          remainingMinutes,
+          candidate.maxSessionMinutes
+        )
+      : remainingMinutes;
 
-const minimumSessionMinutes =
-  taskIsSplittable
-    ? Math.min(
-        MINIMUM_SESSION_MINUTES,
-        targetSessionMinutes
-      )
-    : targetSessionMinutes;
+  const minimumSessionMinutes =
+    taskIsSplittable
+      ? Math.min(
+          MINIMUM_SESSION_MINUTES,
+          targetSessionMinutes
+        )
+      : targetSessionMinutes;
 
-  for (const window of windows) {
-    let cursor =
-      dateKey === today
-        ? Math.max(
-            window.start,
-            roundedCurrentMinute
+  const earliestPossibleMinute =
+    gaps.length > 0
+      ? Math.min(
+          ...gaps.map(
+            (gap) => gap.start
           )
-        : window.start;
+        )
+      : 0;
 
-    if (cursor >= window.end) {
-      continue;
-    }
+  const pattern =
+    settings.energyPattern ??
+    "balanced";
 
-    for (const block of blocksForDay) {
-      const blockStart = timeToMinutes(
-        block.startTime
-      );
+  const options: SessionOption[] =
+    [];
 
-      const blockEnd = timeToMinutes(
-        block.endTime
-      );
+  for (const gap of gaps) {
+    for (
+      const startMinutes of getPossibleStarts(
+        gap
+      )
+    ) {
+      const availableMinutes =
+        gap.end - startMinutes;
 
       if (
-        blockEnd + settings.bufferMinutes <=
-        cursor
+        availableMinutes <
+        minimumSessionMinutes
       ) {
         continue;
       }
 
-      if (blockStart >= window.end) {
-        break;
-      }
-
-      const gapEnd = Math.min(
-        window.end,
-        blockStart -
-          settings.bufferMinutes
-      );
-
-      const availableGapMinutes =
-        gapEnd - cursor;
+      const durationMinutes =
+        taskIsSplittable
+          ? Math.min(
+              targetSessionMinutes,
+              availableMinutes
+            )
+          : targetSessionMinutes;
 
       if (
-        availableGapMinutes >=
-        minimumSessionMinutes
+        durationMinutes >
+        availableMinutes
       ) {
-        return {
-          startMinutes: cursor,
-          durationMinutes:
-            taskIsSplittable
-              ? Math.min(
-                  targetSessionMinutes,
-                  availableGapMinutes
-                )
-              : targetSessionMinutes,
-        };
+        continue;
       }
 
-      cursor = Math.max(
-        cursor,
-        blockEnd +
-          settings.bufferMinutes
-      );
+      const energyScore =
+        getEnergyMatchScore(
+          candidate.energy,
+          startMinutes,
+          durationMinutes,
+          pattern
+        );
 
-      if (cursor >= window.end) {
-        break;
-      }
-    }
+      const urgencyScore =
+        getUrgencyScore(
+          candidate,
+          dateKey,
+          startMinutes,
+          earliestPossibleMinute
+        );
 
-    const remainingWindowMinutes =
-      window.end - cursor;
-
-    if (
-      remainingWindowMinutes >=
-      minimumSessionMinutes
-    ) {
-      return {
-        startMinutes: cursor,
-        durationMinutes:
-          taskIsSplittable
-            ? Math.min(
-                targetSessionMinutes,
-                remainingWindowMinutes
-              )
-            : targetSessionMinutes,
-      };
+      options.push({
+        startMinutes,
+        durationMinutes,
+        score:
+          energyScore +
+          urgencyScore,
+      });
     }
   }
 
-  return undefined;
+  if (options.length === 0) {
+    return undefined;
+  }
+
+  return options.sort(
+    (first, second) => {
+      if (
+        second.score !==
+        first.score
+      ) {
+        return (
+          second.score -
+          first.score
+        );
+      }
+
+      // For equally good slots, keep the schedule as early
+      // and compact as possible.
+      return (
+        first.startMinutes -
+        second.startMinutes
+      );
+    }
+  )[0];
 }
 
 function buildProjectCandidates(
@@ -509,7 +786,10 @@ function buildProjectCandidates(
   horizonEnd: string
 ): ScheduleCandidate[] {
   return tasks
-    .filter((task) => !task.completed)
+    .filter(
+      (task) =>
+        !task.completed
+    )
     .map((task) => {
       const usedDefaultDuration =
         !task.durationMinutes;
@@ -521,15 +801,19 @@ function buildProjectCandidates(
         parentId: task.projectId,
         parentName: task.projectName,
         title:
-          task.title || "Untitled task",
+          task.title ||
+          "Untitled task",
+
         durationMinutes:
           task.durationMinutes ??
           DEFAULT_TASK_MINUTES,
+
         maxSessionMinutes: Math.max(
           1,
           task.maxSessionMinutes ??
             DEFAULT_MAX_SESSION_MINUTES
         ),
+
         usedDefaultDuration,
 
         context:
@@ -546,6 +830,7 @@ function buildProjectCandidates(
           task.projectLatestEndTime,
 
         priority: task.priority,
+        energy: getItemEnergy(task),
         dueDate: task.dueDate,
         earliestDate: today,
         latestDate: horizonEnd,
@@ -563,11 +848,15 @@ function buildRoutineCandidates(
 
   routines
     .filter(
-      (routine) => !routine.archived
+      (routine) =>
+        !routine.archived
     )
     .forEach((routine) => {
       routine.tasks
-        .filter((task) => task.active)
+        .filter(
+          (task) =>
+            task.active
+        )
         .forEach((task) => {
           const usedDefaultDuration =
             !task.durationMinutes;
@@ -578,7 +867,8 @@ function buildRoutineCandidates(
               : task.nextDueDate;
 
           while (
-            occurrenceDate <= horizonEnd
+            occurrenceDate <=
+            horizonEnd
           ) {
             const nextOccurrenceDate =
               addRecurrence(
@@ -604,32 +894,47 @@ function buildRoutineCandidates(
               sourceType: "routine",
               sourceId: task.id,
               parentId: routine.id,
-              parentName: routine.name,
+              parentName:
+                routine.name,
               title:
                 task.title ||
                 "Untitled routine",
+
               durationMinutes:
                 task.durationMinutes ??
                 DEFAULT_TASK_MINUTES,
-              maxSessionMinutes: Math.max(
-                1,
-                task.maxSessionMinutes ??
-                  DEFAULT_MAX_SESSION_MINUTES
-              ),
+
+              maxSessionMinutes:
+                Math.max(
+                  1,
+                  task.maxSessionMinutes ??
+                    DEFAULT_MAX_SESSION_MINUTES
+                ),
+
               usedDefaultDuration,
+
               context:
                 task.scheduleContext ??
                 "personal",
+
               earliestStartTime:
                 task.earliestStartTime,
 
               latestEndTime:
                 task.latestEndTime,
+
               priority: task.priority,
-              dueDate: occurrenceDate,
+              energy:
+                getItemEnergy(task),
+
+              dueDate:
+                occurrenceDate,
+
               occurrenceDate,
+
               earliestDate:
                 occurrenceDate,
+
               latestDate,
             });
 
@@ -651,17 +956,18 @@ export function buildRollingSchedule({
 }: {
   tasks: SchedulableProjectTask[];
   routines: Routine[];
-  settings: ScheduleSettings;
+  settings: SchedulerSettings;
   today: string;
   currentTime: string;
 }): ScheduleResult {
-  const horizonEnd = addDaysToDateKey(
-    today,
-    Math.max(
-      1,
-      settings.planningHorizonDays
-    ) - 1
-  );
+  const horizonEnd =
+    addDaysToDateKey(
+      today,
+      Math.max(
+        1,
+        settings.planningHorizonDays
+      ) - 1
+    );
 
   const projectCandidates =
     buildProjectCandidates(
@@ -677,163 +983,201 @@ export function buildRollingSchedule({
       horizonEnd
     );
 
+  /**
+   * Candidate order still handles "what deserves space first":
+   * due date first, then explicit priority.
+   *
+   * Energy is intentionally NOT used here.
+   * Energy decides WHEN an item should happen after its hard
+   * scheduling constraints have already been respected.
+   */
   const candidates = [
     ...projectCandidates,
     ...routineCandidates,
-  ].sort((first, second) => {
-    const firstDue =
-      first.dueDate ?? horizonEnd;
+  ].sort(
+    (first, second) => {
+      const firstDue =
+        first.dueDate ??
+        horizonEnd;
 
-    const secondDue =
-      second.dueDate ?? horizonEnd;
+      const secondDue =
+        second.dueDate ??
+        horizonEnd;
 
-    const dueComparison =
-      firstDue.localeCompare(secondDue);
-
-    if (dueComparison !== 0) {
-      return dueComparison;
-    }
-
-    return (
-      getPriorityValue(
-        second.priority
-      ) -
-      getPriorityValue(
-        first.priority
-      )
-    );
-  });
-
-  const blocks: ScheduledBlock[] = [];
-  const unscheduled: UnscheduledItem[] =
-    [];
-
-  for (const candidate of candidates) {
-  let remainingMinutes =
-    candidate.durationMinutes;
-
-  let sessionIndex = 0;
-
-  for (
-    let dateKey =
-      candidate.earliestDate;
-
-    dateKey <= candidate.latestDate &&
-    remainingMinutes > 0;
-
-    dateKey = addDaysToDateKey(
-      dateKey,
-      1
-    )
-  ) {
-    while (remainingMinutes > 0) {
-      const session =
-        findAvailableSession(
-          dateKey,
-          candidate,
-          remainingMinutes,
-          settings,
-          blocks,
-          today,
-          currentTime
+      const dueComparison =
+        firstDue.localeCompare(
+          secondDue
         );
 
-      if (!session) {
-        break;
+      if (
+        dueComparison !== 0
+      ) {
+        return dueComparison;
       }
 
-      sessionIndex += 1;
+      return (
+        getPriorityValue(
+          second.priority
+        ) -
+        getPriorityValue(
+          first.priority
+        )
+      );
+    }
+  );
 
-      const endMinutes =
-        session.startMinutes +
-        session.durationMinutes;
+  const blocks:
+    ScheduledBlock[] = [];
 
-      blocks.push({
-        id: `${candidate.id}-session-${sessionIndex}`,
+  const unscheduled:
+    UnscheduledItem[] = [];
+
+  for (
+    const candidate of candidates
+  ) {
+    let remainingMinutes =
+      candidate.durationMinutes;
+
+    let sessionIndex = 0;
+
+    for (
+      let dateKey =
+        candidate.earliestDate;
+
+      dateKey <=
+        candidate.latestDate &&
+      remainingMinutes > 0;
+
+      dateKey =
+        addDaysToDateKey(
+          dateKey,
+          1
+        )
+    ) {
+      while (
+        remainingMinutes > 0
+      ) {
+        const session =
+          findAvailableSession(
+            dateKey,
+            candidate,
+            remainingMinutes,
+            settings,
+            blocks,
+            today,
+            currentTime
+          );
+
+        if (!session) {
+          break;
+        }
+
+        sessionIndex += 1;
+
+        const endMinutes =
+          session.startMinutes +
+          session.durationMinutes;
+
+        blocks.push({
+          id: `${candidate.id}-session-${sessionIndex}`,
+
+          sourceType:
+            candidate.sourceType,
+
+          sourceId:
+            candidate.sourceId,
+
+          parentId:
+            candidate.parentId,
+
+          parentName:
+            candidate.parentName,
+
+          title:
+            candidate.title,
+
+          date:
+            dateKey,
+
+          startTime:
+            minutesToTime(
+              session.startMinutes
+            ),
+
+          endTime:
+            minutesToTime(
+              endMinutes
+            ),
+
+          timeZone:
+            settings.timeZone,
+
+          durationMinutes:
+            session.durationMinutes,
+
+          usedDefaultDuration:
+            candidate.usedDefaultDuration,
+
+          context:
+            candidate.context,
+
+          dueDate:
+            candidate.dueDate,
+
+          occurrenceDate:
+            candidate.occurrenceDate,
+
+          sessionIndex,
+
+          totalDurationMinutes:
+            candidate.durationMinutes,
+        });
+
+        remainingMinutes -=
+          session.durationMinutes;
+      }
+    }
+
+    if (
+      remainingMinutes > 0
+    ) {
+      const remainingHours =
+        remainingMinutes / 60;
+
+      const remainingLabel =
+        remainingMinutes < 60
+          ? `${remainingMinutes} minutes`
+          : `${Number(
+              remainingHours.toFixed(
+                1
+              )
+            )} hours`;
+
+      unscheduled.push({
+        id: candidate.id,
+
+        title:
+          candidate.title,
 
         sourceType:
           candidate.sourceType,
 
-        sourceId: candidate.sourceId,
+        sourceId:
+          candidate.sourceId,
 
-        parentId: candidate.parentId,
+        parentId:
+          candidate.parentId,
 
-        parentName:
-          candidate.parentName,
-
-        title: candidate.title,
-
-        date: dateKey,
-
-        startTime: minutesToTime(
-          session.startMinutes
-        ),
-
-        endTime: minutesToTime(
-          endMinutes
-        ),
-
-        timeZone:
-          settings.timeZone,
-
-        durationMinutes:
-          session.durationMinutes,
-
-        usedDefaultDuration:
-          candidate.usedDefaultDuration,
-
-        context: candidate.context,
-
-        dueDate: candidate.dueDate,
-
-        occurrenceDate:
-          candidate.occurrenceDate,
-
-        sessionIndex,
-
-        totalDurationMinutes:
-          candidate.durationMinutes,
+        reason:
+          sessionIndex > 0
+            ? `${remainingLabel} still need scheduling.`
+            : candidate.context ===
+                "work"
+              ? "No suitable space in your work hours or time window."
+              : "No suitable space in your available hours or time window.",
       });
-
-      remainingMinutes -=
-        session.durationMinutes;
     }
   }
-
-  if (remainingMinutes > 0) {
-    const remainingHours =
-      remainingMinutes / 60;
-
-    const remainingLabel =
-      remainingMinutes < 60
-        ? `${remainingMinutes} minutes`
-        : `${Number(
-            remainingHours.toFixed(1)
-          )} hours`;
-
-    unscheduled.push({
-      id: candidate.id,
-
-      title: candidate.title,
-
-      sourceType:
-        candidate.sourceType,
-
-      sourceId:
-        candidate.sourceId,
-
-      parentId:
-        candidate.parentId,
-
-      reason:
-        sessionIndex > 0
-          ? `${remainingLabel} still need scheduling.`
-          : candidate.context === "work"
-            ? "No suitable space in your work hours or time window."
-            : "No suitable space in your available hours or time window.",
-    });
-  }
-}
 
   return {
     blocks: blocks.sort(
@@ -842,6 +1186,7 @@ export function buildRollingSchedule({
           `${second.date}-${second.startTime}`
         )
     ),
+
     unscheduled,
   };
 }
