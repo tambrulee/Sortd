@@ -903,6 +903,17 @@ function updateProjectStatus(status: ProjectStatus) {
   });
 }
 
+function updateProjectGoal(
+  goalId?: string
+) {
+  if (!activeList) return;
+
+  updateActiveList({
+    ...activeList,
+    goalId,
+  });
+}
+
 function updateProjectScheduleContext(
   scheduleContext: ScheduleContext
 ) {
@@ -1117,6 +1128,8 @@ function updateProjectPreferredPeriod(
             />
           ) : activeView === "projects" ? (
             <ProjectsView
+              goals={goals}
+              
               projects={
                 lists
               }
@@ -1149,6 +1162,9 @@ function updateProjectPreferredPeriod(
               }
               onReorderProjects={
                 reorderLists
+              }
+              onChangeProjectGoal={
+                updateProjectGoal
               }
               onChangeProjectName={
                 updateListName

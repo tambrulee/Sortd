@@ -224,6 +224,7 @@ export type ShoppingItem = {
   purchased: boolean;
   order: number;
   createdAt: string;
+  intent?: ShoppingIntent;
 };
 
 export type ShoppingList = {
@@ -233,3 +234,7 @@ export type ShoppingList = {
   createdAt: string;
   archived: boolean;
 };
+
+export type ShoppingIntent =
+  | "need"
+  | "want";

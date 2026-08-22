@@ -164,6 +164,12 @@ export default function RoutinesView({
     setEditingRoutineTaskId,
   ] = useState<string | null>(null);
 
+  const [isRenamingRoutine, setIsRenamingRoutine] =
+  useState(false);
+
+  const [routineNameDraft, setRoutineNameDraft] =
+    useState("");
+
   const activeRoutine =
     routines.find(
       (routine) => routine.id === activeRoutineId
@@ -334,8 +340,34 @@ export default function RoutinesView({
     });
   }
 
+  function startRenamingRoutine() {
+  if (!activeRoutine) return;
+
+  setRoutineNameDraft(activeRoutine.name);
+  setIsRenamingRoutine(true);
+}
+
+function saveRoutineName() {
+  if (!activeRoutine) return;
+
+  const name = routineNameDraft.trim();
+
+  if (!name) {
+    setRoutineNameDraft(activeRoutine.name);
+    setIsRenamingRoutine(false);
+    return;
+  }
+
+  updateRoutine({
+    ...activeRoutine,
+    name,
+  });
+
+  setIsRenamingRoutine(false);
+}
+
   return (
-    <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
+    <div className="w-full max-w-5xl rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -352,15 +384,6 @@ export default function RoutinesView({
           </p>
         </div>
 
-        {activeRoutine && (
-          <button
-            type="button"
-            onClick={deleteRoutine}
-            className="rounded-xl px-3 py-2 text-sm text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-          >
-            Delete routine
-          </button>
-        )}
       </div>
 
       <form
@@ -388,33 +411,71 @@ export default function RoutinesView({
       </form>
 
       {routines.length > 0 && (
-        <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
-          {routines.map((routine) => {
-            const isActive =
-              routine.id === activeRoutine?.id;
+        <div className="mt-5 flex flex-wrap items-end gap-3">
+          <div className="min-w-[260px] flex-1">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Routine
+            </label>
 
-            return (
-              <button
-                key={routine.id}
-                type="button"
-                onClick={() =>
-                  setActiveRoutineId(routine.id)
+            {isRenamingRoutine ? (
+              <input
+                value={routineNameDraft}
+                onChange={(event) =>
+                  setRoutineNameDraft(event.target.value)
                 }
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
-                  isActive
-                    ? "bg-[#230028] text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
+                onBlur={saveRoutineName}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    saveRoutineName();
+                  }
+
+                  if (event.key === "Escape") {
+                    setIsRenamingRoutine(false);
+                  }
+                }}
+                autoFocus
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none focus:border-[#cd6ce7]"
+              />
+            ) : (
+              <select
+                value={activeRoutine?.id ?? ""}
+                onChange={(event) =>
+                  setActiveRoutineId(event.target.value)
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-700 outline-none focus:border-[#cd6ce7]"
               >
-                {routine.name}
-                <span className="ml-2 opacity-60">
-                  {routine.tasks.length}
-                </span>
-              </button>
-            );
-          })}
+                {routines.map((routine) => (
+                  <option
+                    key={routine.id}
+                    value={routine.id}
+                  >
+                    {routine.name} · {routine.tasks.length}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={startRenamingRoutine}
+            disabled={!activeRoutine}
+            className="rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-40"
+          >
+            Rename
+          </button>
+
+          <button
+            type="button"
+            onClick={deleteRoutine}
+            disabled={!activeRoutine}
+            className="rounded-xl px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-40"
+          >
+            Delete
+          </button>
         </div>
       )}
+
 
       {!activeRoutine ? (
         <div className="mt-8 rounded-2xl bg-slate-50 px-6 py-12 text-center">
@@ -439,7 +500,7 @@ export default function RoutinesView({
                 event.preventDefault();
                 addRoutineTask();
               }}
-              className="mt-3 grid gap-3 lg:grid-cols-[1fr_90px_130px_160px_auto]"
+              className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_90px_130px_160px_auto]"
             >
               <input
                 value={newTaskTitle}

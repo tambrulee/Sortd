@@ -7,6 +7,7 @@ import ProjectDetails from "@/components/ProjectDetails";
 import TaskList from "@/components/TaskList";
 
 import {
+  Goal,
   ProjectStatus,
   ScheduleContext,
   SchedulePeriod,
@@ -22,6 +23,8 @@ type TaskFilter =
 type ProjectsViewProps = {
   projects: SortdList[];
 
+  goals: Goal[];
+
   activeProject:
     | SortdList
     | undefined;
@@ -33,10 +36,6 @@ type ProjectsViewProps = {
   hideCompleted: boolean;
 
   taskFilter: TaskFilter;
-
-  onChangeProject: (
-    projectId: string
-  ) => void;
 
   onCreateProject: () => void;
 
@@ -69,6 +68,14 @@ type ProjectsViewProps = {
 
   onChangeProjectPreferredPeriod: (
     period: SchedulePeriod
+  ) => void;
+
+  onChangeProjectGoal: (
+    goalId?: string
+  ) => void;
+
+  onChangeProject: (
+    projectId: string
   ) => void;
 
   onAddTask: () => void;
@@ -146,6 +153,7 @@ type ProjectsViewProps = {
 
 export default function ProjectsView({
   projects,
+  goals,
 
   activeProject,
   activeProjectId,
@@ -164,6 +172,7 @@ export default function ProjectsView({
   onChangeProjectName,
   onChangeProjectDescription,
   onChangeProjectStatus,
+  onChangeProjectGoal,
   onChangeProjectScheduleContext,
   onChangeProjectPreferredPeriod,
 
@@ -339,6 +348,37 @@ export default function ProjectsView({
                 onChangeProjectPreferredPeriod
               }
             />
+            <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-slate-600">
+              Supports goal
+
+              <select
+                value={activeProject.goalId ?? ""}
+                onChange={(event) =>
+                  onChangeProjectGoal(
+                    event.target.value || undefined
+                  )
+                }
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#cd6ce7] focus:ring-2 focus:ring-[#cd6ce7]/20"
+              >
+                <option value="">
+                  No linked goal
+                </option>
+
+                {goals
+                  .filter(
+                    (goal) =>
+                      goal.status !== "completed"
+                  )
+                  .map((goal) => (
+                    <option
+                      key={goal.id}
+                      value={goal.id}
+                    >
+                      {goal.title}
+                    </option>
+                  ))}
+              </select>
+            </label>
           </div>
         </details>
 
