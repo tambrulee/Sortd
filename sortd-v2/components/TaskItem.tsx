@@ -76,10 +76,6 @@ type TaskItemProps = {
     context?: ScheduleContext
   ) => void;
 
-  onUpdateTaskPreferredPeriod: (
-    id: string,
-    period?: SchedulePeriod
-  ) => void;
 };
 
 function formatDuration(
@@ -112,7 +108,6 @@ export default function TaskItem({
   onUpdateTaskMaxSession,
 
   onUpdateTaskScheduleContext,
-  onUpdateTaskPreferredPeriod,
 
   onToggleTask,
   onDeleteTask,
@@ -209,15 +204,6 @@ export default function TaskItem({
       onUpdateTaskScheduleContext(
         task.id,
         updates.scheduleContext
-      );
-    }
-
-    if (
-      "preferredPeriod" in updates
-    ) {
-      onUpdateTaskPreferredPeriod(
-        task.id,
-        updates.preferredPeriod
       );
     }
   }

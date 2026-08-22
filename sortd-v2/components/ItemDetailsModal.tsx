@@ -9,7 +9,6 @@ import {
   RecurrenceUnit,
   RoutineTask,
   ScheduleContext,
-  SchedulePeriod,
   Task,
 } from "@/lib/types";
 
@@ -24,7 +23,8 @@ type SharedItemUpdates = Partial<
     | "durationMinutes"
     | "maxSessionMinutes"
     | "scheduleContext"
-    | "preferredPeriod"
+    | "earliestStartTime"
+    | "latestEndTime"
   >
 >;
 
@@ -340,50 +340,39 @@ export default function ItemDetailsModal(
               </select>
             </label>
 
-            <label className={labelClassName}>
-              Preferred time
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className={labelClassName}>
+                Earliest start
 
-              <select
-                value={
-                  item.preferredPeriod ??
-                  (props.kind === "routine"
-                    ? "any"
-                    : "")
-                }
-                onChange={(event) =>
-                  updateSharedItem({
-                    preferredPeriod:
-                      event.target.value
-                        ? (event.target
-                            .value as SchedulePeriod)
-                        : undefined,
-                  })
-                }
-                className={fieldClassName}
-              >
-                {props.kind === "task" && (
-                  <option value="">
-                    Use project default
-                  </option>
-                )}
+                <input
+                  type="time"
+                  value={item.earliestStartTime ?? ""}
+                  onChange={(event) =>
+                    updateSharedItem({
+                      earliestStartTime:
+                        event.target.value || undefined,
+                    })
+                  }
+                  className={fieldClassName}
+                />
+              </label>
 
-                <option value="any">
-                  Any time
-                </option>
+              <label className={labelClassName}>
+                Must finish by
 
-                <option value="morning">
-                  Morning
-                </option>
-
-                <option value="afternoon">
-                  Afternoon
-                </option>
-
-                <option value="evening">
-                  Evening
-                </option>
-              </select>
-            </label>
+                <input
+                  type="time"
+                  value={item.latestEndTime ?? ""}
+                  onChange={(event) =>
+                    updateSharedItem({
+                      latestEndTime:
+                        event.target.value || undefined,
+                    })
+                  }
+                  className={fieldClassName}
+                />
+              </label>
+            </div>
 
             {props.kind === "task" && (
               <label className={labelClassName}>

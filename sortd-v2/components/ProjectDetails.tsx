@@ -3,7 +3,6 @@
 import {
   ProjectStatus,
   ScheduleContext,
-  SchedulePeriod,
 } from "@/lib/types";
 
 type ProjectDetailsProps = {
@@ -11,7 +10,9 @@ type ProjectDetailsProps = {
   status: ProjectStatus;
 
   scheduleContext: ScheduleContext;
-  preferredPeriod: SchedulePeriod;
+
+  earliestStartTime?: string;
+  latestEndTime?: string;
 
   onChangeDescription: (
     description: string
@@ -25,8 +26,12 @@ type ProjectDetailsProps = {
     context: ScheduleContext
   ) => void;
 
-  onChangePreferredPeriod: (
-    period: SchedulePeriod
+  onChangeEarliestStartTime: (
+    time?: string
+  ) => void;
+
+  onChangeLatestEndTime: (
+    time?: string
   ) => void;
 };
 
@@ -34,11 +39,13 @@ export default function ProjectDetails({
   description,
   status,
   scheduleContext,
-  preferredPeriod,
+  earliestStartTime,
+  latestEndTime,
   onChangeDescription,
   onChangeStatus,
   onChangeScheduleContext,
-  onChangePreferredPeriod,
+  onChangeEarliestStartTime,
+  onChangeLatestEndTime,
 }: ProjectDetailsProps) {
   return (
     <div className="mb-6 space-y-3">
@@ -107,36 +114,37 @@ export default function ProjectDetails({
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Preferred time
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-600">
+            Earliest start
 
-          <select
-            value={preferredPeriod}
-            onChange={(event) =>
-              onChangePreferredPeriod(
-                event.target
-                  .value as SchedulePeriod
-              )
-            }
-            className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900"
-          >
-            <option value="any">
-              Any time
-            </option>
+            <input
+              type="time"
+              value={earliestStartTime ?? ""}
+              onChange={(event) =>
+                onChangeEarliestStartTime(
+                  event.target.value || undefined
+                )
+              }
+              className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900"
+            />
+          </label>
 
-            <option value="morning">
-              Morning
-            </option>
+          <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-600">
+            Must finish by
 
-            <option value="afternoon">
-              Afternoon
-            </option>
-
-            <option value="evening">
-              Evening
-            </option>
-          </select>
-        </label>
+            <input
+              type="time"
+              value={latestEndTime ?? ""}
+              onChange={(event) =>
+                onChangeLatestEndTime(
+                  event.target.value || undefined
+                )
+              }
+              className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900"
+            />
+          </label>
+        </div>
       </div>
     </div>
   );

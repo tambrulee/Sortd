@@ -2,7 +2,6 @@ import {
   RecurrenceUnit,
   Routine,
   ScheduleContext,
-  SchedulePeriod,
   ScheduledBlock,
   ScheduleSettings,
   Task,
@@ -13,12 +12,20 @@ export type SchedulableProjectTask =
   Task & {
     projectId: string;
     projectName: string;
+
+    projectScheduleContext?: ScheduleContext;
+    projectEarliestStartTime?: string;
+    projectLatestEndTime?: string;
   };
 
 export type UnscheduledItem = {
   id: string;
   title: string;
   sourceType: "task" | "routine";
+
+  sourceId: string;
+  parentId: string;
+
   reason: string;
 };
 
@@ -38,7 +45,8 @@ type ScheduleCandidate = {
   maxSessionMinutes: number;
   usedDefaultDuration: boolean;
   context: ScheduleContext;
-  preferredPeriod: SchedulePeriod;
+  earliestStartTime?: string;
+  latestEndTime?: string;
   priority?: "low" | "medium" | "high";
   dueDate?: string;
   occurrenceDate?: string;
@@ -53,7 +61,7 @@ type TimeWindow = {
 
 const DEFAULT_TASK_MINUTES = 30;
 const DEFAULT_MAX_SESSION_MINUTES = 120;
-const MINIMUM_SESSION_MINUTES = 15;
+const MINIMUM_SESSION_MINUTES = 30;
 
 const DAY_BY_NUMBER: Record<
   number,
@@ -296,48 +304,38 @@ function getAvailableWindows(
   return personalWindows;
 }
 
-function applyPreferredPeriod(
+function applyTimeWindow(
   windows: TimeWindow[],
-  preferredPeriod: SchedulePeriod
+  earliestStartTime?: string,
+  latestEndTime?: string
 ): TimeWindow[] {
-  if (preferredPeriod === "any") {
-    return windows;
-  }
+  const earliestStart =
+    earliestStartTime
+      ? timeToMinutes(earliestStartTime)
+      : undefined;
 
-  const periodWindows: Record<
-    Exclude<SchedulePeriod, "any">,
-    TimeWindow
-  > = {
-    morning: {
-      start: 5 * 60,
-      end: 12 * 60,
-    },
-
-    afternoon: {
-      start: 12 * 60,
-      end: 17 * 60,
-    },
-
-    evening: {
-      start: 17 * 60,
-      end: 24 * 60,
-    },
-  };
-
-  const preferredWindow =
-    periodWindows[preferredPeriod];
+  const latestEnd =
+    latestEndTime
+      ? timeToMinutes(latestEndTime)
+      : undefined;
 
   return windows
     .map((window) => ({
-      start: Math.max(
-        window.start,
-        preferredWindow.start
-      ),
+      start:
+        earliestStart !== undefined
+          ? Math.max(
+              window.start,
+              earliestStart
+            )
+          : window.start,
 
-      end: Math.min(
-        window.end,
-        preferredWindow.end
-      ),
+      end:
+        latestEnd !== undefined
+          ? Math.min(
+              window.end,
+              latestEnd
+            )
+          : window.end,
     }))
     .filter(
       (window) =>
@@ -371,9 +369,10 @@ function findAvailableSession(
       settings
     );
 
-  const windows = applyPreferredPeriod(
+  const windows = applyTimeWindow(
     availableWindows,
-    candidate.preferredPeriod
+    candidate.earliestStartTime,
+    candidate.latestEndTime
   );
 
   const blocksForDay = scheduledBlocks
@@ -392,15 +391,25 @@ function findAvailableSession(
       timeToMinutes(currentTime) / 5
     ) * 5;
 
-  const maximumSessionMinutes = Math.min(
-    remainingMinutes,
-    candidate.maxSessionMinutes
-  );
+  const taskIsSplittable =
+  candidate.durationMinutes >
+  candidate.maxSessionMinutes;
 
-  const minimumSessionMinutes = Math.min(
-    MINIMUM_SESSION_MINUTES,
-    maximumSessionMinutes
-  );
+const targetSessionMinutes =
+  taskIsSplittable
+    ? Math.min(
+        remainingMinutes,
+        candidate.maxSessionMinutes
+      )
+    : remainingMinutes;
+
+const minimumSessionMinutes =
+  taskIsSplittable
+    ? Math.min(
+        MINIMUM_SESSION_MINUTES,
+        targetSessionMinutes
+      )
+    : targetSessionMinutes;
 
   for (const window of windows) {
     let cursor =
@@ -450,10 +459,13 @@ function findAvailableSession(
       ) {
         return {
           startMinutes: cursor,
-          durationMinutes: Math.min(
-            maximumSessionMinutes,
-            availableGapMinutes
-          ),
+          durationMinutes:
+            taskIsSplittable
+              ? Math.min(
+                  targetSessionMinutes,
+                  availableGapMinutes
+                )
+              : targetSessionMinutes,
         };
       }
 
@@ -477,10 +489,13 @@ function findAvailableSession(
     ) {
       return {
         startMinutes: cursor,
-        durationMinutes: Math.min(
-          maximumSessionMinutes,
-          remainingWindowMinutes
-        ),
+        durationMinutes:
+          taskIsSplittable
+            ? Math.min(
+                targetSessionMinutes,
+                remainingWindowMinutes
+              )
+            : targetSessionMinutes,
       };
     }
   }
@@ -516,12 +531,20 @@ function buildProjectCandidates(
             DEFAULT_MAX_SESSION_MINUTES
         ),
         usedDefaultDuration,
+
         context:
           task.scheduleContext ??
+          task.projectScheduleContext ??
           "personal",
-        preferredPeriod:
-          task.preferredPeriod ??
-          "any",
+
+        earliestStartTime:
+          task.earliestStartTime ??
+          task.projectEarliestStartTime,
+
+        latestEndTime:
+          task.latestEndTime ??
+          task.projectLatestEndTime,
+
         priority: task.priority,
         dueDate: task.dueDate,
         earliestDate: today,
@@ -597,9 +620,11 @@ function buildRoutineCandidates(
               context:
                 task.scheduleContext ??
                 "personal",
-              preferredPeriod:
-                task.preferredPeriod ??
-                "any",
+              earliestStartTime:
+                task.earliestStartTime,
+
+              latestEndTime:
+                task.latestEndTime,
               priority: task.priority,
               dueDate: occurrenceDate,
               occurrenceDate,
@@ -794,12 +819,18 @@ export function buildRollingSchedule({
       sourceType:
         candidate.sourceType,
 
+      sourceId:
+        candidate.sourceId,
+
+      parentId:
+        candidate.parentId,
+
       reason:
         sessionIndex > 0
           ? `${remainingLabel} still need scheduling.`
           : candidate.context === "work"
-            ? "No suitable space in your work hours."
-            : "No suitable space in your available hours.",
+            ? "No suitable space in your work hours or time window."
+            : "No suitable space in your available hours or time window.",
     });
   }
 }

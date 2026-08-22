@@ -181,11 +181,13 @@ export default function PlannerView({
   );
 
   const [
-    selectedBlock,
-    setSelectedBlock,
-  ] = useState<ScheduledBlock | null>(
-    null
-  );
+    selectedItem,
+    setSelectedItem,
+  ] = useState<{
+    sourceType: "task" | "routine";
+    sourceId: string;
+    parentId: string;
+  } | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(
@@ -248,31 +250,26 @@ export default function PlannerView({
     );
 
     const selectedProjectTask =
-  selectedBlock?.sourceType === "task"
-    ? tasks.find(
-        (task) =>
-          task.id ===
-            selectedBlock.sourceId &&
-          task.projectId ===
-            selectedBlock.parentId
-      )
-    : undefined;
+      selectedItem?.sourceType === "task"
+        ? tasks.find(
+            (task) =>
+              task.id === selectedItem.sourceId &&
+              task.projectId === selectedItem.parentId
+          )
+        : undefined;
 
-const selectedRoutineTask =
-  selectedBlock?.sourceType ===
-  "routine"
-    ? routines
-        .find(
-          (routine) =>
-            routine.id ===
-            selectedBlock.parentId
-        )
-        ?.tasks.find(
-          (task) =>
-            task.id ===
-            selectedBlock.sourceId
-        )
-    : undefined;
+    const selectedRoutineTask =
+      selectedItem?.sourceType === "routine"
+        ? routines
+            .find(
+              (routine) =>
+                routine.id === selectedItem.parentId
+            )
+            ?.tasks.find(
+              (task) =>
+                task.id === selectedItem.sourceId
+            )
+        : undefined;
 
   return (
     <div className="space-y-5">
@@ -461,7 +458,11 @@ const selectedRoutineTask =
                       <button
                         type="button"
                         onClick={() =>
-                          setSelectedBlock(block)
+                          setSelectedItem({
+                            sourceType: block.sourceType,
+                            sourceId: block.sourceId,
+                            parentId: block.parentId,
+                          })
                         }
                         aria-label={`Edit ${block.title}`}
                         title="Edit task details"
@@ -500,15 +501,31 @@ const selectedRoutineTask =
               (item) => (
                 <div
                   key={item.id}
-                  className="rounded-xl bg-white/70 px-4 py-3"
+                  className="flex items-center justify-between gap-4 rounded-xl bg-white/70 px-4 py-3"
                 >
-                  <p className="font-medium text-slate-900">
-                    {item.title}
-                  </p>
+                  <div>
+                    <p className="font-medium text-slate-900">
+                      {item.title}
+                    </p>
 
-                  <p className="mt-1 text-xs text-slate-500">
-                    {item.reason}
-                  </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {item.reason}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedItem({
+                        sourceType: item.sourceType,
+                        sourceId: item.sourceId,
+                        parentId: item.parentId,
+                      })
+                    }
+                    className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-100"
+                  >
+                    Edit
+                  </button>
                 </div>
               )
             )}
@@ -516,54 +533,50 @@ const selectedRoutineTask =
         </section>
       )}
 
-      {selectedBlock &&
-  selectedProjectTask && (
-    <ItemDetailsModal
-      kind="task"
-      item={
-        selectedProjectTask
-      }
-      onChange={(updates) =>
-        onUpdateProjectTask(
-          selectedBlock.parentId,
-          selectedProjectTask.id,
-          updates
-        )
-      }
-      onDelete={() =>
-        onDeleteProjectTask(
-          selectedBlock.parentId,
-          selectedProjectTask.id
-        )
-      }
-      onClose={() =>
-        setSelectedBlock(null)
-      }
-    />
-  )}
-
-{selectedBlock &&
+      {selectedItem &&
   selectedRoutineTask && (
     <ItemDetailsModal
       kind="routine"
-      item={
-        selectedRoutineTask
-      }
+      item={selectedRoutineTask}
       onChange={(updates) =>
         onUpdateRoutineTask(
-          selectedBlock.parentId,
+          selectedItem.parentId,
           selectedRoutineTask.id,
           updates
         )
       }
       onDelete={() =>
         onDeleteRoutineTask(
-          selectedBlock.parentId,
+          selectedItem.parentId,
           selectedRoutineTask.id
         )
       }
       onClose={() =>
-        setSelectedBlock(null)
+        setSelectedItem(null)
+      }
+    />
+  )}
+
+{selectedItem &&
+  selectedProjectTask && (
+    <ItemDetailsModal
+      kind="task"
+      item={selectedProjectTask}
+      onChange={(updates) =>
+        onUpdateProjectTask(
+          selectedItem.parentId,
+          selectedProjectTask.id,
+          updates
+        )
+      }
+      onDelete={() =>
+        onDeleteProjectTask(
+          selectedItem.parentId,
+          selectedProjectTask.id
+        )
+      }
+      onClose={() =>
+        setSelectedItem(null)
       }
     />
   )}

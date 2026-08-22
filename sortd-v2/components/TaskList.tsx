@@ -47,11 +47,6 @@ type TaskListProps = {
     id: string,
     context?: ScheduleContext
   ) => void;
-
-  onUpdateTaskPreferredPeriod: (
-    id: string,
-    period?: SchedulePeriod
-  ) => void;
 };
 
 export default function TaskList({
@@ -63,7 +58,6 @@ export default function TaskList({
   onUpdateTaskDueDate,
   onUpdateTaskDuration,
   onUpdateTaskScheduleContext,
-  onUpdateTaskPreferredPeriod,
   onUpdateTaskMaxSession,
   onToggleTask,
   onDeleteTask,
@@ -114,7 +108,6 @@ export default function TaskList({
             onUpdateTaskDuration={onUpdateTaskDuration}
             onUpdateTaskMaxSession={onUpdateTaskMaxSession}
             onUpdateTaskScheduleContext={onUpdateTaskScheduleContext}
-            onUpdateTaskPreferredPeriod={onUpdateTaskPreferredPeriod}
             onToggleTask={onToggleTask}
             onDeleteTask={onDeleteTask}
           />

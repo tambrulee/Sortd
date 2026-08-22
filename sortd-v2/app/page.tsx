@@ -140,6 +140,10 @@ function createDefaultList(): SortdList {
 type TaskWithProject = Task & {
   projectId: string;
   projectName: string;
+
+  projectScheduleContext?: ScheduleContext;
+  projectEarliestStartTime?: string;
+  projectLatestEndTime?: string;
 };
 
 type CloudWorkspaceData = {
@@ -225,15 +229,14 @@ export default function Home() {
           projectId: project.id,
           projectName: project.name,
 
-          scheduleContext:
-            task.scheduleContext ??
-            project.scheduleContext ??
-            "personal",
+          projectScheduleContext:
+            project.scheduleContext,
 
-          preferredPeriod:
-            task.preferredPeriod ??
-            project.preferredPeriod ??
-            "any",
+          projectEarliestStartTime:
+            project.earliestStartTime,
+
+          projectLatestEndTime:
+            project.latestEndTime,
         }))
       );
     }, [lists]);
@@ -925,14 +928,25 @@ function updateProjectScheduleContext(
   });
 }
 
-function updateProjectPreferredPeriod(
-  preferredPeriod: SchedulePeriod
+function updateProjectEarliestStartTime(
+  earliestStartTime?: string
 ) {
   if (!activeList) return;
 
   updateActiveList({
     ...activeList,
-    preferredPeriod,
+    earliestStartTime,
+  });
+}
+
+function updateProjectLatestEndTime(
+  latestEndTime?: string
+) {
+  if (!activeList) return;
+
+  updateActiveList({
+    ...activeList,
+    latestEndTime,
   });
 }
 
@@ -1178,8 +1192,11 @@ function updateProjectPreferredPeriod(
               onChangeProjectScheduleContext={
                 updateProjectScheduleContext
               }
-              onChangeProjectPreferredPeriod={
-                updateProjectPreferredPeriod
+              onChangeProjectEarliestStartTime={
+                updateProjectEarliestStartTime
+              }
+              onChangeProjectLatestEndTime={
+                updateProjectLatestEndTime
               }
               onAddTask={
                 addTask
@@ -1216,9 +1233,6 @@ function updateProjectPreferredPeriod(
               }
               onUpdateTaskScheduleContext={
                 updateTaskScheduleContext
-              }
-              onUpdateTaskPreferredPeriod={
-                updateTaskPreferredPeriod
               }
               onToggleTask={
                 toggleTask

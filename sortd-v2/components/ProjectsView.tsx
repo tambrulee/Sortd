@@ -10,7 +10,6 @@ import {
   Goal,
   ProjectStatus,
   ScheduleContext,
-  SchedulePeriod,
   SortdList,
   Task,
 } from "@/lib/types";
@@ -66,8 +65,12 @@ type ProjectsViewProps = {
     context: ScheduleContext
   ) => void;
 
-  onChangeProjectPreferredPeriod: (
-    period: SchedulePeriod
+  onChangeProjectEarliestStartTime: (
+    earliestStartTime?: string
+  ) => void;
+
+  onChangeProjectLatestEndTime: (
+    latestEndTime?: string
   ) => void;
 
   onChangeProjectGoal: (
@@ -129,11 +132,6 @@ type ProjectsViewProps = {
     context?: ScheduleContext
   ) => void;
 
-  onUpdateTaskPreferredPeriod: (
-    id: string,
-    period?: SchedulePeriod
-  ) => void;
-
   onToggleTask: (
     id: string
   ) => void;
@@ -174,7 +172,8 @@ export default function ProjectsView({
   onChangeProjectStatus,
   onChangeProjectGoal,
   onChangeProjectScheduleContext,
-  onChangeProjectPreferredPeriod,
+  onChangeProjectEarliestStartTime,
+  onChangeProjectLatestEndTime,
 
   onAddTask,
   onToggleHideCompleted,
@@ -188,7 +187,6 @@ export default function ProjectsView({
   onUpdateTaskDuration,
   onUpdateTaskMaxSession,
   onUpdateTaskScheduleContext,
-  onUpdateTaskPreferredPeriod,
 
   onToggleTask,
   onDeleteTask,
@@ -305,9 +303,7 @@ export default function ProjectsView({
               Project name
 
               <input
-                value={
-                  activeProject.name
-                }
+                value={activeProject.name}
                 onChange={(event) =>
                   onChangeProjectName(
                     event.target.value
@@ -318,36 +314,6 @@ export default function ProjectsView({
               />
             </label>
 
-            <ProjectDetails
-              description={
-                activeProject.description ??
-                ""
-              }
-              status={
-                activeProject.status ??
-                "active"
-              }
-              scheduleContext={
-                activeProject.scheduleContext ??
-                "personal"
-              }
-              preferredPeriod={
-                activeProject.preferredPeriod ??
-                "any"
-              }
-              onChangeDescription={
-                onChangeProjectDescription
-              }
-              onChangeStatus={
-                onChangeProjectStatus
-              }
-              onChangeScheduleContext={
-                onChangeProjectScheduleContext
-              }
-              onChangePreferredPeriod={
-                onChangeProjectPreferredPeriod
-              }
-            />
             <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-slate-600">
               Supports goal
 
@@ -379,10 +345,44 @@ export default function ProjectsView({
                   ))}
               </select>
             </label>
-          </div>
-        </details>
 
-        <section className="mt-5">
+            <ProjectDetails
+              description={
+                activeProject.description ?? ""
+              }
+              status={
+                activeProject.status ?? "active"
+              }
+              scheduleContext={
+                activeProject.scheduleContext ??
+                "personal"
+              }
+              earliestStartTime={
+                activeProject.earliestStartTime
+              }
+              latestEndTime={
+                activeProject.latestEndTime
+              }
+              onChangeDescription={
+                onChangeProjectDescription
+              }
+              onChangeStatus={
+                onChangeProjectStatus
+              }
+              onChangeScheduleContext={
+                onChangeProjectScheduleContext
+              }
+              onChangeEarliestStartTime={
+                onChangeProjectEarliestStartTime
+              }
+              onChangeLatestEndTime={
+                onChangeProjectLatestEndTime
+              }
+            />
+            </div>
+            </details>
+
+            <section className="mt-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-slate-900">
               Tasks
@@ -427,15 +427,9 @@ export default function ProjectsView({
 
           <div className="max-h-[52vh] overflow-y-auto overscroll-contain pr-1">
             <TaskList
-              tasks={
-                visibleTasks
-              }
-              onAddTask={
-                onAddTask
-              }
-              onUpdateTask={
-                onUpdateTask
-              }
+              tasks={visibleTasks}
+              onAddTask={onAddTask}
+              onUpdateTask={onUpdateTask}
               onUpdateTaskPriority={
                 onUpdateTaskPriority
               }
@@ -453,9 +447,6 @@ export default function ProjectsView({
               }
               onUpdateTaskScheduleContext={
                 onUpdateTaskScheduleContext
-              }
-              onUpdateTaskPreferredPeriod={
-                onUpdateTaskPreferredPeriod
               }
               onToggleTask={
                 onToggleTask

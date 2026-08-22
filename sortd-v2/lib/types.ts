@@ -27,10 +27,12 @@ export type Task = {
   durationMinutes?: number;
   maxSessionMinutes?: number;
 
+  earliestStartTime?: string;
+  latestEndTime?: string;
+
   archivedAt?: string;
 
   scheduleContext?: ScheduleContext;
-  preferredPeriod?: SchedulePeriod;
 };
 
 export type ProjectStatus = "active" | "paused" | "completed";
@@ -47,7 +49,8 @@ export type SortdList = {
   createdAt: string;
 
   scheduleContext?: ScheduleContext;
-  preferredPeriod?: SchedulePeriod;
+  earliestStartTime?: string;
+  latestEndTime?: string;
 };
 
 export interface Project {
@@ -93,7 +96,7 @@ export type AppView =
   | "dreams";
 
   // Routine and RoutineTask types for recurring tasks
-  export type RecurrenceUnit =
+export type RecurrenceUnit =
   | "day"
   | "week"
   | "month";
@@ -113,6 +116,9 @@ export type RoutineTask = {
   durationMinutes?: number;
   maxSessionMinutes?: number;
 
+  earliestStartTime?: string;
+  latestEndTime?: string;
+
   lastCompletedAt?: string;
   completionHistory: string[];
 
@@ -120,7 +126,6 @@ export type RoutineTask = {
   createdAt: string;
 
   scheduleContext?: ScheduleContext;
-  preferredPeriod?: SchedulePeriod;
 };
 
 export type Routine = {
