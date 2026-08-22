@@ -59,6 +59,8 @@ const subscribe = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
+
+
 function getLocalDateKey() {
   const date = new Date();
 
@@ -204,6 +206,16 @@ export default function Home() {
 
   const [hideCompleted, setHideCompleted] =
     useState(() => getStoredHideCompleted());
+
+  const [
+    ,
+    setActiveGoalId,
+  ] = useState<string | null>(null);
+
+  const [
+    ,
+    setActiveDreamId,
+  ] = useState<string | null>(null);
 
   const activeList = useMemo(() => {
     const foundList = lists.find((list) => list.id === activeListId) || lists[0];
@@ -1159,106 +1171,134 @@ function updateProjectLatestEndTime(
           ) : activeView === "projects" ? (
             <ProjectsView
               goals={goals}
-              
-              projects={
-                lists
-              }
-              activeProject={
-                activeList
-              }
+              dreams={dreams}
+
+              projects={lists}
+
+              onOpenGoal={(goalId) => {
+                setActiveGoalId(goalId);
+                setActiveView("goals");
+              }}
+
+              onOpenDream={(dreamId) => {
+                setActiveDreamId(dreamId);
+                setActiveView("dreams");
+              }}
+
+              activeProject={activeList}
+
               activeProjectId={
                 activeList?.id ?? ""
               }
-              visibleTasks={
-                visibleTasks
-              }
-              hideCompleted={
-                hideCompleted
-              }
-              taskFilter={
-                taskFilter
-              }
+
+              visibleTasks={visibleTasks}
+              hideCompleted={hideCompleted}
+              taskFilter={taskFilter}
+
               onChangeProject={
                 setActiveListId
               }
+
               onCreateProject={
                 createList
               }
+
               onDeleteProject={
                 deleteActiveList
               }
+
               onRenameProject={
                 renameList
               }
+
               onReorderProjects={
                 reorderLists
               }
+
               onChangeProjectGoal={
                 updateProjectGoal
               }
+
               onChangeProjectName={
                 updateListName
               }
+
               onChangeProjectDescription={
                 updateProjectDescription
               }
+
               onChangeProjectStatus={
                 updateProjectStatus
               }
+
               onChangeProjectScheduleContext={
                 updateProjectScheduleContext
               }
+
               onChangeProjectEarliestStartTime={
                 updateProjectEarliestStartTime
               }
+
               onChangeProjectLatestEndTime={
                 updateProjectLatestEndTime
               }
-              onAddTask={
-                addTask
-              }
+
+              onAddTask={addTask}
+
               onToggleHideCompleted={() =>
                 setHideCompleted(
-                  (current) =>
-                    !current
+                  (current) => !current
                 )
               }
+
               onArchiveCompleted={
                 archiveCompletedTasks
               }
+
               onChangeTaskFilter={
                 setTaskFilter
               }
+
               onUpdateTask={
                 updateTask
               }
+
               onUpdateTaskPriority={
                 updateTaskPriority
               }
+
               onUpdateTaskEnergy={
                 updateTaskEnergy
               }
+
               onUpdateTaskDueDate={
                 updateTaskDueDate
               }
+
               onUpdateTaskDuration={
                 updateTaskDuration
               }
+
               onUpdateTaskMaxSession={
                 updateTaskMaxSession
               }
+
               onUpdateTaskScheduleContext={
                 updateTaskScheduleContext
               }
+
               onToggleTask={
                 toggleTask
               }
+
               onDeleteTask={
                 deleteTask
               }
+
               onReorderTasks={
                 reorderTasks
               }
+
               onRestoreTask={
                 restoreArchivedTask
               }
@@ -1270,6 +1310,43 @@ function updateProjectLatestEndTime(
             dreams={dreams}
             projects={lists}
             onChangeGoals={setGoals}
+
+            onOpenDream={(dreamId) => {
+              setActiveDreamId(dreamId);
+              setActiveView("dreams");
+            }}
+
+            onOpenProject={(projectId) => {
+              setActiveListId(projectId);
+              setActiveView("projects");
+            }}
+
+            onCreateProjectForGoal={(goalId) => {
+              const newProject = {
+                id: crypto.randomUUID(),
+                name: "New project",
+                description: "",
+                tasks: [],
+                archivedTasks: [],
+                status: "active" as const,
+                goalId,
+                scheduleContext: "personal" as const,
+                createdAt: new Date().toISOString(),
+              };
+
+              reorderLists([
+                ...lists,
+                newProject,
+              ]);
+
+              setActiveListId(
+                newProject.id
+              );
+
+              setActiveView(
+                "projects"
+              );
+            }}
           />
 
           ) : activeView === "shopping" ? (
@@ -1283,7 +1360,13 @@ function updateProjectLatestEndTime(
           <DreamsView
             dreams={dreams}
             goals={goals}
+            projects={lists}
             onChangeDreams={setDreams}
+            onChangeGoals={setGoals}
+            onOpenGoal={(goalId) => {
+              setActiveGoalId(goalId);
+              setActiveView("goals");
+            }}
           />
 
           ) : activeView === "settings" ? (

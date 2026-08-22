@@ -1,6 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
+
 import {
   Dream,
   Goal,
@@ -11,40 +15,127 @@ type GoalsViewProps = {
   goals: Goal[];
   dreams: Dream[];
   projects: SortdList[];
-  onChangeGoals: (goals: Goal[]) => void;
+
+  onChangeGoals: (
+    goals: Goal[]
+  ) => void;
+
+  onCreateProjectForGoal?: (
+    goalId: string
+  ) => void;
+
+  onOpenDream?: (
+    dreamId: string
+  ) => void;
+
+  onOpenProject?: (
+    projectId: string
+  ) => void;
 };
+
+function getGoalProgress(
+  goalId: string,
+  projects: SortdList[]
+) {
+  const linkedProjects =
+    projects.filter(
+      (project) =>
+        project.goalId ===
+        goalId
+    );
+
+  const totalTasks =
+    linkedProjects.reduce(
+      (total, project) =>
+        total +
+        project.tasks.length,
+      0
+    );
+
+  const completedTasks =
+    linkedProjects.reduce(
+      (total, project) =>
+        total +
+        project.tasks.filter(
+          (task) =>
+            task.completed
+        ).length,
+      0
+    );
+
+  return {
+    linkedProjects,
+    totalTasks,
+    completedTasks,
+    progress:
+      totalTasks > 0
+        ? Math.round(
+            (completedTasks /
+              totalTasks) *
+              100
+          )
+        : 0,
+  };
+}
 
 export default function GoalsView({
   goals,
   dreams,
   projects,
   onChangeGoals,
+  onCreateProjectForGoal,
+  onOpenDream,
+  onOpenProject,
 }: GoalsViewProps) {
-  const [newGoalTitle, setNewGoalTitle] =
-    useState("");
+  const [
+    newGoalTitle,
+    setNewGoalTitle,
+  ] = useState("");
 
-  const activeGoals = useMemo(
-    () =>
-      goals.filter(
-        (goal) => goal.status !== "completed"
-      ),
-    [goals]
-  );
+  const [
+    filter,
+    setFilter,
+  ] = useState<
+    "active" | "paused" | "completed" | "all"
+  >("active");
+
+  const visibleGoals =
+    useMemo(
+      () =>
+        goals.filter(
+          (goal) =>
+            filter === "all" ||
+            goal.status ===
+              filter
+        ),
+      [
+        goals,
+        filter,
+      ]
+    );
 
   function addGoal() {
-    const title = newGoalTitle.trim();
+    const title =
+      newGoalTitle.trim();
 
-    if (!title) return;
+    if (!title) {
+      return;
+    }
 
     const newGoal: Goal = {
       id: crypto.randomUUID(),
       title,
       description: "",
       status: "active",
-      createdAt: new Date().toISOString(),
+      createdAt:
+        new Date().toISOString(),
     };
 
-    onChangeGoals([...goals, newGoal]);
+    onChangeGoals([
+      ...goals,
+      newGoal,
+    ]);
+
     setNewGoalTitle("");
   }
 
@@ -53,254 +144,454 @@ export default function GoalsView({
     updates: Partial<Goal>
   ) {
     onChangeGoals(
-      goals.map((goal) =>
-        goal.id === id
-          ? {
-              ...goal,
-              ...updates,
-            }
-          : goal
+      goals.map(
+        (goal) =>
+          goal.id === id
+            ? {
+                ...goal,
+                ...updates,
+              }
+            : goal
       )
     );
   }
 
-  function deleteGoal(id: string) {
-    const goal = goals.find(
-      (item) => item.id === id
-    );
+  function deleteGoal(
+    id: string
+  ) {
+    const goal =
+      goals.find(
+        (item) =>
+          item.id === id
+      );
 
-    if (!goal) return;
+    if (!goal) {
+      return;
+    }
 
-    const confirmed = window.confirm(
-      `Delete "${goal.title}"?`
-    );
-
-    if (!confirmed) return;
+    if (
+      !window.confirm(
+        `Delete "${goal.title}"?`
+      )
+    ) {
+      return;
+    }
 
     onChangeGoals(
-      goals.filter((goal) => goal.id !== id)
+      goals.filter(
+        (goal) =>
+          goal.id !== id
+      )
     );
   }
 
   return (
-    <section className="rounded-3xl bg-white/85 p-8 shadow-xl backdrop-blur-md">
+    <section className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
       <div className="flex flex-col gap-6">
-        <div>
-          <p className="text-sm font-medium text-fuchsia-700">
-            Direction
-          </p>
+        <header className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-fuchsia-700">
+              Direction
+            </p>
 
-          <h1 className="mt-1 text-3xl font-bold">
-            Goals
-          </h1>
+            <h1 className="mt-1 text-3xl font-bold text-slate-950">
+              Goals
+            </h1>
 
-          <p className="mt-2 text-slate-500">
-            Turn the things you want into things
-            you can actively work towards.
-          </p>
-        </div>
+            <p className="mt-2 max-w-2xl text-sm text-slate-500">
+              Turn the things you want into outcomes you can actively work towards.
+            </p>
+          </div>
 
-        <div className="flex gap-3">
+          <div className="text-sm text-slate-500">
+            <span className="font-semibold text-slate-900">
+              {
+                goals.filter(
+                  (goal) =>
+                    goal.status ===
+                    "active"
+                ).length
+              }
+            </span>{" "}
+            active
+          </div>
+        </header>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
           <input
-            value={newGoalTitle}
+            value={
+              newGoalTitle
+            }
             onChange={(event) =>
               setNewGoalTitle(
                 event.target.value
               )
             }
             onKeyDown={(event) => {
-              if (event.key === "Enter") {
+              if (
+                event.key ===
+                "Enter"
+              ) {
                 addGoal();
               }
             }}
             placeholder="Add a goal..."
-            className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-fuchsia-400"
+            className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
           />
 
           <button
             type="button"
             onClick={addGoal}
-            className="rounded-2xl bg-[#1f0825] px-5 py-3 font-medium text-white"
+            className="rounded-2xl bg-[#1f0825] px-5 py-3 font-medium text-white transition hover:bg-[#3b0842]"
           >
             Add goal
           </button>
         </div>
 
-        {activeGoals.length === 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              [
+                "active",
+                "Active",
+              ],
+              [
+                "paused",
+                "Paused",
+              ],
+              [
+                "completed",
+                "Completed",
+              ],
+              [
+                "all",
+                "All",
+              ],
+            ] as const
+          ).map(
+            ([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() =>
+                  setFilter(value)
+                }
+                className={`rounded-xl px-3 py-2 text-sm transition ${
+                  filter === value
+                    ? "bg-[#f3e8f5] font-medium text-[#7c2d92]"
+                    : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {label}
+              </button>
+            )
+          )}
+        </div>
+
+        {visibleGoals.length ===
+        0 ? (
           <div className="rounded-2xl bg-[#f3eeee] px-6 py-12 text-center">
             <p className="font-medium text-slate-700">
-              No goals yet.
+              Nothing here yet.
             </p>
 
             <p className="mt-1 text-sm text-slate-500">
-              Add something you want to make
-              meaningful progress towards.
+              Add something you want to make meaningful progress towards.
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {activeGoals.map((goal) => {
-              const linkedDream =
-                dreams.find(
-                  (dream) =>
-                    dream.id === goal.dreamId
+          <div className="space-y-4">
+            {visibleGoals.map(
+              (goal) => {
+                const linkedDream =
+                  dreams.find(
+                    (dream) =>
+                      dream.id ===
+                      goal.dreamId
+                  );
+
+                const {
+                  linkedProjects,
+                  totalTasks,
+                  completedTasks,
+                  progress,
+                } = getGoalProgress(
+                  goal.id,
+                  projects
                 );
 
-              const linkedProjects =
-                projects.filter(
-                  (project) =>
-                    project.goalId === goal.id
-                );
+                return (
+                  <article
+                    key={goal.id}
+                    className="rounded-2xl border border-slate-200 bg-white p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <input
+                          value={
+                            goal.title
+                          }
+                          onChange={(event) =>
+                            updateGoal(
+                              goal.id,
+                              {
+                                title:
+                                  event
+                                    .target
+                                    .value,
+                              }
+                            )
+                          }
+                          className="w-full bg-transparent text-lg font-semibold text-slate-950 outline-none"
+                        />
 
-              const completedProjects =
-                linkedProjects.filter(
-                  (project) =>
-                    project.status ===
-                    "completed"
-                );
+                        <textarea
+                          value={
+                            goal.description ??
+                            ""
+                          }
+                          onChange={(event) =>
+                            updateGoal(
+                              goal.id,
+                              {
+                                description:
+                                  event
+                                    .target
+                                    .value,
+                              }
+                            )
+                          }
+                          placeholder="What would achieving this change?"
+                          rows={2}
+                          className="mt-2 w-full resize-none bg-transparent text-sm text-slate-500 outline-none"
+                        />
+                      </div>
 
-              const progress =
-                linkedProjects.length > 0
-                  ? Math.round(
-                      (completedProjects.length /
-                        linkedProjects.length) *
-                        100
-                    )
-                  : 0;
-
-              return (
-                <article
-                  key={goal.id}
-                  className="rounded-2xl border border-slate-200 p-5"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <input
-                        value={goal.title}
-                        onChange={(event) =>
-                          updateGoal(goal.id, {
-                            title:
-                              event.target.value,
-                          })
+                      <button
+                        type="button"
+                        onClick={() =>
+                          deleteGoal(
+                            goal.id
+                          )
                         }
-                        className="w-full bg-transparent text-lg font-semibold outline-none"
-                      />
+                        className="text-sm text-slate-400 transition hover:text-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
 
-                      <textarea
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <select
                         value={
-                          goal.description ?? ""
+                          goal.dreamId ??
+                          ""
                         }
                         onChange={(event) =>
-                          updateGoal(goal.id, {
-                            description:
-                              event.target.value,
-                          })
+                          updateGoal(
+                            goal.id,
+                            {
+                              dreamId:
+                                event
+                                  .target
+                                  .value ||
+                                undefined,
+                            }
+                          )
                         }
-                        placeholder="What would achieving this change?"
-                        rows={2}
-                        className="mt-2 w-full resize-none bg-transparent text-sm text-slate-500 outline-none"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        deleteGoal(goal.id)
-                      }
-                      className="text-sm text-slate-400 hover:text-red-600"
-                    >
-                      Delete
-                    </button>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <select
-                      value={
-                        goal.dreamId ?? ""
-                      }
-                      onChange={(event) =>
-                        updateGoal(goal.id, {
-                          dreamId:
-                            event.target
-                              .value ||
-                            undefined,
-                        })
-                      }
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                    >
-                      <option value="">
-                        No linked dream
-                      </option>
-
-                      {dreams.map((dream) => (
-                        <option
-                          key={dream.id}
-                          value={dream.id}
-                        >
-                          {dream.title}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="">
+                          No linked dream
                         </option>
-                      ))}
-                    </select>
 
-                    <select
-                      value={goal.status}
-                      onChange={(event) =>
-                        updateGoal(goal.id, {
-                          status:
-                            event.target
-                              .value as Goal["status"],
-                        })
-                      }
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                    >
-                      <option value="active">
-                        Active
-                      </option>
-                      <option value="paused">
-                        Paused
-                      </option>
-                      <option value="completed">
-                        Completed
-                      </option>
-                    </select>
-                  </div>
+                        {dreams.map(
+                          (dream) => (
+                            <option
+                              key={
+                                dream.id
+                              }
+                              value={
+                                dream.id
+                              }
+                            >
+                              {
+                                dream.title
+                              }
+                            </option>
+                          )
+                        )}
+                      </select>
 
-                  {linkedDream && (
-                    <p className="mt-4 text-sm text-fuchsia-700">
-                      ✦ {linkedDream.title}
-                    </p>
-                  )}
+                      <select
+                        value={
+                          goal.status
+                        }
+                        onChange={(event) =>
+                          updateGoal(
+                            goal.id,
+                            {
+                              status:
+                                event
+                                  .target
+                                  .value as Goal["status"],
+                            }
+                          )
+                        }
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="active">
+                          Active
+                        </option>
 
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">
+                        <option value="paused">
+                          Paused
+                        </option>
+
+                        <option value="completed">
+                          Completed
+                        </option>
+                      </select>
+                    </div>
+
+                    {linkedDream && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onOpenDream?.(
+                            linkedDream.id
+                          )
+                        }
+                        className="mt-4 text-sm font-medium text-fuchsia-700 transition hover:text-fuchsia-900"
+                      >
+                        ✦{" "}
                         {
-                          linkedProjects.length
+                          linkedDream.title
                         }{" "}
-                        linked project
-                        {linkedProjects.length ===
-                        1
-                          ? ""
-                          : "s"}
-                      </span>
+                        →
+                      </button>
+                    )}
 
-                      <span className="font-medium">
-                        {progress}%
-                      </span>
-                    </div>
+                    <div className="mt-5 border-t border-slate-100 pt-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-900">
+                            Projects
+                          </h3>
 
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full rounded-full bg-[#1f0825] transition-all"
-                        style={{
-                          width: `${progress}%`,
-                        }}
-                      />
+                          <p className="mt-1 text-xs text-slate-500">
+                            {
+                              completedTasks
+                            }
+                            /
+                            {
+                              totalTasks
+                            }{" "}
+                            tasks complete
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onCreateProjectForGoal?.(
+                              goal.id
+                            )
+                          }
+                          className="text-sm font-medium text-fuchsia-700 transition hover:text-fuchsia-900"
+                        >
+                          + Create project
+                        </button>
+                      </div>
+
+                      {linkedProjects.length ===
+                      0 ? (
+                        <p className="mt-3 text-sm text-slate-400">
+                          No projects linked yet.
+                        </p>
+                      ) : (
+                        <div className="mt-3 space-y-2">
+                          {linkedProjects.map(
+                            (project) => {
+                              const completed =
+                                project.tasks.filter(
+                                  (task) =>
+                                    task.completed
+                                ).length;
+
+                              return (
+                                <button
+                                  key={
+                                    project.id
+                                  }
+                                  type="button"
+                                  onClick={() =>
+                                    onOpenProject?.(
+                                      project.id
+                                    )
+                                  }
+                                  className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-3 text-left transition hover:bg-slate-100"
+                                >
+                                  <span className="min-w-0">
+                                    <span className="block truncate text-sm font-medium text-slate-700">
+                                      {
+                                        project.name
+                                      }
+                                    </span>
+
+                                    <span className="mt-1 block text-xs text-slate-400">
+                                      {
+                                        completed
+                                      }
+                                      /
+                                      {
+                                        project
+                                          .tasks
+                                          .length
+                                      }{" "}
+                                      tasks ·{" "}
+                                      {
+                                        project.status ??
+                                        "active"
+                                      }
+                                    </span>
+                                  </span>
+
+                                  <span className="shrink-0 text-slate-300">
+                                    →
+                                  </span>
+                                </button>
+                              );
+                            }
+                          )}
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex items-center justify-between text-sm">
+                        <span className="text-slate-500">
+                          Overall progress
+                        </span>
+
+                        <span className="font-medium text-slate-900">
+                          {
+                            progress
+                          }
+                          %
+                        </span>
+                      </div>
+
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-[#1f0825] transition-all"
+                          style={{
+                            width: `${progress}%`,
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
+                  </article>
+                );
+              }
+            )}
           </div>
         )}
       </div>

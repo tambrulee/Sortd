@@ -7,6 +7,7 @@ import ProjectDetails from "@/components/ProjectDetails";
 import TaskList from "@/components/TaskList";
 
 import {
+  Dream,
   Goal,
   ProjectStatus,
   ScheduleContext,
@@ -22,6 +23,15 @@ type TaskFilter =
 type ProjectsViewProps = {
   projects: SortdList[];
   goals: Goal[];
+  dreams: Dream[];
+
+  onOpenGoal?: (
+    goalId: string
+  ) => void;
+
+  onOpenDream?: (
+    dreamId: string
+  ) => void;
 
   activeProject:
     | SortdList
@@ -178,6 +188,9 @@ function getOpenTaskCount(
 export default function ProjectsView({
   projects,
   goals,
+  dreams,
+  onOpenGoal,
+  onOpenDream,
   activeProject,
   activeProjectId,
   visibleTasks,
@@ -225,6 +238,24 @@ export default function ProjectsView({
 
   const activeTasks =
     activeProject?.tasks ?? [];
+
+  const linkedGoal =
+    activeProject?.goalId
+      ? goals.find(
+          (goal) =>
+            goal.id ===
+            activeProject.goalId
+        )
+      : undefined;
+
+  const linkedDream =
+    linkedGoal?.dreamId
+      ? dreams.find(
+          (dream) =>
+            dream.id ===
+            linkedGoal.dreamId
+        )
+      : undefined;
 
   function changeTask(
     taskId: string,
@@ -484,6 +515,57 @@ export default function ProjectsView({
           projects.length > 1
         }
       />
+
+      {activeProject && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+          {linkedDream && (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  onOpenDream?.(
+                    linkedDream.id
+                  )
+                }
+                className="font-medium text-fuchsia-700 transition hover:text-fuchsia-900"
+              >
+                ✦ {linkedDream.title}
+              </button>
+
+              <span className="text-slate-300">
+                →
+              </span>
+            </>
+          )}
+
+          {linkedGoal ? (
+            <button
+              type="button"
+              onClick={() =>
+                onOpenGoal?.(
+                  linkedGoal.id
+                )
+              }
+              className="font-medium text-slate-700 transition hover:text-slate-950"
+            >
+              {linkedGoal.title}
+            </button>
+          ) : (
+            <span className="text-slate-400">
+              No goal attached
+            </span>
+          )}
+
+          <span className="text-slate-300">
+            →
+          </span>
+
+          <span className="font-medium text-slate-900">
+            {activeProject.name}
+          </span>
+        </div>
+      )}
+
 
       {activeProject ? (
         <>

@@ -1,37 +1,140 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
+
 import {
   Dream,
   Goal,
+  SortdList,
 } from "@/lib/types";
 
 type DreamsViewProps = {
   dreams: Dream[];
   goals: Goal[];
-  onChangeDreams: (dreams: Dream[]) => void;
+  projects: SortdList[];
+
+  onChangeDreams: (
+    dreams: Dream[]
+  ) => void;
+
+  onChangeGoals: (
+    goals: Goal[]
+  ) => void;
+
+  onOpenGoal?: (
+    goalId: string
+  ) => void;
 };
 
 export default function DreamsView({
   dreams,
   goals,
+  projects,
   onChangeDreams,
+  onChangeGoals,
+  onOpenGoal,
 }: DreamsViewProps) {
-  const [newDreamTitle, setNewDreamTitle] =
-    useState("");
+  const [
+    newDreamTitle,
+    setNewDreamTitle,
+  ] = useState("");
+
+  const [
+    expandedDreamId,
+    setExpandedDreamId,
+  ] = useState<
+    string | null
+  >(null);
+
+  const dreamProgress = useMemo(
+    () =>
+      new Map(
+        dreams.map((dream) => {
+          const linkedGoals =
+            goals.filter(
+              (goal) =>
+                goal.dreamId ===
+                dream.id
+            );
+
+          const linkedGoalIds =
+            new Set(
+              linkedGoals.map(
+                (goal) =>
+                  goal.id
+              )
+            );
+
+          const linkedProjects =
+            projects.filter(
+              (project) =>
+                project.goalId &&
+                linkedGoalIds.has(
+                  project.goalId
+                )
+            );
+
+          const totalTasks =
+            linkedProjects.reduce(
+              (total, project) =>
+                total +
+                project.tasks.length,
+              0
+            );
+
+          const completedTasks =
+            linkedProjects.reduce(
+              (total, project) =>
+                total +
+                project.tasks.filter(
+                  (task) =>
+                    task.completed
+                ).length,
+              0
+            );
+
+          const progress =
+            totalTasks > 0
+              ? Math.round(
+                  (completedTasks /
+                    totalTasks) *
+                    100
+                )
+              : 0;
+
+          return [
+            dream.id,
+            progress,
+          ] as const;
+        })
+      ),
+    [
+      dreams,
+      goals,
+      projects,
+    ]
+  );
 
   function addDream() {
-    const title = newDreamTitle.trim();
+    const title =
+      newDreamTitle.trim();
 
-    if (!title) return;
+    if (!title) {
+      return;
+    }
 
-    const newDream: Dream = {
-      id: crypto.randomUUID(),
-      title,
-      description: "",
-      category: "",
-      createdAt: new Date().toISOString(),
-    };
+    const newDream: Dream =
+      {
+        id: crypto.randomUUID(),
+        title,
+        description: "",
+        category: "",
+        createdAt:
+          new Date().toISOString(),
+      };
 
     onChangeDreams([
       ...dreams,
@@ -41,28 +144,62 @@ export default function DreamsView({
     setNewDreamTitle("");
   }
 
+  function addGoalToDream(
+    dreamId: string
+  ) {
+    const newGoal: Goal = {
+      id: crypto.randomUUID(),
+      title: "New goal",
+      description: "",
+      status: "active",
+      createdAt:
+        new Date().toISOString(),
+      dreamId,
+    };
+
+    onChangeGoals([
+      ...goals,
+      newGoal,
+    ]);
+
+    setExpandedDreamId(
+      dreamId
+    );
+
+    onOpenGoal?.(
+      newGoal.id
+    );
+  }
+
   function updateDream(
     id: string,
     updates: Partial<Dream>
   ) {
     onChangeDreams(
-      dreams.map((dream) =>
-        dream.id === id
-          ? {
-              ...dream,
-              ...updates,
-            }
-          : dream
+      dreams.map(
+        (dream) =>
+          dream.id === id
+            ? {
+                ...dream,
+                ...updates,
+              }
+            : dream
       )
     );
   }
 
-  function deleteDream(id: string) {
-    const dream = dreams.find(
-      (item) => item.id === id
-    );
+  function deleteDream(
+    id: string
+  ) {
+    const dream =
+      dreams.find(
+        (item) =>
+          item.id === id
+      );
 
-    if (!dream) return;
+    if (!dream) {
+      return;
+    }
 
     const linkedGoals =
       goals.filter(
@@ -73,14 +210,20 @@ export default function DreamsView({
     const message =
       linkedGoals.length > 0
         ? `"${dream.title}" has ${linkedGoals.length} linked goal${
-            linkedGoals.length === 1 ? "" : "s"
+            linkedGoals.length ===
+            1
+              ? ""
+              : "s"
           }. Delete the dream anyway?`
         : `Delete "${dream.title}"?`;
 
-    const confirmed =
-      window.confirm(message);
-
-    if (!confirmed) return;
+    if (
+      !window.confirm(
+        message
+      )
+    ) {
+      return;
+    }
 
     onChangeDreams(
       dreams.filter(
@@ -91,27 +234,38 @@ export default function DreamsView({
   }
 
   return (
-    <section className="rounded-3xl bg-white/85 p-8 shadow-xl backdrop-blur-md">
+    <section className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
       <div className="space-y-8">
-        <div>
-          <p className="text-sm font-medium text-fuchsia-700">
-            Bigger picture
-          </p>
+        <header className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-fuchsia-700">
+              Bigger picture
+            </p>
 
-          <h1 className="mt-1 text-3xl font-bold">
-            Dreams
-          </h1>
+            <h1 className="mt-1 text-3xl font-bold text-slate-950">
+              Dreams
+            </h1>
 
-          <p className="mt-2 max-w-2xl text-slate-500">
-            Capture the things you want your life
-            to move towards. Goals can turn them
-            into something concrete.
-          </p>
-        </div>
+            <p className="mt-2 max-w-2xl text-sm text-slate-500">
+              Capture where you want your life to move. Goals turn the bigger picture into something you can act on.
+            </p>
+          </div>
 
-        <div className="flex gap-3">
+          <div className="text-sm text-slate-500">
+            <span className="font-semibold text-slate-900">
+              {dreams.length}
+            </span>{" "}
+            {dreams.length === 1
+              ? "dream"
+              : "dreams"}
+          </div>
+        </header>
+
+        <div className="flex flex-col gap-3 sm:flex-row">
           <input
-            value={newDreamTitle}
+            value={
+              newDreamTitle
+            }
             onChange={(event) =>
               setNewDreamTitle(
                 event.target.value
@@ -119,19 +273,20 @@ export default function DreamsView({
             }
             onKeyDown={(event) => {
               if (
-                event.key === "Enter"
+                event.key ===
+                "Enter"
               ) {
                 addDream();
               }
             }}
             placeholder="What would you love to make happen?"
-            className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-fuchsia-400"
+            className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
           />
 
           <button
             type="button"
             onClick={addDream}
-            className="rounded-2xl bg-[#1f0825] px-5 py-3 font-medium text-white"
+            className="rounded-2xl bg-[#1f0825] px-5 py-3 font-medium text-white transition hover:bg-[#3b0842]"
           >
             Add dream
           </button>
@@ -148,10 +303,7 @@ export default function DreamsView({
             </p>
 
             <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-              A dream does not need a deadline
-              or a perfect plan. Add something
-              you would genuinely like your life
-              to move towards.
+              A dream does not need a deadline or a perfect plan. Add something you would genuinely like your life to move towards.
             </p>
           </div>
         ) : (
@@ -179,10 +331,19 @@ export default function DreamsView({
                       "completed"
                   );
 
+                const progress =
+                  dreamProgress.get(
+                    dream.id
+                  ) ?? 0;
+
+                const isExpanded =
+                  expandedDreamId ===
+                  dream.id;
+
                 return (
                   <article
                     key={dream.id}
-                    className="flex min-h-[260px] flex-col rounded-3xl border border-slate-200 bg-white p-6"
+                    className="flex min-h-[280px] flex-col rounded-3xl border border-slate-200 bg-white p-6"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <span className="text-xl text-fuchsia-700">
@@ -219,7 +380,7 @@ export default function DreamsView({
                           }
                         )
                       }
-                      className="mt-4 w-full bg-transparent text-xl font-semibold outline-none"
+                      className="mt-4 w-full bg-transparent text-xl font-semibold text-slate-950 outline-none"
                     />
 
                     <textarea
@@ -245,73 +406,187 @@ export default function DreamsView({
                     />
 
                     <div className="mt-auto pt-6">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                          Goals
-                        </p>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            Goals
+                          </p>
 
-                        <span className="text-xs text-slate-400">
-                          {
-                            completedGoals.length
-                          }{" "}
-                          complete
+                          <p className="mt-1 text-xs text-slate-500">
+                            {
+                              activeGoals.length
+                            }{" "}
+                            active ·{" "}
+                            {
+                              completedGoals.length
+                            }{" "}
+                            complete
+                          </p>
+                        </div>
+
+                        <span className="text-sm font-semibold text-slate-700">
+                          {progress}%
                         </span>
+                      </div>
+
+                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-[#1f0825] transition-all"
+                          style={{
+                            width: `${progress}%`,
+                          }}
+                        />
                       </div>
 
                       {linkedGoals.length ===
                       0 ? (
-                        <p className="mt-3 text-sm text-slate-400">
+                        <p className="mt-4 text-sm text-slate-400">
                           No goals linked yet.
                         </p>
                       ) : (
-                        <div className="mt-3 space-y-2">
-                          {linkedGoals.map(
-                            (goal) => (
-                              <div
-                                key={
-                                  goal.id
-                                }
-                                className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2"
-                              >
-                                <span
-                                  className={`min-w-0 truncate text-sm ${
-                                    goal.status ===
-                                    "completed"
-                                      ? "text-slate-400 line-through"
-                                      : "text-slate-700"
-                                  }`}
-                                >
-                                  {
-                                    goal.title
-                                  }
-                                </span>
+                        <div className="mt-4 space-y-2">
+                          {(
+                            isExpanded
+                              ? linkedGoals
+                              : linkedGoals.slice(
+                                  0,
+                                  3
+                                )
+                          ).map(
+                            (goal) => {
+                              const goalProjects =
+                                projects.filter(
+                                  (
+                                    project
+                                  ) =>
+                                    project.goalId ===
+                                    goal.id
+                                );
 
-                                <span className="shrink-0 text-xs capitalize text-slate-400">
-                                  {
-                                    goal.status
+                              const totalTasks =
+                                goalProjects.reduce(
+                                  (
+                                    total,
+                                    project
+                                  ) =>
+                                    total +
+                                    project.tasks
+                                      .length,
+                                  0
+                                );
+
+                              const completedTasks =
+                                goalProjects.reduce(
+                                  (
+                                    total,
+                                    project
+                                  ) =>
+                                    total +
+                                    project.tasks.filter(
+                                      (
+                                        task
+                                      ) =>
+                                        task.completed
+                                    ).length,
+                                  0
+                                );
+
+                              const goalProgress =
+                                totalTasks >
+                                0
+                                  ? Math.round(
+                                      (completedTasks /
+                                        totalTasks) *
+                                        100
+                                    )
+                                  : 0;
+
+                              return (
+                                <button
+                                  key={
+                                    goal.id
                                   }
-                                </span>
-                              </div>
-                            )
+                                  type="button"
+                                  onClick={() =>
+                                    onOpenGoal?.(
+                                      goal.id
+                                    )
+                                  }
+                                  className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-3 text-left transition hover:bg-slate-100"
+                                >
+                                  <span className="min-w-0">
+                                    <span
+                                      className={`block truncate text-sm font-medium ${
+                                        goal.status ===
+                                        "completed"
+                                          ? "text-slate-400 line-through"
+                                          : "text-slate-700"
+                                      }`}
+                                    >
+                                      {
+                                        goal.title
+                                      }
+                                    </span>
+
+                                    <span className="mt-1 block text-xs text-slate-400">
+                                      {
+                                        goalProjects.length
+                                      }{" "}
+                                      {goalProjects.length ===
+                                      1
+                                        ? "project"
+                                        : "projects"}{" "}
+                                      ·{" "}
+                                      {
+                                        goalProgress
+                                      }
+                                      %
+                                    </span>
+                                  </span>
+
+                                  <span className="shrink-0 text-sm text-slate-300">
+                                    →
+                                  </span>
+                                </button>
+                              );
+                            }
+                          )}
+
+                          {linkedGoals.length >
+                            3 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedDreamId(
+                                  isExpanded
+                                    ? null
+                                    : dream.id
+                                )
+                              }
+                              className="text-xs font-medium text-fuchsia-700"
+                            >
+                              {isExpanded
+                                ? "Show less"
+                                : `Show ${
+                                    linkedGoals.length -
+                                    3
+                                  } more`}
+                            </button>
                           )}
                         </div>
                       )}
 
-                      {activeGoals.length >
-                        0 && (
-                        <p className="mt-3 text-xs text-fuchsia-700">
-                          {
-                            activeGoals.length
-                          }{" "}
-                          active goal
-                          {activeGoals.length ===
-                          1
-                            ? ""
-                            : "s"}{" "}
-                          moving this
-                          forward
-                        </p>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          addGoalToDream(
+                            dream.id
+                          )
+                        }
+                        className="mt-4 text-sm font-medium text-fuchsia-700 transition hover:text-fuchsia-900"
+                      >
+                        + Add goal
+                      </button>
                     </div>
                   </article>
                 );
