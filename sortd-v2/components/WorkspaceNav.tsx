@@ -48,6 +48,11 @@ const navigationItems: {
     icon: "🛒",
   },
   {
+    id: "food",
+    label: "Food",
+    icon: "🍽",
+  },
+  {
     id: "settings",
     label: "Settings",
     icon: "⚙",

@@ -832,7 +832,13 @@ function buildProjectCandidates(
         priority: task.priority,
         energy: getItemEnergy(task),
         dueDate: task.dueDate,
-        earliestDate: today,
+
+        earliestDate:
+          task.availableFrom &&
+          task.availableFrom > today
+            ? task.availableFrom
+            : today,
+
         latestDate: horizonEnd,
       };
     });

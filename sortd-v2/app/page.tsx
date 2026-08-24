@@ -23,6 +23,7 @@ import ShoppingView from "@/components/ShoppingView";
 import GoalsView from "@/components/GoalsView";
 import DreamsView from "@/components/DreamsView";
 import SettingsControlPanel from "@/components/SettingsControlPanel";
+import FoodView from "@/components/FoodView";
 
 
 // Types and storage utilities
@@ -39,6 +40,7 @@ import {
   ShoppingList,
   SortdList,
   Task,
+  FoodData,
 } from "@/lib/types";
 
 import {
@@ -154,8 +156,13 @@ type CloudWorkspaceData = {
   routines: Routine[];
   goals?: Goal[];
   dreams?: Dream[];
+
   shoppingLists?: ShoppingList[];
+
+  foodData?: FoodData;
+
   scheduleSettings?: ScheduleSettings;
+
   activeListId: string;
   hideCompleted: boolean;
 };
@@ -175,9 +182,17 @@ export default function Home() {
   const [dreams, setDreams] = useState<Dream[]>([]);
 
   const [
-  shoppingLists,
-  setShoppingLists,
-] = useState<ShoppingList[]>([]);
+    shoppingLists,
+    setShoppingLists,
+  ] = useState<ShoppingList[]>([]);
+
+  const [
+    foodData,
+    setFoodData,
+  ] = useState<FoodData>({
+    meals: [],
+    mealPlan: [],
+  });
 
   const [user, setUser] =
     useState<User | null>(null);
@@ -325,13 +340,18 @@ const visibleTasks = useMemo(() => {
       routines: [],
       goals: [],
       dreams: [],
+      shoppingLists: [],
+      foodData: {
+        meals: [],
+        mealPlan: [],
+      },
+
       scheduleSettings:
         createDefaultScheduleSettings(
           Intl.DateTimeFormat()
             .resolvedOptions()
             .timeZone || "Europe/London"
         ),
-      shoppingLists: [],
     };
 
     if (
@@ -393,6 +413,13 @@ const visibleTasks = useMemo(() => {
         cloudWorkspace.shoppingLists ?? []
       );
 
+      setFoodData(
+        cloudWorkspace.foodData ?? {
+          meals: [],
+          mealPlan: [],
+        }
+      );
+
       setGoals(
         cloudWorkspace.goals ?? []
       );
@@ -429,9 +456,13 @@ const visibleTasks = useMemo(() => {
       routines: [],
       goals: [],
       dreams: [],
+      shoppingLists: [],
+      foodData: {
+        meals: [],
+        mealPlan: [],
+      },
       scheduleSettings:
         localWorkspace.scheduleSettings,
-      shoppingLists: [],
     };
 
     const { error: uploadError } =
@@ -486,6 +517,7 @@ useEffect(() => {
         goals,
         dreams,
         shoppingLists,
+        foodData,
         scheduleSettings,
         activeListId,
         hideCompleted,
@@ -561,6 +593,7 @@ useEffect(() => {
   goals,
   dreams,
   shoppingLists,
+  foodData,
   scheduleSettings,
   user,
 ]);
@@ -1356,6 +1389,21 @@ function updateProjectLatestEndTime(
               setShoppingLists
             }
           />
+
+          ) : activeView === "food" ? (
+          <FoodView
+            foodData={foodData}
+            onChangeFoodData={
+              setFoodData
+            }
+            shoppingLists={
+              shoppingLists
+            }
+            onChangeShoppingLists={
+              setShoppingLists
+            }
+          />
+
           ) : activeView === "dreams" ? (
           <DreamsView
             dreams={dreams}

@@ -211,7 +211,7 @@ export default function ItemDetailsModal(
                       nextContainerId !==
                       props.currentContainerId
                     ) {
-                      props.onMove(
+                      props.onMove?.(
                         nextContainerId
                       );
                     }
@@ -437,24 +437,49 @@ export default function ItemDetailsModal(
             </div>
 
             {props.kind === "task" && (
-              <label className={labelClassName}>
-                Due date
+              <>
+                <label className={labelClassName}>
+                  Available from
 
-                <input
-                  type="date"
-                  value={
-                    props.item.dueDate ?? ""
-                  }
-                  onChange={(event) =>
-                    props.onChange({
-                      dueDate:
-                        event.target.value ||
-                        undefined,
-                    })
-                  }
-                  className={fieldClassName}
-                />
-              </label>
+                  <input
+                    type="date"
+                    value={
+                      props.item.availableFrom ?? ""
+                    }
+                    onChange={(event) =>
+                      props.onChange({
+                        availableFrom:
+                          event.target.value ||
+                          undefined,
+                      })
+                    }
+                    className={fieldClassName}
+                  />
+
+                  <span className="text-[11px] font-normal text-slate-400">
+                    Don&apos;t schedule this task before this date.
+                  </span>
+                </label>
+
+                <label className={labelClassName}>
+                  Due date
+
+                  <input
+                    type="date"
+                    value={
+                      props.item.dueDate ?? ""
+                    }
+                    onChange={(event) =>
+                      props.onChange({
+                        dueDate:
+                          event.target.value ||
+                          undefined,
+                      })
+                    }
+                    className={fieldClassName}
+                  />
+                </label>
+              </>
             )}
 
             {props.kind === "routine" && (

@@ -22,6 +22,7 @@ export type Task = {
   priority?: Priority;
   energy?: Energy;
 
+  availableFrom?: string;
   dueDate?: string;
 
   durationMinutes?: number;
@@ -89,12 +90,14 @@ export interface SortdWorkspace {
 export type AppView =
   | "my-day"
   | "planner"
-  | "settings"
+  | "upcoming"
   | "projects"
   | "routines"
   | "shopping"
+  | "food"
   | "goals"
-  | "dreams";
+  | "dreams"
+  | "settings";
 
   // Routine and RoutineTask types for recurring tasks
 export type RecurrenceUnit =
@@ -241,3 +244,49 @@ export type ShoppingList = {
 export type ShoppingIntent =
   | "need"
   | "want";
+
+// Food and meal planning types for managing meals, ingredients, and meal plans
+
+export type MealIngredient = {
+  id: string;
+  name: string;
+  quantity?: string;
+};
+
+export type MealType =
+  | "breakfast"
+  | "lunch"
+  | "dinner";
+
+export type Meal = {
+  id: string;
+  name: string;
+
+  mealType: MealType;
+
+  defaultPortions: number;
+  portionsAvailable: number;
+
+  ingredients: MealIngredient[];
+
+  prepMinutes?: number;
+  cookMinutes?: number;
+
+  notes?: string;
+  createdAt: string;
+};
+
+export type MealPlanEntry = {
+  id: string;
+  date: string;
+  mealId: string;
+
+  mealType: MealType;
+
+  portions: number;
+};
+
+export type FoodData = {
+  meals: Meal[];
+  mealPlan: MealPlanEntry[];
+};

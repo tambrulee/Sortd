@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+import CollectionSwitcher from "@/components/CollectionSwitcher";
+import ShoppingItemModal from "@/components/ShoppingItemModal";
+
 import {
   ShoppingCategory,
   ShoppingIntent,
@@ -114,9 +117,17 @@ export default function ShoppingView({
     useState<SortOption>("name");
 
   const [
-    newListName,
-    setNewListName,
-  ] = useState("");
+  showAllShops,
+  setShowAllShops,
+] = useState(false);
+
+  const [
+    selectedItemRef,
+    setSelectedItemRef,
+  ] = useState<{
+    listId: string;
+    itemId: string;
+  } | null>(null);
 
   const [
     newItemTitle,
@@ -187,6 +198,17 @@ export default function ShoppingView({
         listName: list.name,
       }))
     );
+
+  const selectedItem =
+    selectedItemRef
+      ? allShoppingItems.find(
+          (item) =>
+            item.listId ===
+              selectedItemRef.listId &&
+            item.id ===
+              selectedItemRef.itemId
+        )
+      : undefined;
 
   const sourceItems = isAllView
     ? allShoppingItems
@@ -361,6 +383,11 @@ export default function ShoppingView({
         first.total
     );
 
+  const visibleShopSummary =
+    showAllShops
+      ? shopSummary
+      : shopSummary.slice(0, 5);
+
   function updateList(
     updatedList: ShoppingList
   ) {
@@ -374,21 +401,22 @@ export default function ShoppingView({
     );
   }
 
-  function createShoppingList() {
-    const name =
-      newListName.trim();
+  function createShoppingList(
+    name: string
+  ) {
+    const trimmedName =
+      name.trim();
 
-    if (!name) return;
+    if (!trimmedName) return;
 
-    const newList: ShoppingList =
-      {
-        id: crypto.randomUUID(),
-        name,
-        items: [],
-        createdAt:
-          new Date().toISOString(),
-        archived: false,
-      };
+    const newList: ShoppingList = {
+      id: crypto.randomUUID(),
+      name: trimmedName,
+      items: [],
+      createdAt:
+        new Date().toISOString(),
+      archived: false,
+    };
 
     onChangeShoppingLists([
       ...shoppingLists,
@@ -399,7 +427,31 @@ export default function ShoppingView({
       newList.id
     );
 
-    setNewListName("");
+    resetFilters();
+  }
+
+  function renameShoppingList(
+    id: string,
+    name: string
+  ) {
+    onChangeShoppingLists(
+      shoppingLists.map((list) =>
+        list.id === id
+          ? {
+              ...list,
+              name,
+            }
+          : list
+      )
+    );
+  }
+
+  function reorderShoppingLists(
+    reorderedLists: ShoppingList[]
+  ) {
+    onChangeShoppingLists(
+      reorderedLists
+    );
   }
 
   function renameActiveList(
@@ -413,26 +465,45 @@ export default function ShoppingView({
     });
   }
 
-  function deleteActiveList() {
-    if (!activeList) return;
+  function deleteShoppingList(
+    id: string
+  ) {
+    const list =
+      shoppingLists.find(
+        (currentList) =>
+          currentList.id === id
+      );
+
+    if (!list) return;
 
     const confirmed =
       window.confirm(
-        `Delete the shopping list "${activeList.name}" and all of its items?`
+        `Delete the shopping list "${list.name}" and all of its items?`
       );
 
     if (!confirmed) return;
 
     onChangeShoppingLists(
       shoppingLists.filter(
-        (list) =>
-          list.id !==
-          activeList.id
+        (currentList) =>
+          currentList.id !== id
       )
     );
 
-    setActiveShoppingListId(
-      "all"
+    if (
+      activeShoppingListId === id
+    ) {
+      setActiveShoppingListId(
+        "all"
+      );
+    }
+  }
+
+  function deleteActiveList() {
+    if (!activeList) return;
+
+    deleteShoppingList(
+      activeList.id
     );
   }
 
@@ -531,6 +602,95 @@ export default function ShoppingView({
     });
   }
 
+  function moveItem(
+    sourceListId: string,
+    itemId: string,
+    destinationListId: string
+  ) {
+    if (
+      sourceListId ===
+        destinationListId
+    ) {
+      return;
+    }
+
+    const sourceList =
+      shoppingLists.find(
+        (list) =>
+          list.id ===
+          sourceListId
+      );
+
+    const destinationList =
+      shoppingLists.find(
+        (list) =>
+          list.id ===
+          destinationListId
+      );
+
+    const item =
+      sourceList?.items.find(
+        (currentItem) =>
+          currentItem.id ===
+          itemId
+      );
+
+    if (
+      !sourceList ||
+      !destinationList ||
+      !item
+    ) {
+      return;
+    }
+
+    const movedItem: ShoppingItem = {
+      ...item,
+      order:
+        destinationList.items
+          .length + 1,
+    };
+
+    onChangeShoppingLists(
+      shoppingLists.map(
+        (list) => {
+          if (
+            list.id ===
+            sourceListId
+          ) {
+            return {
+              ...list,
+              items:
+                list.items.filter(
+                  (currentItem) =>
+                    currentItem.id !==
+                    itemId
+                ),
+            };
+          }
+
+          if (
+            list.id ===
+            destinationListId
+          ) {
+            return {
+              ...list,
+              items: [
+                ...list.items,
+                movedItem,
+              ],
+            };
+          }
+
+          return list;
+        }
+      )
+    );
+
+    setSelectedItemRef(
+      null
+    );
+  }
+
   function toggleItem(
     listId: string,
     itemId: string
@@ -617,16 +777,23 @@ export default function ShoppingView({
     const itemIntent =
       item.intent ?? "need";
 
+    const categoryLabel =
+      categories.find(
+        (category) =>
+          category.value ===
+          item.category
+      )?.label;
+
     return (
       <article
         key={`${item.listId}-${item.id}`}
-        className={`rounded-2xl border px-4 py-4 transition ${
+        className={`rounded-2xl border px-4 py-3 transition ${
           item.purchased
             ? "border-emerald-100 bg-emerald-50/40"
-            : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+            : "border-slate-200 bg-white hover:border-slate-300"
         }`}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <input
             type="checkbox"
             checked={
@@ -639,270 +806,108 @@ export default function ShoppingView({
               )
             }
             aria-label={`Mark ${item.title} as bought`}
-            className="mt-1 h-5 w-5 shrink-0 accent-[#cd6ce7]"
+            className="h-5 w-5 shrink-0 accent-[#cd6ce7]"
           />
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-start gap-3">
-              <div className="min-w-[180px] flex-1">
-                <input
-                  value={
-                    item.title
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    updateItem(
-                      item.listId,
-                      item.id,
-                      {
-                        title:
-                          event
-                            .target
-                            .value,
-                      }
-                    )
-                  }
-                  className={`w-full bg-transparent text-base font-semibold outline-none ${
-                    item.purchased
-                      ? "text-slate-400 line-through"
-                      : "text-slate-900"
-                  }`}
-                />
+            <p
+              className={`truncate text-sm font-semibold ${
+                item.purchased
+                  ? "text-slate-400 line-through"
+                  : "text-slate-900"
+              }`}
+            >
+              {item.title ||
+                "Untitled item"}
+            </p>
 
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  {isAllView && (
-                    <span className="text-xs text-slate-400">
-                      {
-                        item.listName
-                      }
-                    </span>
-                  )}
-
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
-                    {
-                      categories.find(
-                        (
-                          category
-                        ) =>
-                          category.value ===
-                          item.category
-                      )?.label
-                    }
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex rounded-lg bg-slate-100 p-1">
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateItem(
-                      item.listId,
-                      item.id,
-                      {
-                        intent:
-                          "need",
-                      }
-                    )
-                  }
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-                    itemIntent ===
-                    "need"
-                      ? "bg-white text-emerald-700 shadow-sm"
-                      : "text-slate-400 hover:text-slate-600"
-                  }`}
-                >
-                  Need
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateItem(
-                      item.listId,
-                      item.id,
-                      {
-                        intent:
-                          "want",
-                      }
-                    )
-                  }
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-                    itemIntent ===
-                    "want"
-                      ? "bg-white text-purple-700 shadow-sm"
-                      : "text-slate-400 hover:text-slate-600"
-                  }`}
-                >
-                  Want
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  deleteItem(
-                    item.listId,
-                    item.id
-                  )
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+              <span
+                className={
+                  itemIntent === "need"
+                    ? "text-emerald-700"
+                    : "text-purple-700"
                 }
-                aria-label={`Delete ${item.title}`}
-                title="Delete item"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
               >
-                ×
-              </button>
-            </div>
+                {itemIntent === "need"
+                  ? "Need"
+                  : "Want"}
+              </span>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[110px_minmax(160px,1fr)_150px_140px]">
-              <label className="flex flex-col gap-1 text-xs text-slate-400">
-                Quantity
-
-                <input
-                  value={
-                    item.quantity ??
-                    ""
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    updateItem(
-                      item.listId,
-                      item.id,
-                      {
-                        quantity:
-                          event
-                            .target
-                            .value ||
-                          undefined,
-                      }
-                    )
-                  }
-                  placeholder="—"
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 outline-none focus:bg-white"
-                />
-              </label>
-
-              <label className="flex flex-col gap-1 text-xs text-slate-400">
-                Shop
-
-                <input
-                  value={
-                    item.shop ?? ""
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    updateItem(
-                      item.listId,
-                      item.id,
-                      {
-                        shop:
-                          event
-                            .target
-                            .value ||
-                          undefined,
-                      }
-                    )
-                  }
-                  list="known-shopping-shops"
-                  placeholder="No shop"
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 outline-none focus:bg-white"
-                />
-              </label>
-
-              <label className="flex flex-col gap-1 text-xs text-slate-400">
-                Category
-
-                <select
-                  value={
-                    item.category
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    updateItem(
-                      item.listId,
-                      item.id,
-                      {
-                        category:
-                          event
-                            .target
-                            .value as ShoppingCategory,
-                      }
-                    )
-                  }
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 outline-none focus:bg-white"
-                >
-                  {categories.map(
-                    (
-                      category
-                    ) => (
-                      <option
-                        key={
-                          category.value
-                        }
-                        value={
-                          category.value
-                        }
-                      >
-                        {
-                          category.label
-                        }
-                      </option>
-                    )
-                  )}
-                </select>
-              </label>
-
-              <label className="flex flex-col gap-1 text-xs text-slate-400">
-                Estimated cost
-
-                <div className="flex min-w-0 items-center rounded-lg border border-slate-200 bg-slate-50 px-3 focus-within:bg-white">
-                  <span>
-                    £
+              {item.quantity && (
+                <>
+                  <span className="text-slate-300">
+                    ·
                   </span>
+                  <span>
+                    {item.quantity}
+                  </span>
+                </>
+              )}
 
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={
-                      item.estimatedCost ??
-                      ""
-                    }
-                    onChange={(
-                      event
-                    ) => {
-                      const value =
-                        event
-                          .target
-                          .value;
+              {item.shop && (
+                <>
+                  <span className="text-slate-300">
+                    ·
+                  </span>
+                  <span>
+                    {item.shop}
+                  </span>
+                </>
+              )}
 
-                      updateItem(
-                        item.listId,
-                        item.id,
-                        {
-                          estimatedCost:
-                            value
-                              ? Math.max(
-                                  0,
-                                  Number(
-                                    value
-                                  )
-                                )
-                              : undefined,
-                        }
-                      );
-                    }}
-                    placeholder="0.00"
-                    className="w-full bg-transparent px-1 py-1.5 text-sm text-slate-700 outline-none"
-                  />
-                </div>
-              </label>
+              {categoryLabel && (
+                <>
+                  <span className="text-slate-300">
+                    ·
+                  </span>
+                  <span>
+                    {categoryLabel}
+                  </span>
+                </>
+              )}
+
+              {item.estimatedCost !==
+                undefined && (
+                <>
+                  <span className="text-slate-300">
+                    ·
+                  </span>
+                  <span>
+                    {currencyFormatter.format(
+                      item.estimatedCost
+                    )}
+                  </span>
+                </>
+              )}
+
+              {isAllView && (
+                <>
+                  <span className="text-slate-300">
+                    ·
+                  </span>
+                  <span className="text-slate-400">
+                    {item.listName}
+                  </span>
+                </>
+              )}
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setSelectedItemRef({
+                listId: item.listId,
+                itemId: item.id,
+              })
+            }
+            aria-label={`Edit ${item.title}`}
+            title="Item details"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+          >
+            •••
+          </button>
         </div>
       </article>
     );
@@ -937,107 +942,87 @@ export default function ShoppingView({
         </p>
       </header>
 
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          createShoppingList();
-        }}
-        className="mt-6 flex flex-col gap-2 sm:flex-row"
-      >
-        <input
-          value={newListName}
-          onChange={(event) =>
-            setNewListName(
-              event.target.value
-            )
+      <div className="mt-6">
+        <CollectionSwitcher
+          items={shoppingLists}
+          activeItemId={
+            isAllView
+              ? shoppingLists[0]?.id ??
+                ""
+              : activeShoppingListId
           }
-          placeholder="New list, e.g. Weekly food shop"
-          className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none focus:border-[#cd6ce7]"
+          label="Current shopping list"
+          placeholder="Select a shopping list"
+          itemPluralLabel="Shopping lists"
+          createLabel="+ New"
+          deleteLabel="Delete list"
+          onChangeItem={(id) => {
+            setActiveShoppingListId(
+              id
+            );
+            resetFilters();
+          }}
+          onCreateItem={() => {
+            const name =
+              window.prompt(
+                "Name this shopping list"
+              );
+
+            if (name) {
+              createShoppingList(
+                name
+              );
+            }
+          }}
+          onDeleteItem={
+            deleteActiveList
+          }
+          onRenameItem={
+            renameShoppingList
+          }
+          onReorderItems={
+            reorderShoppingLists
+          }
+          getCount={(list) =>
+            list.items.filter(
+              (item) =>
+                !item.purchased
+            ).length
+          }
+          getStatusColour={(list) =>
+            list.archived
+              ? "bg-slate-400"
+              : "bg-emerald-400"
+          }
+          getStatusLabel={(list) =>
+            list.archived
+              ? "archived"
+              : "active"
+          }
+          canDelete={
+            shoppingLists.length >
+            0 &&
+            !isAllView
+          }
         />
 
         <button
-          type="submit"
-          className="rounded-xl bg-[#230028] px-5 py-2.5 font-medium text-white"
+          type="button"
+          onClick={() => {
+            setActiveShoppingListId(
+              "all"
+            );
+            resetFilters();
+          }}
+          className={`mt-2 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            isAllView
+              ? "bg-[#f3e8f5] text-[#7c2d92]"
+              : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+          }`}
         >
-          Add list
+          View all lists
         </button>
-      </form>
-
-      {shoppingLists.length >
-        0 && (
-        <div className="mt-5 flex flex-wrap items-end gap-3">
-          <div className="min-w-[220px] flex-1">
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Shopping list
-            </label>
-
-            <select
-              value={
-                activeShoppingListId
-              }
-              onChange={(
-                event
-              ) => {
-                setActiveShoppingListId(
-                  event.target
-                    .value
-                );
-
-                resetFilters();
-              }}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-[#cd6ce7]"
-            >
-              <option value="all">
-                All lists
-              </option>
-
-              {shoppingLists.map(
-                (list) => {
-                  const remaining =
-                    list.items.filter(
-                      (
-                        item
-                      ) =>
-                        !item.purchased
-                    ).length;
-
-                  return (
-                    <option
-                      key={
-                        list.id
-                      }
-                      value={
-                        list.id
-                      }
-                    >
-                      {
-                        list.name
-                      }{" "}
-                      ·{" "}
-                      {
-                        remaining
-                      }{" "}
-                      remaining
-                    </option>
-                  );
-                }
-              )}
-            </select>
-          </div>
-
-          {activeList && (
-            <button
-              type="button"
-              onClick={
-                deleteActiveList
-              }
-              className="rounded-xl px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
-            >
-              Delete list
-            </button>
-          )}
-        </div>
-      )}
+      </div>
 
       {shoppingLists.length ===
       0 ? (
@@ -1349,65 +1334,69 @@ export default function ShoppingView({
               </button>
             </div>
 
-            {shopSummary.length >
-              0 && (
-              <div className="mt-6">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+           {shopSummary.length > 0 && (
+            <div className="mt-5 border-t border-slate-200 pt-4">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                   By shop
                 </p>
 
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {shopSummary.map(
-                    ([
-                      shop,
-                      summary,
-                    ]) => (
-                      <button
-                        key={
-                          shop
-                        }
-                        type="button"
-                        onClick={() =>
-                          setShopFilter(
-                            shop
-                          )
-                        }
-                        className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-3 text-left transition ${
-                          shopFilter ===
-                          shop
-                            ? "border-[#cd6ce7] bg-purple-50"
-                            : "border-transparent bg-white hover:border-slate-200"
-                        }`}
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-slate-700">
-                            {
-                              shop
-                            }
-                          </p>
-
-                          <p className="text-xs text-slate-400">
-                            {
-                              summary.count
-                            }{" "}
-                            {summary.count ===
-                            1
-                              ? "item"
-                              : "items"}
-                          </p>
-                        </div>
-
-                        <span className="shrink-0 text-sm font-semibold text-slate-900">
-                          {currencyFormatter.format(
-                            summary.total
-                          )}
-                        </span>
-                      </button>
-                    )
-                  )}
-                </div>
+                {shopSummary.length > 5 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowAllShops(
+                        (current) => !current
+                      )
+                    }
+                    className="text-xs font-medium text-[#9d3db7] transition hover:text-[#74258a]"
+                  >
+                    {showAllShops
+                      ? "Show less"
+                      : `Show all ${shopSummary.length}`}
+                  </button>
+                )}
               </div>
-            )}
+
+              <div className="divide-y divide-slate-100">
+                {visibleShopSummary.map(
+                  ([shop, summary]) => (
+                    <button
+                      key={shop}
+                      type="button"
+                      onClick={() =>
+                        setShopFilter(shop)
+                      }
+                      className={`flex w-full items-center justify-between gap-4 px-1 py-2.5 text-left transition ${
+                        shopFilter === shop
+                          ? "text-[#7c2d92]"
+                          : "text-slate-700 hover:text-slate-950"
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {shop}
+                        </p>
+
+                        <p className="text-xs text-slate-400">
+                          {summary.count}{" "}
+                          {summary.count === 1
+                            ? "item"
+                            : "items"}
+                        </p>
+                      </div>
+
+                      <span className="shrink-0 text-sm font-semibold text-slate-900">
+                        {currencyFormatter.format(
+                          summary.total
+                        )}
+                      </span>
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          )}
           </section>
 
           {activeList && (
@@ -1673,6 +1662,51 @@ export default function ShoppingView({
           </section>
         </>
       )}
+
+      {selectedItem && (
+        <ShoppingItemModal
+          item={selectedItem}
+          shoppingLists={
+            shoppingLists
+          }
+          categories={
+            categories
+          }
+          onChange={(
+            updates
+          ) =>
+            updateItem(
+              selectedItem.listId,
+              selectedItem.id,
+              updates
+            )
+          }
+          onMove={(
+            destinationListId
+          ) =>
+            moveItem(
+              selectedItem.listId,
+              selectedItem.id,
+              destinationListId
+            )
+          }
+          onDelete={() => {
+            deleteItem(
+              selectedItem.listId,
+              selectedItem.id
+            );
+            setSelectedItemRef(
+              null
+            );
+          }}
+          onClose={() =>
+            setSelectedItemRef(
+              null
+            )
+          }
+        />
+      )}
+
     </div>
   );
 }
