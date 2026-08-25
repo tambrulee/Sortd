@@ -41,6 +41,7 @@ import {
   SortdList,
   Task,
   FoodData,
+  AdhocTask,
 } from "@/lib/types";
 
 import {
@@ -169,7 +170,7 @@ type CloudWorkspaceData = {
 
 export default function Home() {
   const [routines, setRoutines] =
-  useState<Routine[]>([]);
+    useState<Routine[]>([]);
 
   const [
     scheduleSettings,
@@ -178,7 +179,61 @@ export default function Home() {
     createDefaultScheduleSettings()
   );
 
-  const [goals, setGoals] = useState<Goal[]>([]);
+  const [adhocTasks, setAdhocTasks] =
+    useState<AdhocTask[]>([]);
+
+  function addAdhocTask(
+    task: AdhocTask
+  ) {
+    setAdhocTasks((current) => [
+      ...current,
+      task,
+    ]);
+  }
+
+  function completeAdhocTask(
+    taskId: string
+  ) {
+    setAdhocTasks((current) =>
+      current.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              completed: true,
+            }
+          : task
+      )
+    );
+  }
+
+  function updateAdhocTask(
+    taskId: string,
+    updates: Partial<AdhocTask>
+  ) {
+    setAdhocTasks((current) =>
+      current.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              ...updates,
+            }
+          : task
+      )
+    );
+  }
+
+  function deleteAdhocTask(
+    taskId: string
+  ) {
+    setAdhocTasks((current) =>
+      current.filter(
+        (task) => task.id !== taskId
+      )
+    );
+  }
+
+  const [goals, setGoals] =
+    useState<Goal[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
 
   const [
@@ -186,12 +241,15 @@ export default function Home() {
     setShoppingLists,
   ] = useState<ShoppingList[]>([]);
 
+  
+
   const [
     foodData,
     setFoodData,
   ] = useState<FoodData>({
-    meals: [],
-    mealPlan: [],
+      meals: [],
+      mealPlan: [],
+      shoppingList: [],
   });
 
   const [user, setUser] =
@@ -342,8 +400,9 @@ const visibleTasks = useMemo(() => {
       dreams: [],
       shoppingLists: [],
       foodData: {
-        meals: [],
-        mealPlan: [],
+          meals: [],
+          mealPlan: [],
+          shoppingList: [],
       },
 
       scheduleSettings:
@@ -415,8 +474,9 @@ const visibleTasks = useMemo(() => {
 
       setFoodData(
         cloudWorkspace.foodData ?? {
-          meals: [],
-          mealPlan: [],
+        meals: [],
+        mealPlan: [],
+        shoppingList: [],
         }
       );
 
@@ -458,8 +518,9 @@ const visibleTasks = useMemo(() => {
       dreams: [],
       shoppingLists: [],
       foodData: {
-        meals: [],
-        mealPlan: [],
+          meals: [],
+          mealPlan: [],
+          shoppingList: [],
       },
       scheduleSettings:
         localWorkspace.scheduleSettings,
@@ -1396,12 +1457,6 @@ function updateProjectLatestEndTime(
             onChangeFoodData={
               setFoodData
             }
-            shoppingLists={
-              shoppingLists
-            }
-            onChangeShoppingLists={
-              setShoppingLists
-            }
           />
 
           ) : activeView === "dreams" ? (
@@ -1431,6 +1486,7 @@ function updateProjectLatestEndTime(
             routines={
               routines
             }
+            adhocTasks={adhocTasks}
             settings={
               scheduleSettings
             }
@@ -1455,6 +1511,17 @@ function updateProjectLatestEndTime(
             onDeleteRoutineTask={
               deleteRoutineTaskById
             }
+            onAddAdhocTask={addAdhocTask}
+            onCompleteAdhocTask={
+              completeAdhocTask
+            }
+            onUpdateAdhocTask={
+              updateAdhocTask
+            }
+            onDeleteAdhocTask={
+              deleteAdhocTask
+            }
+
           />
           ) : (
             <RoutinesView

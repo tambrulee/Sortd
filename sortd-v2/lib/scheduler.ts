@@ -1,4 +1,5 @@
 import {
+  AdhocTask,
   Energy,
   RecurrenceUnit,
   Routine,
@@ -22,7 +23,10 @@ export type SchedulableProjectTask =
 export type UnscheduledItem = {
   id: string;
   title: string;
-  sourceType: "task" | "routine";
+  sourceType:
+  | "task"
+  | "routine"
+  | "adhoc";
 
   sourceId: string;
   parentId: string;
@@ -47,7 +51,10 @@ type SchedulerSettings =
 
 type ScheduleCandidate = {
   id: string;
-  sourceType: "task" | "routine";
+  sourceType:
+  | "task"
+  | "routine"
+  | "adhoc";
   sourceId: string;
   parentId: string;
   parentName: string;
@@ -953,15 +960,90 @@ function buildRoutineCandidates(
   return candidates;
 }
 
+function buildAdhocCandidates(
+  adhocTasks: AdhocTask[],
+  today: string,
+  horizonEnd: string
+): ScheduleCandidate[] {
+  return adhocTasks
+    .filter((task) => !task.completed)
+    .map((task) => {
+      const usedDefaultDuration =
+        !task.estimatedMinutes;
+
+      const plannedDate =
+        task.plannedDate &&
+        task.plannedDate >= today
+          ? task.plannedDate
+          : today;
+
+      return {
+        id: `adhoc-${task.id}`,
+
+        sourceType: "adhoc" as const,
+
+        sourceId: task.id,
+
+        parentId: "adhoc",
+
+        parentName: "Ad hoc",
+
+        title:
+          task.title ||
+          "Untitled task",
+
+        durationMinutes:
+          task.estimatedMinutes ??
+          DEFAULT_TASK_MINUTES,
+
+        maxSessionMinutes:
+          DEFAULT_MAX_SESSION_MINUTES,
+
+        usedDefaultDuration,
+
+        context:
+          task.context ??
+          "personal",
+
+        earliestStartTime:
+          task.earliestStart,
+
+        latestEndTime:
+          task.latestEnd,
+
+        priority:
+          task.priority,
+
+        energy:
+          getItemEnergy(task),
+
+        earliestDate:
+          plannedDate,
+
+        latestDate:
+          plannedDate <= horizonEnd
+            ? plannedDate
+            : horizonEnd,
+      };
+    })
+    .filter(
+      (candidate) =>
+        candidate.earliestDate <=
+        candidate.latestDate
+    );
+}
+
 export function buildRollingSchedule({
   tasks,
   routines,
+  adhocTasks,
   settings,
   today,
   currentTime,
 }: {
   tasks: SchedulableProjectTask[];
   routines: Routine[];
+  adhocTasks: AdhocTask[];
   settings: SchedulerSettings;
   today: string;
   currentTime: string;
@@ -989,6 +1071,12 @@ export function buildRollingSchedule({
       horizonEnd
     );
 
+  const adhocCandidates =
+  buildAdhocCandidates(
+    adhocTasks,
+    today,
+    horizonEnd
+  );
   /**
    * Candidate order still handles "what deserves space first":
    * due date first, then explicit priority.
@@ -1000,6 +1088,7 @@ export function buildRollingSchedule({
   const candidates = [
     ...projectCandidates,
     ...routineCandidates,
+    ...adhocCandidates,
   ].sort(
     (first, second) => {
       const firstDue =

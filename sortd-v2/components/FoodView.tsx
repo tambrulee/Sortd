@@ -10,8 +10,6 @@ import {
   Meal,
   MealPlanEntry,
   MealType,
-  ShoppingItem,
-  ShoppingList,
 } from "@/lib/types";
 
 import MealDetailsModal from "@/components/MealDetailsModal";
@@ -21,12 +19,6 @@ type FoodViewProps = {
 
   onChangeFoodData: (
     foodData: FoodData
-  ) => void;
-
-  shoppingLists: ShoppingList[];
-
-  onChangeShoppingLists: (
-    shoppingLists: ShoppingList[]
   ) => void;
 };
 
@@ -125,18 +117,17 @@ const mealTypes: Array<{
   },
 ];
 
-
 export default function FoodView({
   foodData,
   onChangeFoodData,
-  shoppingLists,
-  onChangeShoppingLists,
 }: FoodViewProps) {
   const [
     activeTab,
     setActiveTab,
   ] = useState<
-    "week" | "meals"
+    "week" |
+    "meals" |
+    "shopping"
   >("week");
 
   const [
@@ -154,16 +145,16 @@ export default function FoodView({
   const [
     newMealType,
     setNewMealType,
-    ] = useState<MealType>(
+  ] = useState<MealType>(
     "dinner"
-    );
+  );
 
   const [
     selectedMeal,
     setSelectedMeal,
-    ] = useState<Meal | null>(
+  ] = useState<Meal | null>(
     null
-    );
+  );
 
   const weekDates =
     useMemo(
@@ -181,17 +172,13 @@ export default function FoodView({
     if (!name) return;
 
     const meal: Meal = {
-    id: crypto.randomUUID(),
-    name,
-
-    mealType: newMealType,
-
-    defaultPortions: 2,
-    portionsAvailable: 0,
-
-    ingredients: [],
-
-    createdAt:
+      id: crypto.randomUUID(),
+      name,
+      mealType: newMealType,
+      defaultPortions: 2,
+      portionsAvailable: 0,
+      ingredients: [],
+      createdAt:
         new Date().toISOString(),
     };
 
@@ -250,6 +237,8 @@ export default function FoodView({
     }
 
     onChangeFoodData({
+      ...foodData,
+
       meals:
         foodData.meals.filter(
           (item) =>
@@ -264,138 +253,145 @@ export default function FoodView({
             mealId
         ),
     });
+
+    if (
+      selectedMeal?.id ===
+      mealId
+    ) {
+      setSelectedMeal(null);
+    }
   }
 
   function planMeal(
     date: string,
     mealId: string
-    ) {
+  ) {
     if (!mealId) return;
 
     const meal =
-        foodData.meals.find(
+      foodData.meals.find(
         (item) =>
-            item.id === mealId
-        );
+          item.id === mealId
+      );
 
     if (!meal) return;
 
-    const entry:
-        MealPlanEntry = {
-        id: crypto.randomUUID(),
+    const mealType =
+      meal.mealType ??
+      "dinner";
 
-        date,
+    const existingEntry =
+      foodData.mealPlan.find(
+        (entry) =>
+          entry.date === date &&
+          (
+            entry.mealType ??
+            "dinner"
+          ) === mealType
+      );
 
-        mealId,
-
-        mealType:
-            meal.mealType ??
-            "dinner",
-
-        portions: 1,
-        };
-
-    onChangeFoodData({
+    if (existingEntry) {
+      onChangeFoodData({
         ...foodData,
 
-        mealPlan: [
-        ...foodData.mealPlan,
-        entry,
-        ],
-    });
+        mealPlan:
+          foodData.mealPlan.map(
+            (entry) =>
+              entry.id ===
+              existingEntry.id
+                ? {
+                    ...entry,
+                    mealId,
+                    mealType,
+                  }
+                : entry
+          ),
+      });
+
+      return;
     }
 
+    const entry:
+      MealPlanEntry = {
+      id: crypto.randomUUID(),
+      date,
+      mealId,
+      mealType,
+      portions: 1,
+    };
+
+    onChangeFoodData({
+      ...foodData,
+
+      mealPlan: [
+        ...foodData.mealPlan,
+        entry,
+      ],
+    });
+  }
+
   function buyIngredients(
-  meal: Meal
-) {
-  if (
-    meal.ingredients.length === 0
+    meal: Meal
   ) {
-    return;
+    if (
+      meal.ingredients.length ===
+      0
+    ) {
+      return;
+    }
+
+    const shoppingList =
+      foodData.shoppingList ??
+      [];
+
+    const existingTitles =
+      new Set(
+        shoppingList.map(
+          (item) =>
+            item.title
+              .trim()
+              .toLowerCase()
+        )
+      );
+
+    const newItems =
+      meal.ingredients
+        .filter(
+          (ingredient) =>
+            !existingTitles.has(
+              ingredient.name
+                .trim()
+                .toLowerCase()
+            )
+        )
+        .map(
+          (ingredient) => ({
+            id: crypto.randomUUID(),
+            title:
+              ingredient.name,
+            quantity:
+              ingredient.quantity,
+            purchased: false,
+            createdAt:
+              new Date().toISOString(),
+          })
+        );
+
+    if (
+      newItems.length === 0
+    ) {
+      return;
+    }
+
+    onChangeFoodData({
+      ...foodData,
+
+      shoppingList: [
+        ...shoppingList,
+        ...newItems,
+      ],
+    });
   }
-
-  const existingFoodList =
-    shoppingLists.find(
-      (list) =>
-        list.name.toLowerCase() ===
-        "food shop"
-    );
-
-  const newItems:
-    ShoppingItem[] =
-    meal.ingredients.map(
-      (
-        ingredient,
-        index
-      ) => ({
-        id: crypto.randomUUID(),
-
-        title:
-          ingredient.name,
-
-        quantity:
-          ingredient.quantity,
-
-        category: "food",
-
-        intent: "need",
-
-        purchased: false,
-
-        order:
-          (
-            existingFoodList
-              ?.items.length ??
-            0
-          ) +
-          index +
-          1,
-
-        createdAt:
-          new Date().toISOString(),
-      })
-    );
-
-  if (existingFoodList) {
-    onChangeShoppingLists(
-      shoppingLists.map(
-        (list) =>
-          list.id ===
-          existingFoodList.id
-            ? {
-                ...list,
-
-                items: [
-                  ...list.items,
-                  ...newItems,
-                ],
-              }
-            : list
-      )
-    );
-
-    return;
-  }
-
-  const newFoodList:
-    ShoppingList = {
-    id: crypto.randomUUID(),
-
-    name: "Food Shop",
-
-    items: newItems,
-
-    createdAt:
-      new Date().toISOString(),
-
-    archived: false,
-  };
-
-  onChangeShoppingLists([
-    ...shoppingLists,
-    newFoodList,
-  ]);
-}
 
   function removePlanEntry(
     entryId: string
@@ -427,6 +423,10 @@ export default function FoodView({
 
     setWeekAnchor(next);
   }
+
+  const shoppingList =
+    foodData.shoppingList ??
+    [];
 
   return (
     <div className="space-y-6">
@@ -485,259 +485,284 @@ export default function FoodView({
           >
             Meals
           </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setActiveTab(
+                "shopping"
+              )
+            }
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              activeTab ===
+              "shopping"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500"
+            }`}
+          >
+            Food shop
+          </button>
         </div>
       </header>
 
       {activeTab === "week" ? (
         <section className="space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <button
-                type="button"
-                onClick={() =>
+              type="button"
+              onClick={() =>
                 moveWeek(-1)
-                }
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
+              }
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
             >
-                ← Previous
+              ← Previous
             </button>
 
             <button
-                type="button"
-                onClick={() =>
+              type="button"
+              onClick={() =>
                 setWeekAnchor(
-                    new Date()
+                  new Date()
                 )
-                }
-                className="text-sm font-medium text-[#a93ac5]"
+              }
+              className="text-sm font-medium text-[#a93ac5]"
             >
-                This week
+              This week
             </button>
 
             <button
-                type="button"
-                onClick={() =>
+              type="button"
+              onClick={() =>
                 moveWeek(1)
-                }
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
+              }
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
             >
-                Next →
+              Next →
             </button>
-            </div>
+          </div>
 
-            <div className="space-y-4">
+          <div className="space-y-4">
             {weekDates.map(
-                (date) => {
+              (date) => {
                 const dateKey =
-                    getDateKey(date);
+                  getDateKey(date);
 
                 const entries =
-                    foodData.mealPlan.filter(
+                  foodData.mealPlan.filter(
                     (entry) =>
-                        entry.date ===
-                        dateKey
-                    );
+                      entry.date ===
+                      dateKey
+                  );
 
                 return (
-                    <article
+                  <article
                     key={dateKey}
                     className="rounded-2xl border border-slate-200 bg-white p-5"
-                    >
+                  >
                     <h2 className="text-lg font-semibold text-slate-900">
-                        {formatter.format(
+                      {formatter.format(
                         date
-                        )}
+                      )}
                     </h2>
 
-                    <div className="mt-4 space-y-4">
-                        {mealTypes.map(
+                    <div className="mt-4 space-y-3">
+                      {mealTypes.map(
                         ({
-                            value,
-                            label,
+                          value,
+                          label,
                         }) => {
-                            const sectionEntries =
-                            entries.filter(
-                                (entry) =>
+                          const sectionEntry =
+                            entries.find(
+                              (entry) =>
                                 (
-                                    entry.mealType ??
-                                    "dinner"
-                                ) === value
+                                  entry.mealType ??
+                                  "dinner"
+                                ) ===
+                                value
                             );
 
-                            const availableMeals =
+                          const availableMeals =
                             foodData.meals.filter(
-                                (meal) =>
+                              (meal) =>
                                 (
-                                    meal.mealType ??
-                                    "dinner"
-                                ) === value
+                                  meal.mealType ??
+                                  "dinner"
+                                ) ===
+                                value
                             );
 
-                            return (
+                          const plannedMeal =
+                            sectionEntry
+                              ? foodData.meals.find(
+                                  (
+                                    meal
+                                  ) =>
+                                    meal.id ===
+                                    sectionEntry.mealId
+                                )
+                              : undefined;
+
+                          return (
                             <section
-                                key={value}
-                                className="rounded-xl bg-slate-50 p-4"
+                              key={
+                                value
+                              }
+                              className="rounded-xl bg-slate-50 p-4"
                             >
-                                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
                                 {label}
-                                </p>
+                              </p>
 
-                                <div className="space-y-2">
-                                {sectionEntries.map(
-                                    (entry) => {
-                                    const meal =
-                                        foodData.meals.find(
-                                        (
-                                            item
-                                        ) =>
-                                            item.id ===
-                                            entry.mealId
-                                        );
+                              {sectionEntry &&
+                              plannedMeal ? (
+                                <div className="rounded-xl bg-[#f8f1fa] p-3">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-sm font-semibold text-slate-800">
+                                      {
+                                        plannedMeal.name
+                                      }
+                                    </p>
 
-                                    if (
-                                        !meal
-                                    ) {
-                                        return null;
-                                    }
-
-                                    return (
-                                        <div
-                                        key={
-                                            entry.id
-                                        }
-                                        className="rounded-xl bg-[#f8f1fa] p-3"
-                                        >
-                                        <div className="flex items-start justify-between gap-2">
-                                            <p className="text-sm font-semibold text-slate-800">
-                                            {
-                                                meal.name
-                                            }
-                                            </p>
-
-                                            <button
-                                            type="button"
-                                            onClick={() =>
-                                                removePlanEntry(
-                                                entry.id
-                                                )
-                                            }
-                                            className="text-slate-400 hover:text-red-500"
-                                            >
-                                            ×
-                                            </button>
-                                        </div>
-                                        </div>
-                                    );
-                                    }
-                                )}
-
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        removePlanEntry(
+                                          sectionEntry.id
+                                        )
+                                      }
+                                      className="text-slate-400 hover:text-red-500"
+                                      aria-label={`Remove ${plannedMeal.name}`}
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
                                 <select
-                                    defaultValue=""
-                                    onChange={(
+                                  defaultValue=""
+                                  onChange={(
                                     event
-                                    ) => {
+                                  ) => {
                                     planMeal(
-                                        dateKey,
-                                        event
+                                      dateKey,
+                                      event
                                         .target
                                         .value
                                     );
 
                                     event.target.value =
-                                        "";
-                                    }}
-                                    className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-sm text-slate-500"
+                                      "";
+                                  }}
+                                  className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-sm text-slate-500"
                                 >
-                                    <option value="">
+                                  <option value="">
                                     + Add{" "}
                                     {label.toLowerCase()}
-                                    </option>
+                                  </option>
 
-                                    {availableMeals.map(
+                                  {availableMeals.map(
                                     (
-                                        meal
+                                      meal
                                     ) => (
-                                        <option
+                                      <option
                                         key={
-                                            meal.id
+                                          meal.id
                                         }
                                         value={
-                                            meal.id
+                                          meal.id
                                         }
-                                        >
+                                      >
                                         {
-                                            meal.name
+                                          meal.name
                                         }
-                                        </option>
+                                      </option>
                                     )
-                                    )}
+                                  )}
                                 </select>
-                                </div>
+                              )}
                             </section>
-                            );
+                          );
                         }
-                        )}
+                      )}
                     </div>
-                    </article>
+                  </article>
                 );
-                }
+              }
             )}
-            </div>
+          </div>
         </section>
-        ) : (
-        <section className="space-y-4">
+      ) : activeTab ===
+        "meals" ? (
+        <section className="space-y-6">
           <div className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-3">
             <input
-                value={newMealName}
-                onChange={(event) =>
+              value={
+                newMealName
+              }
+              onChange={(
+                event
+              ) =>
                 setNewMealName(
-                    event.target.value
+                  event
+                    .target
+                    .value
                 )
-                }
-                onKeyDown={(event) => {
+              }
+              onKeyDown={(
+                event
+              ) => {
                 if (
-                    event.key === "Enter"
+                  event.key ===
+                  "Enter"
                 ) {
-                    addMeal();
+                  addMeal();
                 }
-                }}
-                placeholder="Add a meal..."
-                className="min-w-0 flex-1 bg-transparent px-2 py-1 outline-none"
+              }}
+              placeholder="Add a meal..."
+              className="min-w-0 flex-1 bg-transparent px-2 py-1 outline-none"
             />
 
             <select
-                value={newMealType}
-                onChange={(event) =>
+              value={
+                newMealType
+              }
+              onChange={(
+                event
+              ) =>
                 setNewMealType(
-                    event.target
+                  event
+                    .target
                     .value as MealType
                 )
-                }
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+              }
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
             >
-                <option value="breakfast">
+              <option value="breakfast">
                 Breakfast
-                </option>
+              </option>
 
-                <option value="lunch">
+              <option value="lunch">
                 Lunch
-                </option>
+              </option>
 
-                <option value="dinner">
+              <option value="dinner">
                 Dinner
-                </option>
+              </option>
             </select>
 
             <button
-                type="button"
-                onClick={addMeal}
-                className="rounded-xl bg-[#cd6ce7] px-4 py-2 text-sm font-semibold text-white"
+              type="button"
+              onClick={
+                addMeal
+              }
+              className="rounded-xl bg-[#cd6ce7] px-4 py-2 text-sm font-semibold text-white"
             >
-                Add meal
+              Add meal
             </button>
-            </div>
+          </div>
 
-          {foodData.meals
-            .length === 0 ? (
+          {foodData.meals.length ===
+          0 ? (
             <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
               <p className="font-semibold text-slate-700">
                 No meals saved
@@ -753,216 +778,375 @@ export default function FoodView({
             </div>
           ) : (
             <div className="space-y-8">
-                {mealTypes.map(
-                    ({
-                    value,
-                    label,
-                    }) => {
-                    const meals =
-                        foodData.meals.filter(
-                        (meal) =>
-                            (
-                            meal.mealType ??
-                            "dinner"
-                            ) === value
-                        );
-
-                    return (
-                        <section key={value}>
-                        <div className="mb-3 flex items-center gap-3">
-                            <h2 className="text-lg font-semibold text-slate-900">
-                            {label}
-                            </h2>
-
-                            <span className="text-sm text-slate-400">
-                            {meals.length}
-                            </span>
-                        </div>
-
-                        {meals.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 text-sm text-slate-400">
-                            No{" "}
-                            {label.toLowerCase()}{" "}
-                            meals saved yet.
-                            </div>
-                        ) : (
-                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {meals.map(
-                                (meal) => (
-                                                    <article
-                                                        key={meal.id}
-                                                        onClick={() =>
-                                                            setSelectedMeal(meal)
-                                                        }
-                                                        className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-slate-300"
-                                                        >
-                                                        <div className="flex items-start justify-between gap-4">
-                                                        <input
-                                                            value={
-                                                            meal.name
-                                                            }
-                                                            onChange={(
-                                                            event
-                                                            ) =>
-                                                            updateMeal(
-                                                                meal.id,
-                                                                {
-                                                                name: event
-                                                                    .target
-                                                                    .value,
-                                                                }
-                                                            )
-                                                            }
-                                                            className="min-w-0 flex-1 bg-transparent text-lg font-semibold text-slate-900 outline-none"
-                                                        />
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={(event) => {
-                                                            event.stopPropagation();
-
-                                                            deleteMeal(
-                                                                meal.id
-                                                            );
-                                                            }}
-                                                            className="text-slate-400 hover:text-red-500"
-                                                        >
-                                                            ×
-                                                        </button>
-                                                        </div>
-
-                                                        <div className="mt-5 grid grid-cols-2 gap-3">
-                                                        <label className="text-xs text-slate-500">
-                                                            Makes
-
-                                                            <input
-                                                            type="number"
-                                                            min="1"
-                                                            value={
-                                                                meal.defaultPortions
-                                                            }
-                                                            onChange={(
-                                                                event
-                                                            ) =>
-                                                                updateMeal(
-                                                                meal.id,
-                                                                {
-                                                                    defaultPortions:
-                                                                    Math.max(
-                                                                        1,
-                                                                        Number(
-                                                                        event
-                                                                            .target
-                                                                            .value
-                                                                        )
-                                                                    ),
-                                                                }
-                                                                )
-                                                            }
-                                                            onClick={(event) =>
-                                                                event.stopPropagation()
-                                                                }
-                                                            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                                                            />
-                                                        </label>
-
-                                                        <label className="text-xs text-slate-500">
-                                                            Portions ready
-
-                                                            <input
-                                                            type="number"
-                                                            min="0"
-                                                            value={
-                                                                meal.portionsAvailable
-                                                            }
-                                                            onChange={(
-                                                                event
-                                                            ) =>
-                                                                updateMeal(
-                                                                meal.id,
-                                                                {
-                                                                    portionsAvailable:
-                                                                    Math.max(
-                                                                        0,
-                                                                        Number(
-                                                                        event
-                                                                            .target
-                                                                            .value
-                                                                        )
-                                                                    ),
-                                                                }
-                                                                )
-                                                            }
-                                                            onClick={(event) =>
-                                                                event.stopPropagation()
-                                                                }
-                                                            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
-                                                            />
-                                                        </label>
-                                                        </div>
-
-                                                        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
-                                                        <span className="text-slate-500">
-                                                            {
-                                                            meal
-                                                                .ingredients
-                                                                .length
-                                                            }{" "}
-                                                            ingredients
-                                                        </span>
-
-                                                        <button
-                                                            type="button"
-                                                            disabled={
-                                                                meal.ingredients.length ===
-                                                                0
-                                                            }
-                                                            onClick={(event) => {
-                                                                event.stopPropagation();
-
-                                                                buyIngredients(
-                                                                meal
-                                                                );
-                                                            }}
-                                                            className={`font-medium ${
-                                                                meal.ingredients.length >
-                                                                0
-                                                                ? "text-[#a93ac5] hover:text-[#8d2fa8]"
-                                                                : "cursor-not-allowed text-slate-300"
-                                                            }`}
-                                                            >
-                                                            Buy ingredients
-                                                            </button>
-                                                        </div>
-                                                    </article>
-                                )
-                            )}
-                            </div>
-                        )}
-                        </section>
+              {mealTypes.map(
+                ({
+                  value,
+                  label,
+                }) => {
+                  const meals =
+                    foodData.meals.filter(
+                      (meal) =>
+                        (
+                          meal.mealType ??
+                          "dinner"
+                        ) ===
+                        value
                     );
-                    }
-                )}
-                </div>
+
+                  return (
+                    <section
+                      key={value}
+                    >
+                      <div className="mb-3 flex items-center gap-3">
+                        <h2 className="text-lg font-semibold text-slate-900">
+                          {label}
+                        </h2>
+
+                        <span className="text-sm text-slate-400">
+                          {
+                            meals.length
+                          }
+                        </span>
+                      </div>
+
+                      {meals.length ===
+                      0 ? (
+                        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 text-sm text-slate-400">
+                          No{" "}
+                          {label.toLowerCase()}{" "}
+                          meals saved
+                          yet.
+                        </div>
+                      ) : (
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                          {meals.map(
+                            (
+                              meal
+                            ) => (
+                              <article
+                                key={
+                                  meal.id
+                                }
+                                onClick={() =>
+                                  setSelectedMeal(
+                                    meal
+                                  )
+                                }
+                                className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-slate-300"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <input
+                                    value={
+                                      meal.name
+                                    }
+                                    onClick={(
+                                      event
+                                    ) =>
+                                      event.stopPropagation()
+                                    }
+                                    onChange={(
+                                      event
+                                    ) =>
+                                      updateMeal(
+                                        meal.id,
+                                        {
+                                          name: event
+                                            .target
+                                            .value,
+                                        }
+                                      )
+                                    }
+                                    className="min-w-0 flex-1 bg-transparent text-lg font-semibold text-slate-900 outline-none"
+                                  />
+
+                                  <button
+                                    type="button"
+                                    onClick={(
+                                      event
+                                    ) => {
+                                      event.stopPropagation();
+
+                                      deleteMeal(
+                                        meal.id
+                                      );
+                                    }}
+                                    className="text-slate-400 hover:text-red-500"
+                                    aria-label={`Delete ${meal.name}`}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+
+                                <div className="mt-5 grid grid-cols-2 gap-3">
+                                  <label className="text-xs text-slate-500">
+                                    Makes
+
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={
+                                        meal.defaultPortions
+                                      }
+                                      onClick={(
+                                        event
+                                      ) =>
+                                        event.stopPropagation()
+                                      }
+                                      onChange={(
+                                        event
+                                      ) =>
+                                        updateMeal(
+                                          meal.id,
+                                          {
+                                            defaultPortions:
+                                              Math.max(
+                                                1,
+                                                Number(
+                                                  event
+                                                    .target
+                                                    .value
+                                                )
+                                              ),
+                                          }
+                                        )
+                                      }
+                                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                                    />
+                                  </label>
+
+                                  <label className="text-xs text-slate-500">
+                                    Portions
+                                    ready
+
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={
+                                        meal.portionsAvailable
+                                      }
+                                      onClick={(
+                                        event
+                                      ) =>
+                                        event.stopPropagation()
+                                      }
+                                      onChange={(
+                                        event
+                                      ) =>
+                                        updateMeal(
+                                          meal.id,
+                                          {
+                                            portionsAvailable:
+                                              Math.max(
+                                                0,
+                                                Number(
+                                                  event
+                                                    .target
+                                                    .value
+                                                )
+                                              ),
+                                          }
+                                        )
+                                      }
+                                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                                    />
+                                  </label>
+                                </div>
+
+                                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
+                                  <span className="text-slate-500">
+                                    {
+                                      meal
+                                        .ingredients
+                                        .length
+                                    }{" "}
+                                    ingredients
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      meal
+                                        .ingredients
+                                        .length ===
+                                      0
+                                    }
+                                    onClick={(
+                                      event
+                                    ) => {
+                                      event.stopPropagation();
+
+                                      buyIngredients(
+                                        meal
+                                      );
+                                    }}
+                                    className={`font-medium ${
+                                      meal
+                                        .ingredients
+                                        .length >
+                                      0
+                                        ? "text-[#a93ac5] hover:text-[#8d2fa8]"
+                                        : "cursor-not-allowed text-slate-300"
+                                    }`}
+                                  >
+                                    Buy
+                                    ingredients
+                                  </button>
+                                </div>
+                              </article>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </section>
+                  );
+                }
+              )}
+            </div>
           )}
-                </section>
+        </section>
+      ) : (
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">
+                Food shop
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Ingredients you&apos;ve chosen to buy.
+              </p>
+            </div>
+
+            {shoppingList.length >
+              0 && (
+              <span className="text-sm text-slate-400">
+                {
+                  shoppingList.filter(
+                    (item) =>
+                      !item.purchased
+                  ).length
+                }{" "}
+                left
+              </span>
+            )}
+          </div>
+
+          {shoppingList.length ===
+          0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+              Nothing to buy yet.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {shoppingList.map(
+                (item) => (
+                  <div
+                    key={item.id}
+                    className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
+                      item.purchased
+                        ? "border-emerald-100 bg-emerald-50/40"
+                        : "border-slate-200 bg-white"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={
+                        item.purchased
+                      }
+                      onChange={() => {
+                        onChangeFoodData({
+                          ...foodData,
+
+                          shoppingList:
+                            shoppingList.map(
+                              (
+                                shoppingItem
+                              ) =>
+                                shoppingItem.id ===
+                                item.id
+                                  ? {
+                                      ...shoppingItem,
+                                      purchased:
+                                        !shoppingItem.purchased,
+                                    }
+                                  : shoppingItem
+                            ),
+                        });
+                      }}
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`font-medium ${
+                          item.purchased
+                            ? "text-slate-400 line-through"
+                            : "text-slate-800"
+                        }`}
+                      >
+                        {item.title}
+                      </p>
+
+                      {item.quantity && (
+                        <p className="text-sm text-slate-400">
+                          {
+                            item.quantity
+                          }
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onChangeFoodData({
+                          ...foodData,
+
+                          shoppingList:
+                            shoppingList.filter(
+                              (
+                                shoppingItem
+                              ) =>
+                                shoppingItem.id !==
+                                item.id
+                            ),
+                        });
+                      }}
+                      className="text-slate-400 hover:text-red-500"
+                      aria-label={`Remove ${item.title}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+        </section>
       )}
 
-{selectedMeal && (
-  <MealDetailsModal
-    key={selectedMeal.id}
-    meal={selectedMeal}
-    onClose={() =>
-      setSelectedMeal(null)
-    }
-    onSave={(updatedMeal) => {
-      updateMeal(
-        updatedMeal.id,
-        updatedMeal
-      );
-    }}
-  />
-)}
+      {selectedMeal && (
+        <MealDetailsModal
+          key={
+            selectedMeal.id
+          }
+          meal={
+            selectedMeal
+          }
+          onClose={() =>
+            setSelectedMeal(
+              null
+            )
+          }
+          onSave={(
+            updatedMeal
+          ) => {
+            updateMeal(
+              updatedMeal.id,
+              updatedMeal
+            );
+          }}
+        />
+      )}
     </div>
   );
 }

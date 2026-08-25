@@ -36,6 +36,31 @@ export type Task = {
   scheduleContext?: ScheduleContext;
 };
 
+export type AdhocTask = {
+  id: string;
+  title: string;
+
+  completed: boolean;
+
+  estimatedMinutes?: number;
+
+  priority?: "low" | "medium" | "high";
+  energy?: "low" | "medium" | "high";
+
+  context?: "personal" | "work";
+
+  earliestStart?: string;
+  latestEnd?: string;
+
+  plannedDate?: string;
+  blockUntil?: string;
+
+  notes?: string;
+
+  createdAt: string;
+  order: number;
+};
+
 export type ProjectStatus = "active" | "paused" | "completed";
 
 export type SortdList = {
@@ -180,7 +205,10 @@ export type ScheduleSettings = {
 
 export type ScheduledBlock = {
   id: string;
-  sourceType: "task" | "routine";
+  sourceType:
+  | "task"
+  | "routine"
+  | "adhoc";
   sourceId: string;
   parentId: string;
   parentName: string;
@@ -286,7 +314,16 @@ export type MealPlanEntry = {
   portions: number;
 };
 
+export type FoodShoppingItem = {
+  id: string;
+  title: string;
+  quantity?: string;
+  purchased: boolean;
+  createdAt: string;
+};
+
 export type FoodData = {
   meals: Meal[];
   mealPlan: MealPlanEntry[];
+  shoppingList: FoodShoppingItem[];
 };

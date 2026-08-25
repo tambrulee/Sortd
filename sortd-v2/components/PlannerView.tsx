@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import {
+  AdhocTask,
   Routine,
   RoutineTask,
   ScheduleSettings,
@@ -25,6 +26,8 @@ type PlannerViewProps = {
   tasks: SchedulableProjectTask[];
 
   routines: Routine[];
+
+  adhocTasks: AdhocTask[];
 
   settings: ScheduleSettings;
 
@@ -63,6 +66,24 @@ type PlannerViewProps = {
     routineId: string,
     taskId: string
   ) => void;
+
+  onAddAdhocTask: (
+    task: AdhocTask
+  ) => void;
+
+  onCompleteAdhocTask: (
+    taskId: string
+  ) => void;
+
+  onUpdateAdhocTask: (
+    taskId: string,
+    updates: Partial<AdhocTask>
+  ) => void;
+
+  onDeleteAdhocTask: (
+    taskId: string
+  ) => void;
+
 };
 
 function getDateKeyInTimeZone(
@@ -158,19 +179,23 @@ function formatMinutes(minutes: number) {
 
 export default function PlannerView({
   tasks,
-
   routines,
-
+  adhocTasks,
   settings,
 
   onCompleteProjectTask,
   onCompleteRoutineTask,
+  onCompleteAdhocTask,
 
   onUpdateProjectTask,
   onUpdateRoutineTask,
+  onUpdateAdhocTask,
 
   onDeleteProjectTask,
   onDeleteRoutineTask,
+  onDeleteAdhocTask,
+
+  onAddAdhocTask,
 }: PlannerViewProps) {
   const [clock, setClock] = useState(
     () => new Date()
@@ -180,10 +205,21 @@ export default function PlannerView({
     selectedItem,
     setSelectedItem,
   ] = useState<{
-    sourceType: "task" | "routine";
+    sourceType:
+      | "task"
+      | "routine"
+      | "adhoc";
     sourceId: string;
     parentId: string;
   } | null>(null);
+
+  const [
+    newAdhocDate,
+    setNewAdhocDate,
+  ] = useState<string | null>(null);
+
+  const [newAdhocTitle, setNewAdhocTitle] =
+  useState("");
 
   useEffect(() => {
     const timer = window.setInterval(
@@ -208,21 +244,23 @@ export default function PlannerView({
   settings.timeZone
 );
 
-  const schedule = useMemo(
-    () =>
-      buildRollingSchedule({
-        tasks,
-        routines,
-        settings,
-        today,
-        currentTime,
-      }),
+const schedule = useMemo(
+  () =>
+    buildRollingSchedule({
+      tasks,
+      routines,
+      adhocTasks,
+      settings,
+      today,
+      currentTime,
+    }),
     [
-    tasks,
-    routines,
-    settings,
-    today,
-    currentTime,
+      tasks,
+      routines,
+      adhocTasks,
+      settings,
+      today,
+      currentTime,
     ]
   );
 
@@ -266,6 +304,14 @@ export default function PlannerView({
                 task.id === selectedItem.sourceId
             )
         : undefined;
+      
+      const selectedAdhocTask =
+        selectedItem?.sourceType === "adhoc"
+          ? adhocTasks.find(
+              (task) =>
+                task.id === selectedItem.sourceId
+            )
+          : undefined;
 
   return (
     <div className="space-y-5">
@@ -340,13 +386,103 @@ export default function PlannerView({
                   )}
                 </div>
 
-                <span className="text-sm text-slate-400">
-                  {blocks.length}{" "}
-                  {blocks.length === 1
-                    ? "item"
-                    : "items"}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-slate-400">
+                    {blocks.length}{" "}
+                    {blocks.length === 1
+                      ? "item"
+                      : "items"}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setNewAdhocDate(dateKey)
+                    }
+                    className="rounded-xl bg-[#f3eeee] px-3 py-2 text-sm font-medium text-[#9d3db7] transition hover:bg-[#eaddea]"
+                  >
+                    + Add task
+                  </button>
+                </div>
               </div>
+
+              {newAdhocDate === dateKey && (
+                <div className="mb-4 rounded-2xl bg-[#f3eeee] p-3">
+                  <div className="flex gap-2">
+                    <input
+                      value={newAdhocTitle}
+                      onChange={(event) =>
+                        setNewAdhocTitle(
+                          event.target.value
+                        )
+                      }
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === "Enter" &&
+                          newAdhocTitle.trim()
+                        ) {
+                          onAddAdhocTask({
+                            id: crypto.randomUUID(),
+                            title: newAdhocTitle.trim(),
+                            plannedDate: dateKey,
+                            estimatedMinutes: 30,
+                            context: "personal",
+                            completed: false,
+
+                            createdAt: new Date().toISOString(),
+                            order: adhocTasks.length + 1,
+                          });
+
+                          setNewAdhocTitle("");
+                          setNewAdhocDate(null);
+                        }
+                      }}
+                      placeholder="What do you need to do?"
+                      autoFocus
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    />
+
+                    <button
+                      type="button"
+                      disabled={!newAdhocTitle.trim()}
+                      onClick={() => {
+                        if (!newAdhocTitle.trim()) {
+                          return;
+                        }
+
+                        onAddAdhocTask({
+                          id: crypto.randomUUID(),
+                          title: newAdhocTitle.trim(),
+                          plannedDate: dateKey,
+                          estimatedMinutes: 30,
+                          context: "personal",
+                          completed: false,
+
+                          createdAt: new Date().toISOString(),
+                          order: adhocTasks.length + 1,
+                        });
+
+                        setNewAdhocTitle("");
+                        setNewAdhocDate(null);
+                      }}
+                      className="rounded-xl bg-[#9d3db7] px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                    >
+                      Add
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewAdhocDate(null);
+                        setNewAdhocTitle("");
+                      }}
+                      className="px-2 text-sm text-slate-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {blocks.length > 0 ? (
                 <div className="space-y-2">
@@ -359,11 +495,20 @@ export default function PlannerView({
                       type="button"
                       onClick={() => {
                         if (
-                          block.sourceType ===
-                          "routine"
+                          block.sourceType === "routine"
                         ) {
                           onCompleteRoutineTask(
                             block.parentId,
+                            block.sourceId
+                          );
+
+                          return;
+                        }
+
+                        if (
+                          block.sourceType === "adhoc"
+                        ) {
+                          onCompleteAdhocTask(
                             block.sourceId
                           );
 
@@ -398,11 +543,16 @@ export default function PlannerView({
                       </p>
 
                       <p className="mt-1 text-xs text-slate-500">
-                        {block.parentName} ·{" "}
-                        {block.sourceType ===
-                        "routine"
-                          ? "Routine"
-                          : "Project task"}
+                        {block.sourceType === "adhoc"
+                          ? "Ad hoc task"
+                          : (
+                            <>
+                              {block.parentName} ·{" "}
+                              {block.sourceType === "routine"
+                                ? "Routine"
+                                : "Project task"}
+                            </>
+                          )}
 
                         {block.sessionIndex &&
                           block.totalDurationMinutes &&
@@ -554,6 +704,28 @@ export default function PlannerView({
         onDeleteProjectTask(
           selectedItem.parentId,
           selectedProjectTask.id
+        )
+      }
+      onClose={() =>
+        setSelectedItem(null)
+      }
+    />
+  )}
+
+  {selectedItem &&
+  selectedAdhocTask && (
+    <ItemDetailsModal
+      kind="task"
+      item={selectedAdhocTask}
+      onChange={(updates) =>
+        onUpdateAdhocTask(
+          selectedAdhocTask.id,
+          updates
+        )
+      }
+      onDelete={() =>
+        onDeleteAdhocTask(
+          selectedAdhocTask.id
         )
       }
       onClose={() =>
