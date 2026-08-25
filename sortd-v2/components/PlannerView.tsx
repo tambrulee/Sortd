@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   AdhocTask,
@@ -31,138 +27,80 @@ type PlannerViewProps = {
 
   settings: ScheduleSettings;
 
-  onChangeSettings: (
-    settings: ScheduleSettings
-  ) => void;
+  onChangeSettings: (settings: ScheduleSettings) => void;
 
-  onCompleteProjectTask: (
-    projectId: string,
-    taskId: string
-  ) => void;
+  onCompleteProjectTask: (projectId: string, taskId: string) => void;
 
-  onCompleteRoutineTask: (
-    routineId: string,
-    taskId: string
-  ) => void;
+  onCompleteRoutineTask: (routineId: string, taskId: string) => void;
 
   onUpdateProjectTask: (
     projectId: string,
     taskId: string,
-    updates: Partial<Task>
+    updates: Partial<Task>,
   ) => void;
 
   onUpdateRoutineTask: (
     routineId: string,
     taskId: string,
-    updates: Partial<RoutineTask>
+    updates: Partial<RoutineTask>,
   ) => void;
 
-  onDeleteProjectTask: (
-    projectId: string,
-    taskId: string
-  ) => void;
+  onDeleteProjectTask: (projectId: string, taskId: string) => void;
 
-  onDeleteRoutineTask: (
-    routineId: string,
-    taskId: string
-  ) => void;
+  onDeleteRoutineTask: (routineId: string, taskId: string) => void;
 
-  onAddAdhocTask: (
-    task: AdhocTask
-  ) => void;
+  onAddAdhocTask: (task: AdhocTask) => void;
 
-  onCompleteAdhocTask: (
-    taskId: string
-  ) => void;
+  onCompleteAdhocTask: (taskId: string) => void;
 
-  onUpdateAdhocTask: (
-    taskId: string,
-    updates: Partial<AdhocTask>
-  ) => void;
+  onUpdateAdhocTask: (taskId: string, updates: Partial<AdhocTask>) => void;
 
-  onDeleteAdhocTask: (
-    taskId: string
-  ) => void;
-
+  onDeleteAdhocTask: (taskId: string) => void;
 };
 
-function getDateKeyInTimeZone(
-  date: Date,
-  timeZone: string
-) {
-  const parts = new Intl.DateTimeFormat(
-    "en-GB",
-    {
-      timeZone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }
-  ).formatToParts(date);
+function getDateKeyInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
 
-  const year = parts.find(
-    (part) => part.type === "year"
-  )?.value;
+  const year = parts.find((part) => part.type === "year")?.value;
 
-  const month = parts.find(
-    (part) => part.type === "month"
-  )?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
 
-  const day = parts.find(
-    (part) => part.type === "day"
-  )?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
 
   return `${year}-${month}-${day}`;
 }
 
-function getTimeInTimeZone(
-  date: Date,
-  timeZone: string
-) {
-  const parts = new Intl.DateTimeFormat(
-    "en-GB",
-    {
-      timeZone,
-      hour: "2-digit",
-      minute: "2-digit",
-      hourCycle: "h23",
-    }
-  ).formatToParts(date);
+function getTimeInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
 
-  const hour =
-    parts.find(
-      (part) => part.type === "hour"
-    )?.value ?? "00";
+  const hour = parts.find((part) => part.type === "hour")?.value ?? "00";
 
-  const minute =
-    parts.find(
-      (part) => part.type === "minute"
-    )?.value ?? "00";
+  const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
 
   return `${hour}:${minute}`;
 }
 
-function formatDate(
-  dateKey: string,
-  timeZone: string
-) {
-  const [year, month, day] = dateKey
-    .split("-")
-    .map(Number);
+function formatDate(dateKey: string, timeZone: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
 
-  const safeDate = new Date(
-    Date.UTC(year, month - 1, day, 12)
-  );
+  const safeDate = new Date(Date.UTC(year, month - 1, day, 12));
 
-  return new Intl.DateTimeFormat(
-    "en-GB",
-    {
-      timeZone,
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    }
-  ).format(safeDate);
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(safeDate);
 }
 
 function formatMinutes(minutes: number) {
@@ -172,9 +110,7 @@ function formatMinutes(minutes: number) {
 
   const hours = minutes / 60;
 
-  return Number.isInteger(hours)
-    ? `${hours} hr`
-    : `${hours.toFixed(1)} hrs`;
+  return Number.isInteger(hours) ? `${hours} hr` : `${hours.toFixed(1)} hrs`;
 }
 
 export default function PlannerView({
@@ -197,121 +133,75 @@ export default function PlannerView({
 
   onAddAdhocTask,
 }: PlannerViewProps) {
-  const [clock, setClock] = useState(
-    () => new Date()
-  );
+  const [clock, setClock] = useState(() => new Date());
 
-  const [
-    selectedItem,
-    setSelectedItem,
-  ] = useState<{
-    sourceType:
-      | "task"
-      | "routine"
-      | "adhoc";
+  const [selectedItem, setSelectedItem] = useState<{
+    sourceType: "task" | "routine" | "adhoc";
     sourceId: string;
     parentId: string;
   } | null>(null);
 
-  const [
-    newAdhocDate,
-    setNewAdhocDate,
-  ] = useState<string | null>(null);
+  const [newAdhocDate, setNewAdhocDate] = useState<string | null>(null);
 
-  const [newAdhocTitle, setNewAdhocTitle] =
-  useState("");
+  const [newAdhocTitle, setNewAdhocTitle] = useState("");
 
   useEffect(() => {
-    const timer = window.setInterval(
-      () => {
-        setClock(new Date());
-      },
-      60_000
-    );
+    const timer = window.setInterval(() => {
+      setClock(new Date());
+    }, 60_000);
 
     return () => {
       window.clearInterval(timer);
     };
   }, []);
 
-  const today = getDateKeyInTimeZone(
-    clock,
-    settings.timeZone
-  );
+  const today = getDateKeyInTimeZone(clock, settings.timeZone);
 
-  const currentTime = getTimeInTimeZone(
-  clock,
-  settings.timeZone
-);
+  const currentTime = getTimeInTimeZone(clock, settings.timeZone);
 
-const schedule = useMemo(
-  () =>
-    buildRollingSchedule({
-      tasks,
-      routines,
-      adhocTasks,
-      settings,
-      today,
-      currentTime,
-    }),
-    [
-      tasks,
-      routines,
-      adhocTasks,
-      settings,
-      today,
-      currentTime,
-    ]
+  const schedule = useMemo(
+    () =>
+      buildRollingSchedule({
+        tasks,
+        routines,
+        adhocTasks,
+        settings,
+        today,
+        currentTime,
+      }),
+    [tasks, routines, adhocTasks, settings, today, currentTime],
   );
 
   const dateKeys = useMemo(
-    () =>
-      getScheduleDateKeys(
-        today,
-        settings.planningHorizonDays
-      ),
-    [
-      today,
-      settings.planningHorizonDays,
-    ]
+    () => getScheduleDateKeys(today, settings.planningHorizonDays),
+    [today, settings.planningHorizonDays],
   );
 
-  const plannedMinutes =
-    schedule.blocks.reduce(
-      (total, block) =>
-        total + block.durationMinutes,
-      0
-    );
+  const plannedMinutes = schedule.blocks.reduce(
+    (total, block) => total + block.durationMinutes,
+    0,
+  );
 
-    const selectedProjectTask =
-      selectedItem?.sourceType === "task"
-        ? tasks.find(
-            (task) =>
-              task.id === selectedItem.sourceId &&
-              task.projectId === selectedItem.parentId
-          )
-        : undefined;
+  const selectedProjectTask =
+    selectedItem?.sourceType === "task"
+      ? tasks.find(
+          (task) =>
+            task.id === selectedItem.sourceId &&
+            task.projectId === selectedItem.parentId,
+        )
+      : undefined;
 
-    const selectedRoutineTask =
-      selectedItem?.sourceType === "routine"
-        ? routines
-            .find(
-              (routine) =>
-                routine.id === selectedItem.parentId
-            )
-            ?.tasks.find(
-              (task) =>
-                task.id === selectedItem.sourceId
-            )
-        : undefined;
-      
-      const selectedAdhocTask =
-        selectedItem?.sourceType === "adhoc"
-          ? adhocTasks.find(
-              (task) =>
-                task.id === selectedItem.sourceId
-            )
-          : undefined;
+  const selectedRoutineTask =
+    selectedItem?.sourceType === "routine"
+      ? routines
+          .find((routine) => routine.id === selectedItem.parentId)
+          ?.tasks.find((task) => task.id === selectedItem.sourceId)
+      : undefined;
+
+  const selectedAdhocTask =
+    selectedItem?.sourceType === "adhoc"
+      ? adhocTasks.find((task) => task.id === selectedItem.sourceId)
+      : undefined;
 
   return (
     <div className="space-y-5">
@@ -327,43 +217,31 @@ const schedule = useMemo(
             </h1>
 
             <p className="mt-2 text-sm text-slate-500">
-              Automatically planned in{" "}
-              {settings.timeZone}.
+              Automatically planned in {settings.timeZone}.
             </p>
           </div>
 
           <div className="flex gap-3">
             <div className="rounded-xl bg-[#f3eeee] px-4 py-3 text-center">
-              <p className="text-xl font-bold">
-                {schedule.blocks.length}
-              </p>
-              <p className="text-xs text-slate-500">
-                Planned
-              </p>
+              <p className="text-xl font-bold">{schedule.blocks.length}</p>
+              <p className="text-xs text-slate-500">Planned</p>
             </div>
 
             <div className="rounded-xl bg-[#f3eeee] px-4 py-3 text-center">
               <p className="text-xl font-bold">
-                {formatMinutes(
-                  plannedMinutes
-                )}
+                {formatMinutes(plannedMinutes)}
               </p>
-              <p className="text-xs text-slate-500">
-                Scheduled
-              </p>
+              <p className="text-xs text-slate-500">Scheduled</p>
             </div>
           </div>
         </div>
-
       </div>
 
       <div className="space-y-4">
         {dateKeys.map((dateKey) => {
-          const blocks =
-            schedule.blocks.filter(
-              (block) =>
-                block.date === dateKey
-            );
+          const blocks = schedule.blocks.filter(
+            (block) => block.date === dateKey,
+          );
 
           return (
             <section
@@ -373,32 +251,22 @@ const schedule = useMemo(
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-950">
-                    {formatDate(
-                      dateKey,
-                      settings.timeZone
-                    )}
+                    {formatDate(dateKey, settings.timeZone)}
                   </h2>
 
                   {dateKey === today && (
-                    <p className="text-xs font-medium text-[#9d3db7]">
-                      Today
-                    </p>
+                    <p className="text-xs font-medium text-[#9d3db7]">Today</p>
                   )}
                 </div>
 
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-slate-400">
-                    {blocks.length}{" "}
-                    {blocks.length === 1
-                      ? "item"
-                      : "items"}
+                    {blocks.length} {blocks.length === 1 ? "item" : "items"}
                   </span>
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setNewAdhocDate(dateKey)
-                    }
+                    onClick={() => setNewAdhocDate(dateKey)}
                     className="rounded-xl bg-[#f3eeee] px-3 py-2 text-sm font-medium text-[#9d3db7] transition hover:bg-[#eaddea]"
                   >
                     + Add task
@@ -411,16 +279,9 @@ const schedule = useMemo(
                   <div className="flex gap-2">
                     <input
                       value={newAdhocTitle}
-                      onChange={(event) =>
-                        setNewAdhocTitle(
-                          event.target.value
-                        )
-                      }
+                      onChange={(event) => setNewAdhocTitle(event.target.value)}
                       onKeyDown={(event) => {
-                        if (
-                          event.key === "Enter" &&
-                          newAdhocTitle.trim()
-                        ) {
+                        if (event.key === "Enter" && newAdhocTitle.trim()) {
                           onAddAdhocTask({
                             id: crypto.randomUUID(),
                             title: newAdhocTitle.trim(),
@@ -487,65 +348,54 @@ const schedule = useMemo(
               {blocks.length > 0 ? (
                 <div className="space-y-2">
                   {blocks.map((block) => (
-                  <div
-                    key={block.id}
-                    className="grid gap-3 rounded-2xl bg-[#f3eeee] px-4 py-3 sm:grid-cols-[44px_130px_1fr_auto] sm:items-center"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (
-                          block.sourceType === "routine"
-                        ) {
-                          onCompleteRoutineTask(
-                            block.parentId,
-                            block.sourceId
-                          );
-
-                          return;
-                        }
-
-                        if (
-                          block.sourceType === "adhoc"
-                        ) {
-                          onCompleteAdhocTask(
-                            block.sourceId
-                          );
-
-                          return;
-                        }
-
-                        onCompleteProjectTask(
-                          block.parentId,
-                          block.sourceId
-                        );
-                      }}
-                      aria-label={`Complete ${block.title}`}
-                      title={
-                        block.sourceType ===
-                        "routine"
-                          ? "Complete routine task"
-                          : "Mark whole task complete"
-                      }
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+                    <div
+                      key={block.id}
+                      className="grid gap-3 rounded-2xl bg-[#f3eeee] px-4 py-3 sm:grid-cols-[44px_130px_1fr_auto] sm:items-center"
                     >
-                      ✓
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (block.sourceType === "routine") {
+                            onCompleteRoutineTask(
+                              block.parentId,
+                              block.sourceId,
+                            );
 
-                    <p className="font-semibold text-[#1f0825]">
-                      {block.startTime}–
-                      {block.endTime}
-                    </p>
+                            return;
+                          }
 
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-900">
-                        {block.title}
+                          if (block.sourceType === "adhoc") {
+                            onCompleteAdhocTask(block.sourceId);
+
+                            return;
+                          }
+
+                          onCompleteProjectTask(block.parentId, block.sourceId);
+                        }}
+                        aria-label={`Complete ${block.title}`}
+                        title={
+                          block.sourceType === "routine"
+                            ? "Complete routine task"
+                            : "Mark whole task complete"
+                        }
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+                      >
+                        ✓
+                      </button>
+
+                      <p className="font-semibold text-[#1f0825]">
+                        {block.startTime}–{block.endTime}
                       </p>
 
-                      <p className="mt-1 text-xs text-slate-500">
-                        {block.sourceType === "adhoc"
-                          ? "Ad hoc task"
-                          : (
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-900">
+                          {block.title}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          {block.sourceType === "adhoc" ? (
+                            "Ad hoc task"
+                          ) : (
                             <>
                               {block.parentName} ·{" "}
                               {block.sourceType === "routine"
@@ -554,56 +404,50 @@ const schedule = useMemo(
                             </>
                           )}
 
-                        {block.sessionIndex &&
-                          block.totalDurationMinutes &&
-                          block.totalDurationMinutes >
-                            block.durationMinutes && (
-                            <>
-                              {" "}
-                              · Session{" "}
-                              {block.sessionIndex}
-                            </>
-                          )}
-                      </p>
-                    </div>
+                          {block.sessionIndex &&
+                            block.totalDurationMinutes &&
+                            block.totalDurationMinutes >
+                              block.durationMinutes && (
+                              <> · Session {block.sessionIndex}</>
+                            )}
+                        </p>
+                      </div>
 
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span
-                        className={`rounded-full px-2.5 py-1 ${
-                          block.context === "work"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-purple-100 text-purple-700"
-                        }`}
-                      >
-                        {block.context}
-                      </span>
-
-                      {block.usedDefaultDuration && (
-                        
-                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
-                          30 min assumed
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span
+                          className={`rounded-full px-2.5 py-1 ${
+                            block.context === "work"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-purple-100 text-purple-700"
+                          }`}
+                        >
+                          {block.context}
                         </span>
-                        
-                      )}
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedItem({
-                            sourceType: block.sourceType,
-                            sourceId: block.sourceId,
-                            parentId: block.parentId,
-                          })
-                        }
-                        aria-label={`Edit ${block.title}`}
-                        title="Edit task details"
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-white hover:text-slate-900"
-                      >
-                        •••
-                      </button>
+                        {block.usedDefaultDuration && (
+                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
+                            30 min assumed
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedItem({
+                              sourceType: block.sourceType,
+                              sourceId: block.sourceId,
+                              parentId: block.parentId,
+                            })
+                          }
+                          aria-label={`Edit ${block.title}`}
+                          title="Edit task details"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-white hover:text-slate-900"
+                        >
+                          •••
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
                 </div>
               ) : (
                 <p className="rounded-2xl bg-[#f3eeee] px-4 py-7 text-center text-sm text-slate-500">
@@ -622,117 +466,88 @@ const schedule = useMemo(
           </h2>
 
           <p className="mt-1 text-sm text-amber-800">
-            Try extending your planning
-            horizon, adding availability or
+            Try extending your planning horizon, adding availability or
             shortening task estimates.
           </p>
 
           <div className="mt-4 space-y-2">
-            {schedule.unscheduled.map(
-              (item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-4 rounded-xl bg-white/70 px-4 py-3"
-                >
-                  <div>
-                    <p className="font-medium text-slate-900">
-                      {item.title}
-                    </p>
+            {schedule.unscheduled.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between gap-4 rounded-xl bg-white/70 px-4 py-3"
+              >
+                <div>
+                  <p className="font-medium text-slate-900">{item.title}</p>
 
-                    <p className="mt-1 text-xs text-slate-500">
-                      {item.reason}
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSelectedItem({
-                        sourceType: item.sourceType,
-                        sourceId: item.sourceId,
-                        parentId: item.parentId,
-                      })
-                    }
-                    className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-100"
-                  >
-                    Edit
-                  </button>
+                  <p className="mt-1 text-xs text-slate-500">{item.reason}</p>
                 </div>
-              )
-            )}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedItem({
+                      sourceType: item.sourceType,
+                      sourceId: item.sourceId,
+                      parentId: item.parentId,
+                    })
+                  }
+                  className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-100"
+                >
+                  Edit
+                </button>
+              </div>
+            ))}
           </div>
         </section>
       )}
 
-      {selectedItem &&
-  selectedRoutineTask && (
-    <ItemDetailsModal
-      kind="routine"
-      item={selectedRoutineTask}
-      onChange={(updates) =>
-        onUpdateRoutineTask(
-          selectedItem.parentId,
-          selectedRoutineTask.id,
-          updates
-        )
-      }
-      onDelete={() =>
-        onDeleteRoutineTask(
-          selectedItem.parentId,
-          selectedRoutineTask.id
-        )
-      }
-      onClose={() =>
-        setSelectedItem(null)
-      }
-    />
-  )}
+      {selectedItem && selectedRoutineTask && (
+        <ItemDetailsModal
+          kind="routine"
+          item={selectedRoutineTask}
+          onChange={(updates) =>
+            onUpdateRoutineTask(
+              selectedItem.parentId,
+              selectedRoutineTask.id,
+              updates,
+            )
+          }
+          onDelete={() =>
+            onDeleteRoutineTask(selectedItem.parentId, selectedRoutineTask.id)
+          }
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
 
-{selectedItem &&
-  selectedProjectTask && (
-    <ItemDetailsModal
-      kind="task"
-      item={selectedProjectTask}
-      onChange={(updates) =>
-        onUpdateProjectTask(
-          selectedItem.parentId,
-          selectedProjectTask.id,
-          updates
-        )
-      }
-      onDelete={() =>
-        onDeleteProjectTask(
-          selectedItem.parentId,
-          selectedProjectTask.id
-        )
-      }
-      onClose={() =>
-        setSelectedItem(null)
-      }
-    />
-  )}
+      {selectedItem && selectedProjectTask && (
+        <ItemDetailsModal
+          kind="task"
+          item={selectedProjectTask}
+          onChange={(updates) =>
+            onUpdateProjectTask(
+              selectedItem.parentId,
+              selectedProjectTask.id,
+              updates,
+            )
+          }
+          onDelete={() =>
+            onDeleteProjectTask(selectedItem.parentId, selectedProjectTask.id)
+          }
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
 
-  {selectedItem &&
-  selectedAdhocTask && (
-    <ItemDetailsModal
-      kind="task"
-      item={selectedAdhocTask}
-      onChange={(updates) =>
-        onUpdateAdhocTask(
-          selectedAdhocTask.id,
-          updates
-        )
-      }
-      onDelete={() =>
-        onDeleteAdhocTask(
-          selectedAdhocTask.id
-        )
-      }
-      onClose={() =>
-        setSelectedItem(null)
-      }
-    />
-  )}
+      {selectedItem && selectedAdhocTask && (
+        <ItemDetailsModal
+          kind="task"
+          item={selectedAdhocTask}
+          onChange={(updates) =>
+            onUpdateAdhocTask(selectedAdhocTask.id, updates)
+          }
+          onDelete={() => onDeleteAdhocTask(selectedAdhocTask.id)}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
     </div>
   );
 }

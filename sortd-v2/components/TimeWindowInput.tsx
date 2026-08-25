@@ -8,32 +8,18 @@ type TimeWindowInputProps = {
   placeholder?: string;
 };
 
-const TIME_OPTIONS = Array.from(
-  { length: 24 * 4 },
-  (_, index) => {
-    const totalMinutes = index * 15;
+const TIME_OPTIONS = Array.from({ length: 24 * 4 }, (_, index) => {
+  const totalMinutes = index * 15;
 
-    const hour = Math.floor(
-      totalMinutes / 60
-    );
+  const hour = Math.floor(totalMinutes / 60);
 
-    const minute =
-      totalMinutes % 60;
+  const minute = totalMinutes % 60;
 
-    return `${String(hour).padStart(
-      2,
-      "0"
-    )}:${String(minute).padStart(
-      2,
-      "0"
-    )}`;
-  }
-);
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+});
 
 function isValidTime(value: string) {
-  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(
-    value
-  );
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
 }
 
 export default function TimeWindowInput({
@@ -43,11 +29,8 @@ export default function TimeWindowInput({
 }: TimeWindowInputProps) {
   const listId = useId();
 
-  function handleChange(
-    event: React.ChangeEvent<HTMLInputElement>
-  ) {
-    const nextValue =
-      event.target.value.trim();
+  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const nextValue = event.target.value.trim();
 
     // Explicitly removing the value
     if (!nextValue) {
@@ -62,11 +45,8 @@ export default function TimeWindowInput({
     }
   }
 
-  function handleBlur(
-    event: React.FocusEvent<HTMLInputElement>
-  ) {
-    const nextValue =
-      event.target.value.trim();
+  function handleBlur(event: React.FocusEvent<HTMLInputElement>) {
+    const nextValue = event.target.value.trim();
 
     if (!nextValue) {
       onChange(undefined);
@@ -80,8 +60,7 @@ export default function TimeWindowInput({
 
     // Invalid/incomplete input:
     // restore the last saved value.
-    event.currentTarget.value =
-      value ?? "";
+    event.currentTarget.value = value ?? "";
   }
 
   return (
@@ -99,14 +78,9 @@ export default function TimeWindowInput({
       />
 
       <datalist id={listId}>
-        {TIME_OPTIONS.map(
-          (time) => (
-            <option
-              key={time}
-              value={time}
-            />
-          )
-        )}
+        {TIME_OPTIONS.map((time) => (
+          <option key={time} value={time} />
+        ))}
       </datalist>
     </>
   );

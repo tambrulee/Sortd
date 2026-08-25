@@ -88,10 +88,7 @@ export interface Project {
   createdAt: string;
 }
 
-export type GoalStatus =
-  | "active"
-  | "paused"
-  | "completed";
+export type GoalStatus = "active" | "paused" | "completed";
 
 export interface Goal {
   id: string;
@@ -124,11 +121,8 @@ export type AppView =
   | "dreams"
   | "settings";
 
-  // Routine and RoutineTask types for recurring tasks
-export type RecurrenceUnit =
-  | "day"
-  | "week"
-  | "month";
+// Routine and RoutineTask types for recurring tasks
+export type RecurrenceUnit = "day" | "week" | "month";
 
 export type RoutineTask = {
   id: string;
@@ -168,10 +162,7 @@ export type Routine = {
 
 //  ScheduledBlock type for representing scheduled tasks and routines in the calendar view
 
-export type ScheduleContext =
-  | "work"
-  | "personal"
-  | "any";
+export type ScheduleContext = "work" | "personal" | "any";
 
 export type Weekday =
   | "monday"
@@ -190,10 +181,7 @@ export type DayAvailability = {
   workEnd?: string;
 };
 
-export type EnergyPattern =
-  | "morning"
-  | "balanced"
-  | "evening";
+export type EnergyPattern = "morning" | "balanced" | "evening";
 
 export type ScheduleSettings = {
   timeZone: string;
@@ -205,10 +193,7 @@ export type ScheduleSettings = {
 
 export type ScheduledBlock = {
   id: string;
-  sourceType:
-  | "task"
-  | "routine"
-  | "adhoc";
+  sourceType: "task" | "routine" | "adhoc";
   sourceId: string;
   parentId: string;
   parentName: string;
@@ -230,11 +215,7 @@ export type ScheduledBlock = {
   totalDurationMinutes?: number;
 };
 
-export type SchedulePeriod =
-  | "any"
-  | "morning"
-  | "afternoon"
-  | "evening";
+export type SchedulePeriod = "any" | "morning" | "afternoon" | "evening";
 
 // Shopping list types for managing shopping items and categories
 
@@ -269,9 +250,7 @@ export type ShoppingList = {
   archived: boolean;
 };
 
-export type ShoppingIntent =
-  | "need"
-  | "want";
+export type ShoppingIntent = "need" | "want";
 
 // Food and meal planning types for managing meals, ingredients, and meal plans
 
@@ -281,10 +260,7 @@ export type MealIngredient = {
   quantity?: string;
 };
 
-export type MealType =
-  | "breakfast"
-  | "lunch"
-  | "dinner";
+export type MealType = "breakfast" | "lunch" | "dinner";
 
 export type Meal = {
   id: string;

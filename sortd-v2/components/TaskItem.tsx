@@ -1,22 +1,12 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
-import {
-  Task,
-} from "@/lib/types";
+import { Task } from "@/lib/types";
 
-import {
-  useSortable,
-} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
 
-import {
-  CSS,
-} from "@dnd-kit/utilities";
+import { CSS } from "@dnd-kit/utilities";
 
 import ItemDetailsModal from "@/components/ItemDetailsModal";
 
@@ -34,28 +24,16 @@ type TaskItemProps = {
 
   onAddTask: () => void;
 
-  onChangeTask: (
-    id: string,
-    updates: Partial<Task>
-  ) => void;
+  onChangeTask: (id: string, updates: Partial<Task>) => void;
 
-  onToggleTask: (
-    id: string
-  ) => void;
+  onToggleTask: (id: string) => void;
 
-  onDeleteTask: (
-    id: string
-  ) => void;
+  onDeleteTask: (id: string) => void;
 
-  onMoveTask: (
-    taskId: string,
-    destinationProjectId: string
-  ) => void;
+  onMoveTask: (taskId: string, destinationProjectId: string) => void;
 };
 
-function formatDuration(
-  minutes?: number
-) {
+function formatDuration(minutes?: number) {
   if (!minutes) {
     return null;
   }
@@ -64,19 +42,12 @@ function formatDuration(
     return `${minutes} min`;
   }
 
-  const hours =
-    minutes / 60;
+  const hours = minutes / 60;
 
-  return Number.isInteger(
-    hours
-  )
-    ? `${hours} hr`
-    : `${hours.toFixed(1)} hrs`;
+  return Number.isInteger(hours) ? `${hours} hr` : `${hours.toFixed(1)} hrs`;
 }
 
-function getPriorityLabel(
-  priority?: Task["priority"]
-) {
+function getPriorityLabel(priority?: Task["priority"]) {
   if (priority === "high") {
     return "High priority";
   }
@@ -88,9 +59,7 @@ function getPriorityLabel(
   return "Medium priority";
 }
 
-function getEnergyLabel(
-  energy?: Task["energy"]
-) {
+function getEnergyLabel(energy?: Task["energy"]) {
   if (energy === "high") {
     return "High energy";
   }
@@ -112,15 +81,9 @@ export default function TaskItem({
   onDeleteTask,
   onMoveTask,
 }: TaskItemProps) {
-  const [
-    showDetails,
-    setShowDetails,
-  ] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
-  const inputRef =
-    useRef<HTMLInputElement>(
-      null
-    );
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const {
     attributes,
@@ -134,10 +97,7 @@ export default function TaskItem({
   });
 
   const style = {
-    transform:
-      CSS.Transform.toString(
-        transform
-      ),
+    transform: CSS.Transform.toString(transform),
     transition,
   };
 
@@ -145,10 +105,7 @@ export default function TaskItem({
     if (task.title === "") {
       inputRef.current?.focus();
     }
-  }, [
-    task.id,
-    task.title,
-  ]);
+  }, [task.id, task.title]);
 
   return (
     <>
@@ -156,9 +113,7 @@ export default function TaskItem({
         ref={setNodeRef}
         style={style}
         className={`rounded-2xl border border-slate-200 bg-white p-3 transition ${
-          isDragging
-            ? "z-50 opacity-60 shadow-lg"
-            : ""
+          isDragging ? "z-50 opacity-60 shadow-lg" : ""
         }`}
       >
         <div className="flex items-center gap-3">
@@ -175,14 +130,8 @@ export default function TaskItem({
 
           <input
             type="checkbox"
-            checked={
-              task.completed
-            }
-            onChange={() =>
-              onToggleTask(
-                task.id
-              )
-            }
+            checked={task.completed}
+            onChange={() => onToggleTask(task.id)}
             className="h-5 w-5 shrink-0 accent-[#cd6ce7]"
           />
 
@@ -190,25 +139,13 @@ export default function TaskItem({
             <input
               ref={inputRef}
               value={task.title}
-              onChange={(
-                event
-              ) =>
-                onChangeTask(
-                  task.id,
-                  {
-                    title:
-                      event.target
-                        .value,
-                  }
-                )
+              onChange={(event) =>
+                onChangeTask(task.id, {
+                  title: event.target.value,
+                })
               }
-              onKeyDown={(
-                event
-              ) => {
-                if (
-                  event.key !==
-                  "Enter"
-                ) {
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") {
                   return;
                 }
 
@@ -225,66 +162,36 @@ export default function TaskItem({
             />
 
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-slate-500">
-              <span>
-                {getPriorityLabel(
-                  task.priority
-                )}
-              </span>
+              <span>{getPriorityLabel(task.priority)}</span>
 
-              <span
-                aria-hidden="true"
-                className="text-slate-300"
-              >
+              <span aria-hidden="true" className="text-slate-300">
                 ·
               </span>
 
-              <span>
-                {getEnergyLabel(
-                  task.energy
-                )}
-              </span>
+              <span>{getEnergyLabel(task.energy)}</span>
 
-              {formatDuration(
-                task.durationMinutes
-              ) && (
+              {formatDuration(task.durationMinutes) && (
                 <>
-                  <span
-                    aria-hidden="true"
-                    className="text-slate-300"
-                  >
+                  <span aria-hidden="true" className="text-slate-300">
                     ·
                   </span>
 
-                  <span>
-                    {formatDuration(
-                      task.durationMinutes
-                    )}
-                  </span>
+                  <span>{formatDuration(task.durationMinutes)}</span>
                 </>
               )}
 
               {task.dueDate && (
                 <>
-                  <span
-                    aria-hidden="true"
-                    className="text-slate-300"
-                  >
+                  <span aria-hidden="true" className="text-slate-300">
                     ·
                   </span>
 
                   <span>
                     Due{" "}
-                    {new Intl.DateTimeFormat(
-                      "en-GB",
-                      {
-                        day: "numeric",
-                        month: "short",
-                      }
-                    ).format(
-                      new Date(
-                        `${task.dueDate}T12:00:00`
-                      )
-                    )}
+                    {new Intl.DateTimeFormat("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                    }).format(new Date(`${task.dueDate}T12:00:00`))}
                   </span>
                 </>
               )}
@@ -293,11 +200,7 @@ export default function TaskItem({
 
           <button
             type="button"
-            onClick={() =>
-              setShowDetails(
-                true
-              )
-            }
+            onClick={() => setShowDetails(true)}
             aria-label={`Edit ${task.title}`}
             title="Task details"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
@@ -312,46 +215,20 @@ export default function TaskItem({
           kind="task"
           item={task}
           containerLabel="Project"
-          currentContainerId={
-            currentProjectId
-          }
-          containerOptions={
-            projectOptions
-          }
-          onMove={(
-            destinationProjectId
-          ) => {
-            onMoveTask(
-              task.id,
-              destinationProjectId
-            );
+          currentContainerId={currentProjectId}
+          containerOptions={projectOptions}
+          onMove={(destinationProjectId) => {
+            onMoveTask(task.id, destinationProjectId);
 
-            setShowDetails(
-              false
-            );
+            setShowDetails(false);
           }}
-          onChange={(
-            updates
-          ) =>
-            onChangeTask(
-              task.id,
-              updates
-            )
-          }
+          onChange={(updates) => onChangeTask(task.id, updates)}
           onDelete={() => {
-            onDeleteTask(
-              task.id
-            );
+            onDeleteTask(task.id);
 
-            setShowDetails(
-              false
-            );
+            setShowDetails(false);
           }}
-          onClose={() =>
-            setShowDetails(
-              false
-            )
-          }
+          onClose={() => setShowDetails(false)}
         />
       )}
     </>

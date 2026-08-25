@@ -57,7 +57,6 @@ const navigationItems: {
     label: "Settings",
     icon: "⚙",
   },
-
 ];
 
 export default function WorkspaceNav({
@@ -85,9 +84,7 @@ export default function WorkspaceNav({
                   : "text-slate-700 hover:bg-[#eeeaea]"
               }`}
             >
-              <span className="w-5 text-center">
-                {item.icon}
-              </span>
+              <span className="w-5 text-center">{item.icon}</span>
 
               <span>{item.label}</span>
             </button>

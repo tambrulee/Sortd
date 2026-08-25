@@ -61,9 +61,7 @@ type RoutineTaskModalProps = {
   onMove?: (containerId: string) => void;
 };
 
-type ItemDetailsModalProps =
-  | ProjectTaskModalProps
-  | RoutineTaskModalProps;
+type ItemDetailsModalProps = ProjectTaskModalProps | RoutineTaskModalProps;
 
 const SESSION_OPTIONS = [
   { value: 15, label: "15 minutes" },
@@ -78,9 +76,7 @@ const SESSION_OPTIONS = [
   { value: 480, label: "8 hours" },
 ];
 
-export default function ItemDetailsModal(
-  props: ItemDetailsModalProps
-) {
+export default function ItemDetailsModal(props: ItemDetailsModalProps) {
   const { item, onClose, onDelete } = props;
 
   useEffect(() => {
@@ -90,30 +86,20 @@ export default function ItemDetailsModal(
       }
     }
 
-    const previousOverflow =
-      document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
 
     document.body.style.overflow = "hidden";
 
-    window.addEventListener(
-      "keydown",
-      handleKeyDown
-    );
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow =
-        previousOverflow;
+      document.body.style.overflow = previousOverflow;
 
-      window.removeEventListener(
-        "keydown",
-        handleKeyDown
-      );
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [onClose]);
 
-  function updateSharedItem(
-    updates: SharedItemUpdates
-  ) {
+  function updateSharedItem(updates: SharedItemUpdates) {
     if (props.kind === "task") {
       props.onChange(updates);
       return;
@@ -132,9 +118,7 @@ export default function ItemDetailsModal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"
       onMouseDown={(event) => {
-        if (
-          event.target === event.currentTarget
-        ) {
+        if (event.target === event.currentTarget) {
           onClose();
         }
       }}
@@ -148,9 +132,7 @@ export default function ItemDetailsModal(
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
-              {props.kind === "routine"
-                ? "Routine task"
-                : "Project task"}
+              {props.kind === "routine" ? "Routine task" : "Project task"}
             </p>
 
             <h2
@@ -161,8 +143,7 @@ export default function ItemDetailsModal(
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Adjust how this item appears and
-              gets scheduled.
+              Adjust how this item appears and gets scheduled.
             </p>
           </div>
 
@@ -179,7 +160,6 @@ export default function ItemDetailsModal(
         <div className="mt-6 space-y-5">
           <label className={labelClassName}>
             Task title
-
             <input
               value={item.title}
               onChange={(event) =>
@@ -197,37 +177,24 @@ export default function ItemDetailsModal(
             props.onMove && (
               <label className={labelClassName}>
                 {props.containerLabel ??
-                  (props.kind === "routine"
-                    ? "Routine"
-                    : "Project")}
+                  (props.kind === "routine" ? "Routine" : "Project")}
 
                 <select
                   value={props.currentContainerId}
                   onChange={(event) => {
-                    const nextContainerId =
-                      event.target.value;
+                    const nextContainerId = event.target.value;
 
-                    if (
-                      nextContainerId !==
-                      props.currentContainerId
-                    ) {
-                      props.onMove?.(
-                        nextContainerId
-                      );
+                    if (nextContainerId !== props.currentContainerId) {
+                      props.onMove?.(nextContainerId);
                     }
                   }}
                   className={fieldClassName}
                 >
-                  {props.containerOptions.map(
-                    (option) => (
-                      <option
-                        key={option.id}
-                        value={option.id}
-                      >
-                        {option.name}
-                      </option>
-                    )
-                  )}
+                  {props.containerOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name}
+                    </option>
+                  ))}
                 </select>
 
                 <span className="text-[11px] font-normal text-slate-400">
@@ -239,181 +206,121 @@ export default function ItemDetailsModal(
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={labelClassName}>
               Priority
-
               <select
-                value={
-                  item.priority ?? "medium"
-                }
+                value={item.priority ?? "medium"}
                 onChange={(event) =>
                   updateSharedItem({
-                    priority:
-                      event.target
-                        .value as Priority,
+                    priority: event.target.value as Priority,
                   })
                 }
                 className={fieldClassName}
               >
-                <option value="low">
-                  Low priority
-                </option>
+                <option value="low">Low priority</option>
 
-                <option value="medium">
-                  Medium priority
-                </option>
+                <option value="medium">Medium priority</option>
 
-                <option value="high">
-                  High priority
-                </option>
+                <option value="high">High priority</option>
               </select>
             </label>
 
             <label className={labelClassName}>
               Energy needed
-
               <select
                 value={item.energy ?? "medium"}
                 onChange={(event) =>
                   updateSharedItem({
-                    energy:
-                      event.target
-                        .value as Energy,
+                    energy: event.target.value as Energy,
                   })
                 }
                 className={fieldClassName}
               >
-                <option value="low">
-                  Low energy
-                </option>
+                <option value="low">Low energy</option>
 
-                <option value="medium">
-                  Medium energy
-                </option>
+                <option value="medium">Medium energy</option>
 
-                <option value="high">
-                  High energy
-                </option>
+                <option value="high">High energy</option>
               </select>
             </label>
 
             <label className={labelClassName}>
               Estimated total time
-
               <select
-                value={
-                  item.durationMinutes ?? ""
-                }
+                value={item.durationMinutes ?? ""}
                 onChange={(event) =>
                   updateSharedItem({
-                    durationMinutes:
-                      event.target.value
-                        ? Number(
-                            event.target.value
-                          )
-                        : undefined,
+                    durationMinutes: event.target.value
+                      ? Number(event.target.value)
+                      : undefined,
                   })
                 }
                 className={fieldClassName}
               >
-                <option value="">
-                  Not estimated
-                </option>
+                <option value="">Not estimated</option>
 
-                {DURATION_OPTIONS.map(
-                  (option) => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </option>
-                  )
-                )}
+                {DURATION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
 
             <label className={labelClassName}>
               Maximum session length
-
               <select
-                value={
-                  item.maxSessionMinutes ?? 120
-                }
+                value={item.maxSessionMinutes ?? 120}
                 onChange={(event) =>
                   updateSharedItem({
-                    maxSessionMinutes: Number(
-                      event.target.value
-                    ),
+                    maxSessionMinutes: Number(event.target.value),
                   })
                 }
                 className={fieldClassName}
               >
-                {SESSION_OPTIONS.map(
-                  (option) => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </option>
-                  )
-                )}
+                {SESSION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
 
             <label className={labelClassName}>
               Schedule during
-
               <select
                 value={
                   item.scheduleContext ??
-                  (props.kind === "routine"
-                    ? "personal"
-                    : "")
+                  (props.kind === "routine" ? "personal" : "")
                 }
                 onChange={(event) =>
                   updateSharedItem({
-                    scheduleContext:
-                      event.target.value
-                        ? (event.target
-                            .value as ScheduleContext)
-                        : undefined,
+                    scheduleContext: event.target.value
+                      ? (event.target.value as ScheduleContext)
+                      : undefined,
                   })
                 }
                 className={fieldClassName}
               >
                 {props.kind === "task" && (
-                  <option value="">
-                    Use project default
-                  </option>
+                  <option value="">Use project default</option>
                 )}
 
-                <option value="personal">
-                  Personal hours
-                </option>
+                <option value="personal">Personal hours</option>
 
-                <option value="work">
-                  Working hours
-                </option>
+                <option value="work">Working hours</option>
 
-                <option value="any">
-                  Either
-                </option>
+                <option value="any">Either</option>
               </select>
             </label>
-            
+
             {/* Time Restrictions */}
             <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
               <label className={labelClassName}>
                 Earliest start
-
                 <TimeWindowInput
-                  value={
-                    item.earliestStartTime
-                  }
+                  value={item.earliestStartTime}
                   onChange={(value) =>
                     updateSharedItem({
-                      earliestStartTime:
-                        value,
+                      earliestStartTime: value,
                     })
                   }
                 />
@@ -421,15 +328,11 @@ export default function ItemDetailsModal(
 
               <label className={labelClassName}>
                 Must finish by
-
                 <TimeWindowInput
-                  value={
-                    item.latestEndTime
-                  }
+                  value={item.latestEndTime}
                   onChange={(value) =>
                     updateSharedItem({
-                      latestEndTime:
-                        value,
+                      latestEndTime: value,
                     })
                   }
                 />
@@ -440,22 +343,16 @@ export default function ItemDetailsModal(
               <>
                 <label className={labelClassName}>
                   Available from
-
                   <input
                     type="date"
-                    value={
-                      props.item.availableFrom ?? ""
-                    }
+                    value={props.item.availableFrom ?? ""}
                     onChange={(event) =>
                       props.onChange({
-                        availableFrom:
-                          event.target.value ||
-                          undefined,
+                        availableFrom: event.target.value || undefined,
                       })
                     }
                     className={fieldClassName}
                   />
-
                   <span className="text-[11px] font-normal text-slate-400">
                     Don&apos;t schedule this task before this date.
                   </span>
@@ -463,17 +360,12 @@ export default function ItemDetailsModal(
 
                 <label className={labelClassName}>
                   Due date
-
                   <input
                     type="date"
-                    value={
-                      props.item.dueDate ?? ""
-                    }
+                    value={props.item.dueDate ?? ""}
                     onChange={(event) =>
                       props.onChange({
-                        dueDate:
-                          event.target.value ||
-                          undefined,
+                        dueDate: event.target.value || undefined,
                       })
                     }
                     className={fieldClassName}
@@ -486,16 +378,12 @@ export default function ItemDetailsModal(
               <>
                 <label className={labelClassName}>
                   Next due date
-
                   <input
                     type="date"
-                    value={
-                      props.item.nextDueDate
-                    }
+                    value={props.item.nextDueDate}
                     onChange={(event) =>
                       props.onChange({
-                        nextDueDate:
-                          event.target.value,
+                        nextDueDate: event.target.value,
                       })
                     }
                     className={fieldClassName}
@@ -504,19 +392,13 @@ export default function ItemDetailsModal(
 
                 <label className={labelClassName}>
                   Repeat every
-
                   <input
                     type="number"
                     min="1"
                     value={props.item.interval}
                     onChange={(event) =>
                       props.onChange({
-                        interval: Math.max(
-                          1,
-                          Number(
-                            event.target.value
-                          )
-                        ),
+                        interval: Math.max(1, Number(event.target.value)),
                       })
                     }
                     className={fieldClassName}
@@ -525,31 +407,20 @@ export default function ItemDetailsModal(
 
                 <label className={labelClassName}>
                   Repeat period
-
                   <select
-                    value={
-                      props.item.recurrenceUnit
-                    }
+                    value={props.item.recurrenceUnit}
                     onChange={(event) =>
                       props.onChange({
-                        recurrenceUnit:
-                          event.target
-                            .value as RecurrenceUnit,
+                        recurrenceUnit: event.target.value as RecurrenceUnit,
                       })
                     }
                     className={fieldClassName}
                   >
-                    <option value="day">
-                      Days
-                    </option>
+                    <option value="day">Days</option>
 
-                    <option value="week">
-                      Weeks
-                    </option>
+                    <option value="week">Weeks</option>
 
-                    <option value="month">
-                      Months
-                    </option>
+                    <option value="month">Months</option>
                   </select>
                 </label>
               </>
@@ -575,15 +446,12 @@ export default function ItemDetailsModal(
                   type="button"
                   onClick={() =>
                     props.onChange({
-                      active:
-                        !props.item.active,
+                      active: !props.item.active,
                     })
                   }
                   className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                 >
-                  {props.item.active
-                    ? "Pause"
-                    : "Resume"}
+                  {props.item.active ? "Pause" : "Resume"}
                 </button>
               </div>
             </div>
@@ -610,6 +478,6 @@ export default function ItemDetailsModal(
       </section>
     </div>,
 
-    document.body
+    document.body,
   );
 }

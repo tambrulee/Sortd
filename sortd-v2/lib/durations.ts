@@ -13,20 +13,16 @@ const shorterDurations: DurationOption[] = [
   { value: 90, label: "1½ hours" },
 ];
 
-const hourlyDurations: DurationOption[] =
-  Array.from(
-    { length: 23 },
-    (_, index) => {
-      const hours = index + 2;
+const hourlyDurations: DurationOption[] = Array.from(
+  { length: 23 },
+  (_, index) => {
+    const hours = index + 2;
 
-      return {
-        value: hours * 60,
-        label: `${hours} hours`,
-      };
-    }
-  );
+    return {
+      value: hours * 60,
+      label: `${hours} hours`,
+    };
+  },
+);
 
-export const DURATION_OPTIONS = [
-  ...shorterDurations,
-  ...hourlyDurations,
-];
+export const DURATION_OPTIONS = [...shorterDurations, ...hourlyDurations];

@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  FormEvent,
-  useEffect,
-  useState,
-} from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
@@ -15,46 +11,36 @@ type AuthPanelProps = {
 };
 
 export default function AuthPanel({ onUserChange }: AuthPanelProps) {
-
-  const [mode, setMode] =
-    useState<AuthMode>("login");
+  const [mode, setMode] = useState<AuthMode>("login");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  const [checkingSession, setCheckingSession] =
-    useState(true);
+  const [checkingSession, setCheckingSession] = useState(true);
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [message, setMessage] = useState("");
-  
 
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        const nextUser = session?.user ?? null;
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUser = session?.user ?? null;
 
-        setUser(nextUser);
-        onUserChange(nextUser);
-        setCheckingSession(false);
-      }
-    );
+      setUser(nextUser);
+      onUserChange(nextUser);
+      setCheckingSession(false);
+    });
 
     return () => {
       subscription.unsubscribe();
     };
   }, [onUserChange]);
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setIsSubmitting(true);
@@ -62,11 +48,10 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
 
     try {
       if (mode === "signup") {
-        const { data, error } =
-          await supabase.auth.signUp({
-            email,
-            password,
-          });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
 
         if (error) {
           setMessage(error.message);
@@ -76,16 +61,13 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
         if (data.session) {
           setMessage("Account created. You’re signed in.");
         } else {
-          setMessage(
-            "Account created. Check your email to confirm it."
-          );
+          setMessage("Account created. Check your email to confirm it.");
         }
       } else {
-        const { error } =
-          await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
         if (error) {
           setMessage(error.message);
@@ -100,21 +82,20 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
   }
 
   async function handleSignOut() {
-  setMessage("");
+    setMessage("");
 
-  const { error } =
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
 
-  if (error) {
-    setMessage(error.message);
-    return;
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setUser(null);
+    onUserChange(null);
+    setEmail("");
+    setPassword("");
   }
-
-  setUser(null);
-  onUserChange(null);
-  setEmail("");
-  setPassword("");
-}
 
   if (checkingSession) {
     return (
@@ -143,11 +124,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
           Log out
         </button>
 
-        {message && (
-          <p className="mt-3 text-xs text-red-600">
-            {message}
-          </p>
-        )}
+        {message && <p className="mt-3 text-xs text-red-600">{message}</p>}
       </div>
     );
   }
@@ -155,46 +132,33 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
   return (
     <div className="rounded-3xl bg-white/85 p-4 shadow-xl backdrop-blur-md">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-        {mode === "login"
-          ? "Welcome back"
-          : "Create account"}
+        {mode === "login" ? "Welcome back" : "Create account"}
       </p>
 
-      <form
-        onSubmit={handleSubmit}
-        className="mt-4 space-y-3"
-      >
+      <form onSubmit={handleSubmit} className="mt-4 space-y-3">
         <label className="block text-xs font-medium text-slate-600">
           Email
-
           <input
             type="email"
             required
             autoComplete="email"
             value={email}
-            onChange={(event) =>
-              setEmail(event.target.value)
-            }
+            onChange={(event) => setEmail(event.target.value)}
             className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#cd6ce7]"
           />
         </label>
 
         <label className="block text-xs font-medium text-slate-600">
           Password
-
           <input
             type="password"
             required
             minLength={8}
             autoComplete={
-              mode === "login"
-                ? "current-password"
-                : "new-password"
+              mode === "login" ? "current-password" : "new-password"
             }
             value={password}
-            onChange={(event) =>
-              setPassword(event.target.value)
-            }
+            onChange={(event) => setPassword(event.target.value)}
             className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#cd6ce7]"
           />
         </label>
@@ -215,11 +179,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
       <button
         type="button"
         onClick={() => {
-          setMode((current) =>
-            current === "login"
-              ? "signup"
-              : "login"
-          );
+          setMode((current) => (current === "login" ? "signup" : "login"));
 
           setMessage("");
         }}
@@ -230,11 +190,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
           : "Already have an account? Log in"}
       </button>
 
-      {message && (
-        <p className="mt-3 text-xs text-slate-600">
-          {message}
-        </p>
-      )}
+      {message && <p className="mt-3 text-xs text-slate-600">{message}</p>}
     </div>
   );
 }

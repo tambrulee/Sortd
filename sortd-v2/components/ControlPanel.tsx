@@ -52,7 +52,6 @@ export default function ControlPanel({
             onChange={onToggleHideCompleted}
             className="h-4 w-4 accent-[#1f0825]"
           />
-
           Hide completed
         </label>
 

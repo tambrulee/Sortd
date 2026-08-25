@@ -161,7 +161,7 @@ This project reflects both my technical curiosity and my interest in building sy
 ## Contact
 
 GitHub: https://github.com/tambrulee  
-Portfolio: https://tambrulee.github.io/portfolio_project/ 
+Portfolio: https://tambrulee.github.io/portfolio_project/
 LinkedIn: https://linkedin.com/in/tamsin-te-strote/
 
 ---

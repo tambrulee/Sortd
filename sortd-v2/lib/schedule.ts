@@ -1,7 +1,4 @@
-import {
-  ScheduleSettings,
-  Weekday,
-} from "@/lib/types";
+import { ScheduleSettings, Weekday } from "@/lib/types";
 
 export const WEEKDAYS: Weekday[] = [
   "monday",
@@ -13,10 +10,7 @@ export const WEEKDAYS: Weekday[] = [
   "sunday",
 ];
 
-export const WEEKDAY_LABELS: Record<
-  Weekday,
-  string
-> = {
+export const WEEKDAY_LABELS: Record<Weekday, string> = {
   monday: "Monday",
   tuesday: "Tuesday",
   wednesday: "Wednesday",
@@ -27,7 +21,7 @@ export const WEEKDAY_LABELS: Record<
 };
 
 export function createDefaultScheduleSettings(
-  timeZone = "Europe/London"
+  timeZone = "Europe/London",
 ): ScheduleSettings {
   return {
     timeZone,

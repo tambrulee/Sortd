@@ -25,7 +25,6 @@ import DreamsView from "@/components/DreamsView";
 import SettingsControlPanel from "@/components/SettingsControlPanel";
 import FoodView from "@/components/FoodView";
 
-
 // Types and storage utilities
 import {
   AppView,
@@ -53,7 +52,6 @@ import {
   saveLists,
 } from "@/lib/storage";
 
-
 // Supabase client for cloud workspace storage
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
@@ -61,8 +59,6 @@ import { supabase } from "@/lib/supabase";
 const subscribe = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
-
-
 
 function getLocalDateKey() {
   const date = new Date();
@@ -75,9 +71,7 @@ function getLocalDateKey() {
 }
 
 function parseLocalDateKey(dateKey: string) {
-  const [year, month, day] = dateKey
-    .split("-")
-    .map(Number);
+  const [year, month, day] = dateKey.split("-").map(Number);
 
   return new Date(year, month - 1, day);
 }
@@ -93,7 +87,7 @@ function toLocalDateKey(date: Date) {
 function getNextRoutineDate(
   dateKey: string,
   interval: number,
-  unit: RecurrenceUnit
+  unit: RecurrenceUnit,
 ) {
   const date = parseLocalDateKey(dateKey);
   const safeInterval = Math.max(1, interval);
@@ -103,28 +97,22 @@ function getNextRoutineDate(
   }
 
   if (unit === "week") {
-    date.setDate(
-      date.getDate() + safeInterval * 7
-    );
+    date.setDate(date.getDate() + safeInterval * 7);
   }
 
   if (unit === "month") {
     const originalDay = date.getDate();
 
     date.setDate(1);
-    date.setMonth(
-      date.getMonth() + safeInterval
-    );
+    date.setMonth(date.getMonth() + safeInterval);
 
     const finalDayOfMonth = new Date(
       date.getFullYear(),
       date.getMonth() + 1,
-      0
+      0,
     ).getDate();
 
-    date.setDate(
-      Math.min(originalDay, finalDayOfMonth)
-    );
+    date.setDate(Math.min(originalDay, finalDayOfMonth));
   }
 
   return toLocalDateKey(date);
@@ -169,31 +157,19 @@ type CloudWorkspaceData = {
 };
 
 export default function Home() {
-  const [routines, setRoutines] =
-    useState<Routine[]>([]);
+  const [routines, setRoutines] = useState<Routine[]>([]);
 
-  const [
-    scheduleSettings,
-    setScheduleSettings,
-  ] = useState<ScheduleSettings>(() =>
-    createDefaultScheduleSettings()
+  const [scheduleSettings, setScheduleSettings] = useState<ScheduleSettings>(
+    () => createDefaultScheduleSettings(),
   );
 
-  const [adhocTasks, setAdhocTasks] =
-    useState<AdhocTask[]>([]);
+  const [adhocTasks, setAdhocTasks] = useState<AdhocTask[]>([]);
 
-  function addAdhocTask(
-    task: AdhocTask
-  ) {
-    setAdhocTasks((current) => [
-      ...current,
-      task,
-    ]);
+  function addAdhocTask(task: AdhocTask) {
+    setAdhocTasks((current) => [...current, task]);
   }
 
-  function completeAdhocTask(
-    taskId: string
-  ) {
+  function completeAdhocTask(taskId: string) {
     setAdhocTasks((current) =>
       current.map((task) =>
         task.id === taskId
@@ -201,15 +177,12 @@ export default function Home() {
               ...task,
               completed: true,
             }
-          : task
-      )
+          : task,
+      ),
     );
   }
 
-  function updateAdhocTask(
-    taskId: string,
-    updates: Partial<AdhocTask>
-  ) {
+  function updateAdhocTask(taskId: string, updates: Partial<AdhocTask>) {
     setAdhocTasks((current) =>
       current.map((task) =>
         task.id === taskId
@@ -217,81 +190,56 @@ export default function Home() {
               ...task,
               ...updates,
             }
-          : task
-      )
+          : task,
+      ),
     );
   }
 
-  function deleteAdhocTask(
-    taskId: string
-  ) {
-    setAdhocTasks((current) =>
-      current.filter(
-        (task) => task.id !== taskId
-      )
-    );
+  function deleteAdhocTask(taskId: string) {
+    setAdhocTasks((current) => current.filter((task) => task.id !== taskId));
   }
 
-  const [goals, setGoals] =
-    useState<Goal[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [dreams, setDreams] = useState<Dream[]>([]);
 
-  const [
-    shoppingLists,
-    setShoppingLists,
-  ] = useState<ShoppingList[]>([]);
+  const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([]);
 
-  
-
-  const [
-    foodData,
-    setFoodData,
-  ] = useState<FoodData>({
-      meals: [],
-      mealPlan: [],
-      shoppingList: [],
+  const [foodData, setFoodData] = useState<FoodData>({
+    meals: [],
+    mealPlan: [],
+    shoppingList: [],
   });
 
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  const cloudReadyForUserRef =
-  useRef<string | null>(null);
+  const cloudReadyForUserRef = useRef<string | null>(null);
 
-  const [lists, setLists] =
-    useState<SortdList[]>(() => {
-      const storedLists = getStoredLists();
+  const [lists, setLists] = useState<SortdList[]>(() => {
+    const storedLists = getStoredLists();
 
-      return storedLists.length > 0
-        ? storedLists
-        : [createDefaultList()];
-    });
+    return storedLists.length > 0 ? storedLists : [createDefaultList()];
+  });
 
-  const [activeListId, setActiveListId] =
-    useState(() => {
-      const stored = getStoredActiveListId();
+  const [activeListId, setActiveListId] = useState(() => {
+    const stored = getStoredActiveListId();
 
-      if (stored) return stored;
+    if (stored) return stored;
 
-      const storedLists = getStoredLists();
-      return storedLists[0]?.id || "";
-    });
+    const storedLists = getStoredLists();
+    return storedLists[0]?.id || "";
+  });
 
-  const [hideCompleted, setHideCompleted] =
-    useState(() => getStoredHideCompleted());
+  const [hideCompleted, setHideCompleted] = useState(() =>
+    getStoredHideCompleted(),
+  );
 
-  const [
-    ,
-    setActiveGoalId,
-  ] = useState<string | null>(null);
+  const [, setActiveGoalId] = useState<string | null>(null);
 
-  const [
-    ,
-    setActiveDreamId,
-  ] = useState<string | null>(null);
+  const [, setActiveDreamId] = useState<string | null>(null);
 
   const activeList = useMemo(() => {
-    const foundList = lists.find((list) => list.id === activeListId) || lists[0];
+    const foundList =
+      lists.find((list) => list.id === activeListId) || lists[0];
 
     if (!foundList) return undefined;
 
@@ -303,61 +251,55 @@ export default function Home() {
 
   const tasks = useMemo(() => {
     return activeList?.tasks ?? [];
-    }, [activeList]);
+  }, [activeList]);
 
-  const allTasks =
-    useMemo<TaskWithProject[]>(() => {
-      return lists.flatMap((project) =>
-        project.tasks.map((task) => ({
-          ...task,
+  const allTasks = useMemo<TaskWithProject[]>(() => {
+    return lists.flatMap((project) =>
+      project.tasks.map((task) => ({
+        ...task,
 
-          projectId: project.id,
-          projectName: project.name,
+        projectId: project.id,
+        projectName: project.name,
 
-          projectScheduleContext:
-            project.scheduleContext,
+        projectScheduleContext: project.scheduleContext,
 
-          projectEarliestStartTime:
-            project.earliestStartTime,
+        projectEarliestStartTime: project.earliestStartTime,
 
-          projectLatestEndTime:
-            project.latestEndTime,
-        }))
-      );
-    }, [lists]);
+        projectLatestEndTime: project.latestEndTime,
+      })),
+    );
+  }, [lists]);
 
-const [taskFilter, setTaskFilter] = useState<"all" | "high" | "low-energy">(
-    "all"
+  const [taskFilter, setTaskFilter] = useState<"all" | "high" | "low-energy">(
+    "all",
   );
 
-const isHydrated = useSyncExternalStore(
-  subscribe,
-  getClientSnapshot,
-  getServerSnapshot
-);
+  const isHydrated = useSyncExternalStore(
+    subscribe,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
 
-const [activeView, setActiveView] =
-  useState<AppView>("projects");
+  const [activeView, setActiveView] = useState<AppView>("projects");
 
-const visibleTasks = useMemo(() => {
-  let filteredTasks = hideCompleted
-    ? tasks.filter((task) => !task.completed)
-    : tasks;
+  const visibleTasks = useMemo(() => {
+    let filteredTasks = hideCompleted
+      ? tasks.filter((task) => !task.completed)
+      : tasks;
 
-  if (taskFilter === "high") {
-    filteredTasks = filteredTasks.filter((task) => task.priority === "high");
-  }
+    if (taskFilter === "high") {
+      filteredTasks = filteredTasks.filter((task) => task.priority === "high");
+    }
 
-  if (taskFilter === "low-energy") {
-    filteredTasks = filteredTasks.filter((task) => task.energy === "low");
-  }
+    if (taskFilter === "low-energy") {
+      filteredTasks = filteredTasks.filter((task) => task.energy === "low");
+    }
 
-  return filteredTasks;
-}, [tasks, hideCompleted, taskFilter]);
-
+    return filteredTasks;
+  }, [tasks, hideCompleted, taskFilter]);
 
   useEffect(() => {
-  if (!user) return;
+    if (!user) return;
 
     saveLists(lists);
   }, [lists, user]);
@@ -380,197 +322,157 @@ const visibleTasks = useMemo(() => {
 
   // Load cloud workspace for the user when they log in
   useEffect(() => {
-  if (!user) {
-    cloudReadyForUserRef.current = null;
-    return;
-  }
+    if (!user) {
+      cloudReadyForUserRef.current = null;
+      return;
+    }
 
-  const userId = user.id;
-  let cancelled = false;
+    const userId = user.id;
+    let cancelled = false;
 
-  async function loadCloudWorkspace() {
-    const localWorkspace: CloudWorkspaceData = {
-      version: 1,
-      lists: getStoredLists(),
-      activeListId:
-        getStoredActiveListId() ?? "",
-      hideCompleted: getStoredHideCompleted(),
-      routines: [],
-      goals: [],
-      dreams: [],
-      shoppingLists: [],
-      foodData: {
+    async function loadCloudWorkspace() {
+      const localWorkspace: CloudWorkspaceData = {
+        version: 1,
+        lists: getStoredLists(),
+        activeListId: getStoredActiveListId() ?? "",
+        hideCompleted: getStoredHideCompleted(),
+        routines: [],
+        goals: [],
+        dreams: [],
+        shoppingLists: [],
+        foodData: {
           meals: [],
           mealPlan: [],
           shoppingList: [],
-      },
+        },
 
-      scheduleSettings:
-        createDefaultScheduleSettings(
-          Intl.DateTimeFormat()
-            .resolvedOptions()
-            .timeZone || "Europe/London"
+        scheduleSettings: createDefaultScheduleSettings(
+          Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/London",
         ),
-    };
+      };
 
-    if (
-      !localStorage.getItem(
-        "sortd-pre-cloud-backup"
-      )
-    ) {
-      localStorage.setItem(
-        "sortd-pre-cloud-backup",
-        JSON.stringify(localWorkspace)
-      );
-    }
+      if (!localStorage.getItem("sortd-pre-cloud-backup")) {
+        localStorage.setItem(
+          "sortd-pre-cloud-backup",
+          JSON.stringify(localWorkspace),
+        );
+      }
 
-    const { data: workspaceRow, error } =
-      await supabase
+      const { data: workspaceRow, error } = await supabase
         .from("workspaces")
         .select("data")
         .eq("user_id", userId)
         .maybeSingle();
 
-    if (cancelled) return;
+      if (cancelled) return;
 
-    if (error) {
-      console.error(
-        "Unable to load cloud workspace:",
-        error
-      );
-      return;
-    }
+      if (error) {
+        console.error("Unable to load cloud workspace:", error);
+        return;
+      }
 
-    const cloudWorkspace =
-      workspaceRow?.data as
-        | CloudWorkspaceData
-        | undefined;
+      const cloudWorkspace = workspaceRow?.data as
+        CloudWorkspaceData | undefined;
 
-    if (
-      cloudWorkspace &&
-      Array.isArray(cloudWorkspace.lists) &&
-      cloudWorkspace.lists.length > 0
-    ) {
-      cloudReadyForUserRef.current = userId;
+      if (
+        cloudWorkspace &&
+        Array.isArray(cloudWorkspace.lists) &&
+        cloudWorkspace.lists.length > 0
+      ) {
+        cloudReadyForUserRef.current = userId;
 
-      setLists(cloudWorkspace.lists);
+        setLists(cloudWorkspace.lists);
 
-      setActiveListId(
-        cloudWorkspace.activeListId ||
-          cloudWorkspace.lists[0].id
-      );
+        setActiveListId(
+          cloudWorkspace.activeListId || cloudWorkspace.lists[0].id,
+        );
 
-      setHideCompleted(
-        cloudWorkspace.hideCompleted ?? false
-      );
+        setHideCompleted(cloudWorkspace.hideCompleted ?? false);
 
-      setRoutines(
-        cloudWorkspace.routines ?? []
-      );
+        setRoutines(cloudWorkspace.routines ?? []);
 
-      setShoppingLists(
-        cloudWorkspace.shoppingLists ?? []
-      );
+        setShoppingLists(cloudWorkspace.shoppingLists ?? []);
 
-      setFoodData(
-        cloudWorkspace.foodData ?? {
-        meals: [],
-        mealPlan: [],
-        shoppingList: [],
-        }
-      );
+        setFoodData(
+          cloudWorkspace.foodData ?? {
+            meals: [],
+            mealPlan: [],
+            shoppingList: [],
+          },
+        );
 
-      setGoals(
-        cloudWorkspace.goals ?? []
-      );
+        setGoals(cloudWorkspace.goals ?? []);
 
-      setDreams(
-        cloudWorkspace.dreams ?? []
-      );
+        setDreams(cloudWorkspace.dreams ?? []);
 
-      setScheduleSettings(
-        cloudWorkspace.scheduleSettings ??
-          createDefaultScheduleSettings(
-            Intl.DateTimeFormat()
-              .resolvedOptions()
-              .timeZone || "Europe/London"
-          )
-      );
+        setScheduleSettings(
+          cloudWorkspace.scheduleSettings ??
+            createDefaultScheduleSettings(
+              Intl.DateTimeFormat().resolvedOptions().timeZone ||
+                "Europe/London",
+            ),
+        );
 
-      return;
-    }
+        return;
+      }
 
-    const listsToUpload =
-      localWorkspace.lists.length > 0
-        ? localWorkspace.lists
-        : [createDefaultList()];
+      const listsToUpload =
+        localWorkspace.lists.length > 0
+          ? localWorkspace.lists
+          : [createDefaultList()];
 
-    const firstWorkspace: CloudWorkspaceData = {
-      version: 1,
-      lists: listsToUpload,
-      activeListId:
-        localWorkspace.activeListId ||
-        listsToUpload[0].id,
-      hideCompleted:
-        localWorkspace.hideCompleted,
-      routines: [],
-      goals: [],
-      dreams: [],
-      shoppingLists: [],
-      foodData: {
+      const firstWorkspace: CloudWorkspaceData = {
+        version: 1,
+        lists: listsToUpload,
+        activeListId: localWorkspace.activeListId || listsToUpload[0].id,
+        hideCompleted: localWorkspace.hideCompleted,
+        routines: [],
+        goals: [],
+        dreams: [],
+        shoppingLists: [],
+        foodData: {
           meals: [],
           mealPlan: [],
           shoppingList: [],
-      },
-      scheduleSettings:
-        localWorkspace.scheduleSettings,
-    };
+        },
+        scheduleSettings: localWorkspace.scheduleSettings,
+      };
 
-    const { error: uploadError } =
-      await supabase
-        .from("workspaces")
-        .upsert(
-          {
-            user_id: userId,
-            data: firstWorkspace,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "user_id",
-          }
-        );
-
-    if (cancelled) return;
-
-    if (uploadError) {
-      console.error(
-        "Unable to create cloud workspace:",
-        uploadError
+      const { error: uploadError } = await supabase.from("workspaces").upsert(
+        {
+          user_id: userId,
+          data: firstWorkspace,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "user_id",
+        },
       );
+
+      if (cancelled) return;
+
+      if (uploadError) {
+        console.error("Unable to create cloud workspace:", uploadError);
+        return;
+      }
+
+      cloudReadyForUserRef.current = userId;
+    }
+
+    loadCloudWorkspace();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  // Save cloud workspace when lists, activeListId, or hideCompleted changes
+  useEffect(() => {
+    if (!user || cloudReadyForUserRef.current !== user.id) {
       return;
     }
 
-    cloudReadyForUserRef.current = userId;
-  }
-
-  loadCloudWorkspace();
-
-  return () => {
-    cancelled = true;
-  };
-}, [user]);
-
-// Save cloud workspace when lists, activeListId, or hideCompleted changes
-useEffect(() => {
-  if (
-    !user ||
-    cloudReadyForUserRef.current !== user.id
-  ) {
-    return;
-  }
-
-  const saveTimer = window.setTimeout(
-    async () => {
+    const saveTimer = window.setTimeout(async () => {
       const workspace: CloudWorkspaceData = {
         version: 1,
         lists,
@@ -585,89 +487,69 @@ useEffect(() => {
       };
 
       try {
-
-  console.log(
-  "Saving time windows:",
-  lists.map((project) => ({
-    project: project.name,
-    earliestStartTime:
-      project.earliestStartTime,
-    latestEndTime:
-      project.latestEndTime,
-    tasks: project.tasks.map(
-      (task) => ({
-        title: task.title,
-        earliestStartTime:
-          task.earliestStartTime,
-        latestEndTime:
-          task.latestEndTime,
-      })
-    ),
-  }))
-);
-
-  const { data, error } = await supabase
-        .from("workspaces")
-        .upsert(
-          {
-            user_id: user.id,
-            data: workspace,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "user_id",
-          }
-        )
-        .select();
-
-      if (error) {
-        console.error(
-          "Unable to save cloud workspace:",
-          error
+        console.log(
+          "Saving time windows:",
+          lists.map((project) => ({
+            project: project.name,
+            earliestStartTime: project.earliestStartTime,
+            latestEndTime: project.latestEndTime,
+            tasks: project.tasks.map((task) => ({
+              title: task.title,
+              earliestStartTime: task.earliestStartTime,
+              latestEndTime: task.latestEndTime,
+            })),
+          })),
         );
 
-        return;
+        const { data, error } = await supabase
+          .from("workspaces")
+          .upsert(
+            {
+              user_id: user.id,
+              data: workspace,
+              updated_at: new Date().toISOString(),
+            },
+            {
+              onConflict: "user_id",
+            },
+          )
+          .select();
+
+        if (error) {
+          console.error("Unable to save cloud workspace:", error);
+
+          return;
+        }
+
+        console.log("Cloud workspace saved:", data);
+      } catch (error) {
+        console.error("Cloud workspace save request failed:", error);
       }
+    }, 800);
 
-      console.log(
-        "Cloud workspace saved:",
-        data
-      );
-    } catch (error) {
-      console.error(
-        "Cloud workspace save request failed:",
-        error
-      );
-    }
-    },
-    800
-  );
-
-  return () => {
-    window.clearTimeout(saveTimer);
-  };
-}, [
-  lists,
-  activeListId,
-  hideCompleted,
-  routines,
-  goals,
-  dreams,
-  shoppingLists,
-  foodData,
-  scheduleSettings,
-  user,
-]);
+    return () => {
+      window.clearTimeout(saveTimer);
+    };
+  }, [
+    lists,
+    activeListId,
+    hideCompleted,
+    routines,
+    goals,
+    dreams,
+    shoppingLists,
+    foodData,
+    scheduleSettings,
+    user,
+  ]);
 
   function updateActiveList(updatedList: SortdList) {
     setLists((currentLists) =>
       currentLists.map((list) =>
-        list.id === updatedList.id ? updatedList : list
-      )
+        list.id === updatedList.id ? updatedList : list,
+      ),
     );
   }
-
-
 
   function addTask() {
     if (!activeList) return;
@@ -695,37 +577,27 @@ useEffect(() => {
 
     updateActiveList({
       ...activeList,
-      tasks: tasks.map((task) =>
-        task.id === id ? { ...task, title } : task
-      ),
+      tasks: tasks.map((task) => (task.id === id ? { ...task, title } : task)),
     });
   }
 
-  function updateTaskPriority(
-    id: string,
-    priority: "low" | "medium" | "high"
-  ) {
+  function updateTaskPriority(id: string, priority: "low" | "medium" | "high") {
     if (!activeList) return;
 
     updateActiveList({
       ...activeList,
       tasks: tasks.map((task) =>
-        task.id === id ? { ...task, priority } : task
+        task.id === id ? { ...task, priority } : task,
       ),
     });
   }
 
-  function updateTaskEnergy(
-    id: string,
-    energy: "low" | "medium" | "high"
-  ) {
+  function updateTaskEnergy(id: string, energy: "low" | "medium" | "high") {
     if (!activeList) return;
 
     updateActiveList({
       ...activeList,
-      tasks: tasks.map((task) =>
-        task.id === id ? { ...task, energy } : task
-      ),
+      tasks: tasks.map((task) => (task.id === id ? { ...task, energy } : task)),
     });
   }
 
@@ -735,30 +607,23 @@ useEffect(() => {
     updateActiveList({
       ...activeList,
       tasks: tasks.map((task) =>
-        task.id === id
-          ? { ...task, dueDate: dueDate || undefined }
-          : task
+        task.id === id ? { ...task, dueDate: dueDate || undefined } : task,
       ),
     });
   }
 
   function updateTaskDuration(id: string, durationMinutes?: number) {
-      if (!activeList) return;
+    if (!activeList) return;
 
-      updateActiveList({
-        ...activeList,
-        tasks: tasks.map((task) =>
-          task.id === id
-            ? { ...task, durationMinutes }
-            : task
-        ),
-      });
-    }
+    updateActiveList({
+      ...activeList,
+      tasks: tasks.map((task) =>
+        task.id === id ? { ...task, durationMinutes } : task,
+      ),
+    });
+  }
 
-  function updateTaskMaxSession(
-    id: string,
-    maxSessionMinutes?: number
-  ) {
+  function updateTaskMaxSession(id: string, maxSessionMinutes?: number) {
     if (!activeList) return;
 
     updateActiveList({
@@ -769,14 +634,14 @@ useEffect(() => {
               ...task,
               maxSessionMinutes,
             }
-          : task
+          : task,
       ),
     });
   }
-  
+
   function updateTaskScheduleContext(
     id: string,
-    scheduleContext?: ScheduleContext
+    scheduleContext?: ScheduleContext,
   ) {
     if (!activeList) return;
 
@@ -789,7 +654,7 @@ useEffect(() => {
               ...task,
               scheduleContext,
             }
-          : task
+          : task,
       ),
     });
   }
@@ -800,14 +665,38 @@ useEffect(() => {
     updateActiveList({
       ...activeList,
       tasks: tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
+        task.id === id ? { ...task, completed: !task.completed } : task,
       ),
     });
   }
 
-  function completeProjectTask(
+  function completeProjectTask(projectId: string, taskId: string) {
+    setLists((currentLists) =>
+      currentLists.map((project) => {
+        if (project.id !== projectId) {
+          return project;
+        }
+
+        return {
+          ...project,
+
+          tasks: project.tasks.map((task) =>
+            task.id === taskId
+              ? {
+                  ...task,
+                  completed: true,
+                }
+              : task,
+          ),
+        };
+      }),
+    );
+  }
+
+  function updateProjectTaskById(
     projectId: string,
-    taskId: string
+    taskId: string,
+    updates: Partial<Task>,
   ) {
     setLists((currentLists) =>
       currentLists.map((project) => {
@@ -818,133 +707,82 @@ useEffect(() => {
         return {
           ...project,
 
-          tasks: project.tasks.map(
-            (task) =>
-              task.id === taskId
-                ? {
-                    ...task,
-                    completed: true,
-                  }
-                : task
+          tasks: project.tasks.map((task) =>
+            task.id === taskId
+              ? {
+                  ...task,
+                  ...updates,
+                }
+              : task,
           ),
         };
-      })
+      }),
     );
   }
 
-  function updateProjectTaskById(
-  projectId: string,
-  taskId: string,
-  updates: Partial<Task>
-) {
-  setLists((currentLists) =>
-    currentLists.map((project) => {
-      if (project.id !== projectId) {
-        return project;
-      }
+  function deleteProjectTaskById(projectId: string, taskId: string) {
+    const project = lists.find((item) => item.id === projectId);
 
-      return {
-        ...project,
+    const task = project?.tasks.find((item) => item.id === taskId);
 
-        tasks: project.tasks.map(
-          (task) =>
-            task.id === taskId
-              ? {
-                  ...task,
-                  ...updates,
-                }
-              : task
-        ),
-      };
-    })
-  );
-}
+    if (!project || !task) return;
 
-function deleteProjectTaskById(
-  projectId: string,
-  taskId: string
-) {
-  const project = lists.find(
-    (item) => item.id === projectId
-  );
+    const confirmed = window.confirm(`Delete "${task.title || "this task"}"?`);
 
-  const task = project?.tasks.find(
-    (item) => item.id === taskId
-  );
+    if (!confirmed) return;
 
-  if (!project || !task) return;
+    setLists((currentLists) =>
+      currentLists.map((item) => {
+        if (item.id !== projectId) {
+          return item;
+        }
 
-  const confirmed = window.confirm(
-    `Delete "${task.title || "this task"}"?`
-  );
-
-  if (!confirmed) return;
-
-  setLists((currentLists) =>
-    currentLists.map((item) => {
-      if (item.id !== projectId) {
-        return item;
-      }
-
-      return {
-        ...item,
-        tasks: item.tasks.filter(
-          (projectTask) =>
-            projectTask.id !== taskId
-        ),
-      };
-    })
-  );
-}
+        return {
+          ...item,
+          tasks: item.tasks.filter((projectTask) => projectTask.id !== taskId),
+        };
+      }),
+    );
+  }
 
   function updateRoutineTaskById(
-  routineId: string,
-  taskId: string,
-  updates: Partial<RoutineTask>
-) {
-  setRoutines((currentRoutines) =>
-    currentRoutines.map((routine) => {
-      if (routine.id !== routineId) {
-        return routine;
-      }
+    routineId: string,
+    taskId: string,
+    updates: Partial<RoutineTask>,
+  ) {
+    setRoutines((currentRoutines) =>
+      currentRoutines.map((routine) => {
+        if (routine.id !== routineId) {
+          return routine;
+        }
 
-      return {
-        ...routine,
+        return {
+          ...routine,
 
-        tasks: routine.tasks.map(
-          (task) =>
+          tasks: routine.tasks.map((task) =>
             task.id === taskId
               ? {
                   ...task,
                   ...updates,
                 }
-              : task
-        ),
-      };
-    })
-  );
-}
-
-  function deleteRoutineTaskById(
-    routineId: string,
-    taskId: string
-  ) {
-    const routine = routines.find(
-      (item) =>
-        item.id === routineId
+              : task,
+          ),
+        };
+      }),
     );
+  }
 
-    const task = routine?.tasks.find(
-      (item) =>
-        item.id === taskId
-    );
+  function deleteRoutineTaskById(routineId: string, taskId: string) {
+    const routine = routines.find((item) => item.id === routineId);
+
+    const task = routine?.tasks.find((item) => item.id === taskId);
 
     if (!routine || !task) {
       return;
     }
 
     const confirmed = window.confirm(
-      `Delete the routine task "${task.title}"?`
+      `Delete the routine task "${task.title}"?`,
     );
 
     if (!confirmed) {
@@ -960,37 +798,30 @@ function deleteProjectTaskById(
         return {
           ...item,
 
-          tasks: item.tasks.filter(
-            (routineTask) =>
-              routineTask.id !== taskId
-          ),
+          tasks: item.tasks.filter((routineTask) => routineTask.id !== taskId),
         };
-      })
+      }),
     );
   }
 
-  
-
   function deleteTask(id: string) {
-  if (!activeList) return;
+    if (!activeList) return;
 
-  const taskToDelete = tasks.find(
-    (task) => task.id === id
-  );
+    const taskToDelete = tasks.find((task) => task.id === id);
 
-  if (!taskToDelete) return;
+    if (!taskToDelete) return;
 
-  const confirmed = window.confirm(
-    `Delete "${taskToDelete.title || "this task"}"?`
-  );
+    const confirmed = window.confirm(
+      `Delete "${taskToDelete.title || "this task"}"?`,
+    );
 
-  if (!confirmed) return;
+    if (!confirmed) return;
 
-  updateActiveList({
-    ...activeList,
-    tasks: tasks.filter((task) => task.id !== id),
-  });
-}
+    updateActiveList({
+      ...activeList,
+      tasks: tasks.filter((task) => task.id !== id),
+    });
+  }
 
   function reorderTasks(reorderedTasks: Task[]) {
     if (!activeList) return;
@@ -1011,66 +842,58 @@ function deleteProjectTaskById(
   }
 
   function updateProjectDescription(description: string) {
-  if (!activeList) return;
+    if (!activeList) return;
 
-  updateActiveList({
-    ...activeList,
-    description,
-  });
-}
+    updateActiveList({
+      ...activeList,
+      description,
+    });
+  }
 
-function updateProjectStatus(status: ProjectStatus) {
-  if (!activeList) return;
+  function updateProjectStatus(status: ProjectStatus) {
+    if (!activeList) return;
 
-  updateActiveList({
-    ...activeList,
-    status,
-  });
-}
+    updateActiveList({
+      ...activeList,
+      status,
+    });
+  }
 
-function updateProjectGoal(
-  goalId?: string
-) {
-  if (!activeList) return;
+  function updateProjectGoal(goalId?: string) {
+    if (!activeList) return;
 
-  updateActiveList({
-    ...activeList,
-    goalId,
-  });
-}
+    updateActiveList({
+      ...activeList,
+      goalId,
+    });
+  }
 
-function updateProjectScheduleContext(
-  scheduleContext: ScheduleContext
-) {
-  if (!activeList) return;
+  function updateProjectScheduleContext(scheduleContext: ScheduleContext) {
+    if (!activeList) return;
 
-  updateActiveList({
-    ...activeList,
-    scheduleContext,
-  });
-}
+    updateActiveList({
+      ...activeList,
+      scheduleContext,
+    });
+  }
 
-function updateProjectEarliestStartTime(
-  earliestStartTime?: string
-) {
-  if (!activeList) return;
+  function updateProjectEarliestStartTime(earliestStartTime?: string) {
+    if (!activeList) return;
 
-  updateActiveList({
-    ...activeList,
-    earliestStartTime,
-  });
-}
+    updateActiveList({
+      ...activeList,
+      earliestStartTime,
+    });
+  }
 
-function updateProjectLatestEndTime(
-  latestEndTime?: string
-) {
-  if (!activeList) return;
+  function updateProjectLatestEndTime(latestEndTime?: string) {
+    if (!activeList) return;
 
-  updateActiveList({
-    ...activeList,
-    latestEndTime,
-  });
-}
+    updateActiveList({
+      ...activeList,
+      latestEndTime,
+    });
+  }
 
   function createList() {
     const newList: SortdList = {
@@ -1088,27 +911,23 @@ function updateProjectLatestEndTime(
   }
 
   function deleteActiveList() {
-  if (!activeList || lists.length === 1) return;
+    if (!activeList || lists.length === 1) return;
 
-  const confirmed = window.confirm(
-    `Delete the project "${activeList.name}" and all of its tasks? This cannot be undone.`
-  );
+    const confirmed = window.confirm(
+      `Delete the project "${activeList.name}" and all of its tasks? This cannot be undone.`,
+    );
 
-  if (!confirmed) return;
+    if (!confirmed) return;
 
-  const remainingLists = lists.filter(
-    (list) => list.id !== activeList.id
-  );
+    const remainingLists = lists.filter((list) => list.id !== activeList.id);
 
-  setLists(remainingLists);
-  setActiveListId(remainingLists[0].id);
-}
+    setLists(remainingLists);
+    setActiveListId(remainingLists[0].id);
+  }
 
   function renameList(id: string, name: string) {
     setLists((currentLists) =>
-      currentLists.map((list) =>
-        list.id === id ? { ...list, name } : list
-      )
+      currentLists.map((list) => (list.id === id ? { ...list, name } : list)),
     );
   }
 
@@ -1139,7 +958,7 @@ function updateProjectLatestEndTime(
     if (!activeList) return;
 
     const taskToRestore = activeList.archivedTasks.find(
-      (task) => task.id === taskId
+      (task) => task.id === taskId,
     );
 
     if (!taskToRestore) return;
@@ -1155,50 +974,46 @@ function updateProjectLatestEndTime(
       ...activeList,
       tasks: [...tasks, restoredTask],
       archivedTasks: activeList.archivedTasks.filter(
-        (task) => task.id !== taskId
+        (task) => task.id !== taskId,
       ),
     });
   }
 
-  function completeRoutineTask(
-  routineId: string,
-  taskId: string
-) {
-  const completedAt = new Date().toISOString();
-  const today = getLocalDateKey();
+  function completeRoutineTask(routineId: string, taskId: string) {
+    const completedAt = new Date().toISOString();
+    const today = getLocalDateKey();
 
-  setRoutines((currentRoutines) =>
-    currentRoutines.map((routine) => {
-      if (routine.id !== routineId) {
-        return routine;
-      }
+    setRoutines((currentRoutines) =>
+      currentRoutines.map((routine) => {
+        if (routine.id !== routineId) {
+          return routine;
+        }
 
-      return {
-        ...routine,
-        tasks: routine.tasks.map((task) => {
-          if (task.id !== taskId) {
-            return task;
-          }
+        return {
+          ...routine,
+          tasks: routine.tasks.map((task) => {
+            if (task.id !== taskId) {
+              return task;
+            }
 
-          return {
-            ...task,
-            lastCompletedAt: completedAt,
-            completionHistory: [
-              ...(task.completionHistory ?? []),
-              completedAt,
-            ],
-            nextDueDate: getNextRoutineDate(
-              today,
-              task.interval,
-              task.recurrenceUnit
-            ),
-          };
-        }),
-      };
-    })
-  );
-}
-
+            return {
+              ...task,
+              lastCompletedAt: completedAt,
+              completionHistory: [
+                ...(task.completionHistory ?? []),
+                completedAt,
+              ],
+              nextDueDate: getNextRoutineDate(
+                today,
+                task.interval,
+                task.recurrenceUnit,
+              ),
+            };
+          }),
+        };
+      }),
+    );
+  }
 
   if (!isHydrated) {
     return (
@@ -1231,19 +1046,11 @@ function updateProjectLatestEndTime(
       <section className="flex flex-1 justify-center px-4 py-8">
         <div className="grid w-full max-w-6xl gap-4 md:grid-cols-[260px_1fr]">
           <div className="space-y-4">
-            <AuthPanel
-              onUserChange={
-                setUser
-              }
-            />
+            <AuthPanel onUserChange={setUser} />
 
             <WorkspaceNav
-              activeView={
-                activeView
-              }
-              onChangeView={
-                setActiveView
-              }
+              activeView={activeView}
+              onChangeView={setActiveView}
             />
           </div>
 
@@ -1251,12 +1058,8 @@ function updateProjectLatestEndTime(
             <MyDayView
               tasks={allTasks}
               routines={routines}
-              onCompleteProjectTask={
-                completeProjectTask
-              }
-              onCompleteRoutineTask={
-                completeRoutineTask
-              }
+              onCompleteProjectTask={completeProjectTask}
+              onCompleteRoutineTask={completeRoutineTask}
               onOpenProject={(projectId) => {
                 setActiveListId(projectId);
                 setActiveView("projects");
@@ -1281,255 +1084,149 @@ function updateProjectLatestEndTime(
 
               activeProject={activeList}
 
-              activeProjectId={
-                activeList?.id ?? ""
-              }
+              activeProjectId={activeList?.id ?? ""}
 
               visibleTasks={visibleTasks}
               hideCompleted={hideCompleted}
               taskFilter={taskFilter}
 
-              onChangeProject={
-                setActiveListId
-              }
+              onChangeProject={setActiveListId}
 
-              onCreateProject={
-                createList
-              }
+              onCreateProject={createList}
 
-              onDeleteProject={
-                deleteActiveList
-              }
+              onDeleteProject={deleteActiveList}
 
-              onRenameProject={
-                renameList
-              }
+              onRenameProject={renameList}
 
-              onReorderProjects={
-                reorderLists
-              }
+              onReorderProjects={reorderLists}
 
-              onChangeProjectGoal={
-                updateProjectGoal
-              }
+              onChangeProjectGoal={updateProjectGoal}
 
-              onChangeProjectName={
-                updateListName
-              }
+              onChangeProjectName={updateListName}
 
-              onChangeProjectDescription={
-                updateProjectDescription
-              }
+              onChangeProjectDescription={updateProjectDescription}
 
-              onChangeProjectStatus={
-                updateProjectStatus
-              }
+              onChangeProjectStatus={updateProjectStatus}
 
-              onChangeProjectScheduleContext={
-                updateProjectScheduleContext
-              }
+              onChangeProjectScheduleContext={updateProjectScheduleContext}
 
-              onChangeProjectEarliestStartTime={
-                updateProjectEarliestStartTime
-              }
+              onChangeProjectEarliestStartTime={updateProjectEarliestStartTime}
 
-              onChangeProjectLatestEndTime={
-                updateProjectLatestEndTime
-              }
+              onChangeProjectLatestEndTime={updateProjectLatestEndTime}
 
               onAddTask={addTask}
 
               onToggleHideCompleted={() =>
-                setHideCompleted(
-                  (current) => !current
-                )
+                setHideCompleted((current) => !current)
               }
 
-              onArchiveCompleted={
-                archiveCompletedTasks
-              }
+              onArchiveCompleted={archiveCompletedTasks}
 
-              onChangeTaskFilter={
-                setTaskFilter
-              }
+              onChangeTaskFilter={setTaskFilter}
 
-              onUpdateTask={
-                updateTask
-              }
+              onUpdateTask={updateTask}
 
-              onUpdateTaskPriority={
-                updateTaskPriority
-              }
+              onUpdateTaskPriority={updateTaskPriority}
 
-              onUpdateTaskEnergy={
-                updateTaskEnergy
-              }
+              onUpdateTaskEnergy={updateTaskEnergy}
 
-              onUpdateTaskDueDate={
-                updateTaskDueDate
-              }
+              onUpdateTaskDueDate={updateTaskDueDate}
 
-              onUpdateTaskDuration={
-                updateTaskDuration
-              }
+              onUpdateTaskDuration={updateTaskDuration}
 
-              onUpdateTaskMaxSession={
-                updateTaskMaxSession
-              }
+              onUpdateTaskMaxSession={updateTaskMaxSession}
 
-              onUpdateTaskScheduleContext={
-                updateTaskScheduleContext
-              }
+              onUpdateTaskScheduleContext={updateTaskScheduleContext}
 
-              onToggleTask={
-                toggleTask
-              }
+              onToggleTask={toggleTask}
 
-              onDeleteTask={
-                deleteTask
-              }
+              onDeleteTask={deleteTask}
 
-              onReorderTasks={
-                reorderTasks
-              }
+              onReorderTasks={reorderTasks}
 
-              onRestoreTask={
-                restoreArchivedTask
-              }
+              onRestoreTask={restoreArchivedTask}
             />
-
           ) : activeView === "goals" ? (
-          <GoalsView
-            goals={goals}
-            dreams={dreams}
-            projects={lists}
-            onChangeGoals={setGoals}
+            <GoalsView
+              goals={goals}
+              dreams={dreams}
+              projects={lists}
+              onChangeGoals={setGoals}
 
-            onOpenDream={(dreamId) => {
-              setActiveDreamId(dreamId);
-              setActiveView("dreams");
-            }}
+              onOpenDream={(dreamId) => {
+                setActiveDreamId(dreamId);
+                setActiveView("dreams");
+              }}
 
-            onOpenProject={(projectId) => {
-              setActiveListId(projectId);
-              setActiveView("projects");
-            }}
+              onOpenProject={(projectId) => {
+                setActiveListId(projectId);
+                setActiveView("projects");
+              }}
 
-            onCreateProjectForGoal={(goalId) => {
-              const newProject = {
-                id: crypto.randomUUID(),
-                name: "New project",
-                description: "",
-                tasks: [],
-                archivedTasks: [],
-                status: "active" as const,
-                goalId,
-                scheduleContext: "personal" as const,
-                createdAt: new Date().toISOString(),
-              };
+              onCreateProjectForGoal={(goalId) => {
+                const newProject = {
+                  id: crypto.randomUUID(),
+                  name: "New project",
+                  description: "",
+                  tasks: [],
+                  archivedTasks: [],
+                  status: "active" as const,
+                  goalId,
+                  scheduleContext: "personal" as const,
+                  createdAt: new Date().toISOString(),
+                };
 
-              reorderLists([
-                ...lists,
-                newProject,
-              ]);
+                reorderLists([...lists, newProject]);
 
-              setActiveListId(
-                newProject.id
-              );
+                setActiveListId(newProject.id);
 
-              setActiveView(
-                "projects"
-              );
-            }}
-          />
-
-          ) : activeView === "shopping" ? (
-          <ShoppingView
-            shoppingLists={shoppingLists}
-            onChangeShoppingLists={
-              setShoppingLists
-            }
-          />
-
-          ) : activeView === "food" ? (
-          <FoodView
-            foodData={foodData}
-            onChangeFoodData={
-              setFoodData
-            }
-          />
-
-          ) : activeView === "dreams" ? (
-          <DreamsView
-            dreams={dreams}
-            goals={goals}
-            projects={lists}
-            onChangeDreams={setDreams}
-            onChangeGoals={setGoals}
-            onOpenGoal={(goalId) => {
-              setActiveGoalId(goalId);
-              setActiveView("goals");
-            }}
-          />
-
-          ) : activeView === "settings" ? (
-          <SettingsControlPanel
-            settings={scheduleSettings}
-            onChangeSettings={setScheduleSettings}
-          />
-
-          ) : activeView === "planner" ? (
-          <PlannerView
-            tasks={
-              allTasks
-            }
-            routines={
-              routines
-            }
-            adhocTasks={adhocTasks}
-            settings={
-              scheduleSettings
-            }
-            onChangeSettings={
-              setScheduleSettings
-            }
-            onCompleteProjectTask={
-              completeProjectTask
-            }
-            onCompleteRoutineTask={
-              completeRoutineTask
-            }
-            onUpdateProjectTask={
-              updateProjectTaskById
-            }
-            onUpdateRoutineTask={
-              updateRoutineTaskById
-            }
-            onDeleteProjectTask={
-              deleteProjectTaskById
-            }
-            onDeleteRoutineTask={
-              deleteRoutineTaskById
-            }
-            onAddAdhocTask={addAdhocTask}
-            onCompleteAdhocTask={
-              completeAdhocTask
-            }
-            onUpdateAdhocTask={
-              updateAdhocTask
-            }
-            onDeleteAdhocTask={
-              deleteAdhocTask
-            }
-
-          />
-          ) : (
-            <RoutinesView
-              routines={routines}
-              onChangeRoutines={setRoutines}
+                setActiveView("projects");
+              }}
             />
-
-           
+          ) : activeView === "shopping" ? (
+            <ShoppingView
+              shoppingLists={shoppingLists}
+              onChangeShoppingLists={setShoppingLists}
+            />
+          ) : activeView === "food" ? (
+            <FoodView foodData={foodData} onChangeFoodData={setFoodData} />
+          ) : activeView === "dreams" ? (
+            <DreamsView
+              dreams={dreams}
+              goals={goals}
+              projects={lists}
+              onChangeDreams={setDreams}
+              onChangeGoals={setGoals}
+              onOpenGoal={(goalId) => {
+                setActiveGoalId(goalId);
+                setActiveView("goals");
+              }}
+            />
+          ) : activeView === "settings" ? (
+            <SettingsControlPanel
+              settings={scheduleSettings}
+              onChangeSettings={setScheduleSettings}
+            />
+          ) : activeView === "planner" ? (
+            <PlannerView
+              tasks={allTasks}
+              routines={routines}
+              adhocTasks={adhocTasks}
+              settings={scheduleSettings}
+              onChangeSettings={setScheduleSettings}
+              onCompleteProjectTask={completeProjectTask}
+              onCompleteRoutineTask={completeRoutineTask}
+              onUpdateProjectTask={updateProjectTaskById}
+              onUpdateRoutineTask={updateRoutineTaskById}
+              onDeleteProjectTask={deleteProjectTaskById}
+              onDeleteRoutineTask={deleteRoutineTaskById}
+              onAddAdhocTask={addAdhocTask}
+              onCompleteAdhocTask={completeAdhocTask}
+              onUpdateAdhocTask={updateAdhocTask}
+              onDeleteAdhocTask={deleteAdhocTask}
+            />
+          ) : (
+            <RoutinesView routines={routines} onChangeRoutines={setRoutines} />
           )}
         </div>
       </section>
@@ -1537,4 +1234,4 @@ function updateProjectLatestEndTime(
       <Footer />
     </main>
   );
-  }
+}

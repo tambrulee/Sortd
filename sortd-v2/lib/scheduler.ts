@@ -10,23 +10,19 @@ import {
   Weekday,
 } from "@/lib/types";
 
-export type SchedulableProjectTask =
-  Task & {
-    projectId: string;
-    projectName: string;
+export type SchedulableProjectTask = Task & {
+  projectId: string;
+  projectName: string;
 
-    projectScheduleContext?: ScheduleContext;
-    projectEarliestStartTime?: string;
-    projectLatestEndTime?: string;
-  };
+  projectScheduleContext?: ScheduleContext;
+  projectEarliestStartTime?: string;
+  projectLatestEndTime?: string;
+};
 
 export type UnscheduledItem = {
   id: string;
   title: string;
-  sourceType:
-  | "task"
-  | "routine"
-  | "adhoc";
+  sourceType: "task" | "routine" | "adhoc";
 
   sourceId: string;
   parentId: string;
@@ -39,22 +35,15 @@ export type ScheduleResult = {
   unscheduled: UnscheduledItem[];
 };
 
-type EnergyPattern =
-  | "morning"
-  | "balanced"
-  | "evening";
+type EnergyPattern = "morning" | "balanced" | "evening";
 
-type SchedulerSettings =
-  ScheduleSettings & {
-    energyPattern?: EnergyPattern;
-  };
+type SchedulerSettings = ScheduleSettings & {
+  energyPattern?: EnergyPattern;
+};
 
 type ScheduleCandidate = {
   id: string;
-  sourceType:
-  | "task"
-  | "routine"
-  | "adhoc";
+  sourceType: "task" | "routine" | "adhoc";
   sourceId: string;
   parentId: string;
   parentName: string;
@@ -89,10 +78,7 @@ const DEFAULT_MAX_SESSION_MINUTES = 120;
 const MINIMUM_SESSION_MINUTES = 30;
 const SLOT_STEP_MINUTES = 30;
 
-const DAY_BY_NUMBER: Record<
-  number,
-  Weekday
-> = {
+const DAY_BY_NUMBER: Record<number, Weekday> = {
   0: "sunday",
   1: "monday",
   2: "tuesday",
@@ -109,9 +95,7 @@ const ENERGY_VALUE: Record<Energy, number> = {
 };
 
 function parseDateKey(dateKey: string) {
-  const [year, month, day] = dateKey
-    .split("-")
-    .map(Number);
+  const [year, month, day] = dateKey.split("-").map(Number);
 
   return new Date(year, month - 1, day);
 }
@@ -119,120 +103,76 @@ function parseDateKey(dateKey: string) {
 function toDateKey(date: Date) {
   return [
     date.getFullYear(),
-    String(date.getMonth() + 1).padStart(
-      2,
-      "0"
-    ),
-    String(date.getDate()).padStart(
-      2,
-      "0"
-    ),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
   ].join("-");
 }
 
-export function addDaysToDateKey(
-  dateKey: string,
-  days: number
-) {
+export function addDaysToDateKey(dateKey: string, days: number) {
   const date = parseDateKey(dateKey);
   date.setDate(date.getDate() + days);
 
   return toDateKey(date);
 }
 
-export function getScheduleDateKeys(
-  today: string,
-  numberOfDays: number
-) {
-  return Array.from(
-    { length: numberOfDays },
-    (_, index) =>
-      addDaysToDateKey(today, index)
+export function getScheduleDateKeys(today: string, numberOfDays: number) {
+  return Array.from({ length: numberOfDays }, (_, index) =>
+    addDaysToDateKey(today, index),
   );
 }
 
-function getWeekday(
-  dateKey: string
-): Weekday {
-  return DAY_BY_NUMBER[
-    parseDateKey(dateKey).getDay()
-  ];
+function getWeekday(dateKey: string): Weekday {
+  return DAY_BY_NUMBER[parseDateKey(dateKey).getDay()];
 }
 
 function timeToMinutes(time: string) {
-  const [hours, minutes] = time
-    .split(":")
-    .map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
 
   return hours * 60 + minutes;
 }
 
 function minutesToTime(minutes: number) {
-  const safeMinutes = Math.max(
-    0,
-    Math.min(minutes, 24 * 60)
-  );
+  const safeMinutes = Math.max(0, Math.min(minutes, 24 * 60));
 
-  const hours = Math.floor(
-    safeMinutes / 60
-  );
+  const hours = Math.floor(safeMinutes / 60);
 
-  const remainingMinutes =
-    safeMinutes % 60;
+  const remainingMinutes = safeMinutes % 60;
 
-  return `${String(hours).padStart(
+  return `${String(hours).padStart(2, "0")}:${String(remainingMinutes).padStart(
     2,
-    "0"
-  )}:${String(remainingMinutes).padStart(
-    2,
-    "0"
+    "0",
   )}`;
 }
 
 function addRecurrence(
   dateKey: string,
   interval: number,
-  unit: RecurrenceUnit
+  unit: RecurrenceUnit,
 ) {
   const date = parseDateKey(dateKey);
-  const safeInterval = Math.max(
-    1,
-    interval
-  );
+  const safeInterval = Math.max(1, interval);
 
   if (unit === "day") {
-    date.setDate(
-      date.getDate() + safeInterval
-    );
+    date.setDate(date.getDate() + safeInterval);
   }
 
   if (unit === "week") {
-    date.setDate(
-      date.getDate() +
-        safeInterval * 7
-    );
+    date.setDate(date.getDate() + safeInterval * 7);
   }
 
   if (unit === "month") {
     const originalDay = date.getDate();
 
     date.setDate(1);
-    date.setMonth(
-      date.getMonth() + safeInterval
-    );
+    date.setMonth(date.getMonth() + safeInterval);
 
     const finalDayOfMonth = new Date(
       date.getFullYear(),
       date.getMonth() + 1,
-      0
+      0,
     ).getDate();
 
-    date.setDate(
-      Math.min(
-        originalDay,
-        finalDayOfMonth
-      )
-    );
+    date.setDate(Math.min(originalDay, finalDayOfMonth));
   }
 
   return toDateKey(date);
@@ -241,28 +181,22 @@ function addRecurrence(
 function getAvailableWindows(
   dateKey: string,
   context: ScheduleContext,
-  settings: SchedulerSettings
+  settings: SchedulerSettings,
 ): TimeWindow[] {
   const weekday = getWeekday(dateKey);
   const day = settings.days[weekday];
 
   if (!day.enabled) return [];
 
-  const wakeTime = timeToMinutes(
-    day.wakeTime
-  );
+  const wakeTime = timeToMinutes(day.wakeTime);
 
-  const bedTime = timeToMinutes(
-    day.bedTime
-  );
+  const bedTime = timeToMinutes(day.bedTime);
 
   if (bedTime <= wakeTime) {
     return [];
   }
 
-  const hasWorkBlock =
-    Boolean(day.workStart) &&
-    Boolean(day.workEnd);
+  const hasWorkBlock = Boolean(day.workStart) && Boolean(day.workEnd);
 
   if (!hasWorkBlock) {
     if (context === "work") return [];
@@ -275,19 +209,11 @@ function getAvailableWindows(
     ];
   }
 
-  const workStart = timeToMinutes(
-    day.workStart!
-  );
+  const workStart = timeToMinutes(day.workStart!);
 
-  const workEnd = timeToMinutes(
-    day.workEnd!
-  );
+  const workEnd = timeToMinutes(day.workEnd!);
 
-  if (
-    workEnd <= workStart ||
-    workStart < wakeTime ||
-    workEnd > bedTime
-  ) {
+  if (workEnd <= workStart || workStart < wakeTime || workEnd > bedTime) {
     if (context === "work") return [];
 
     return [
@@ -316,8 +242,7 @@ function getAvailableWindows(
     ];
   }
 
-  const personalWindows: TimeWindow[] =
-    [];
+  const personalWindows: TimeWindow[] = [];
 
   if (wakeTime < workStart) {
     personalWindows.push({
@@ -339,45 +264,28 @@ function getAvailableWindows(
 function applyTimeWindow(
   windows: TimeWindow[],
   earliestStartTime?: string,
-  latestEndTime?: string
+  latestEndTime?: string,
 ): TimeWindow[] {
-  const earliestStart =
-    earliestStartTime
-      ? timeToMinutes(earliestStartTime)
-      : undefined;
+  const earliestStart = earliestStartTime
+    ? timeToMinutes(earliestStartTime)
+    : undefined;
 
-  const latestEnd =
-    latestEndTime
-      ? timeToMinutes(latestEndTime)
-      : undefined;
+  const latestEnd = latestEndTime ? timeToMinutes(latestEndTime) : undefined;
 
   return windows
     .map((window) => ({
       start:
         earliestStart !== undefined
-          ? Math.max(
-              window.start,
-              earliestStart
-            )
+          ? Math.max(window.start, earliestStart)
           : window.start,
 
       end:
-        latestEnd !== undefined
-          ? Math.min(
-              window.end,
-              latestEnd
-            )
-          : window.end,
+        latestEnd !== undefined ? Math.min(window.end, latestEnd) : window.end,
     }))
-    .filter(
-      (window) =>
-        window.start < window.end
-    );
+    .filter((window) => window.start < window.end);
 }
 
-function getPriorityValue(
-  priority?: "low" | "medium" | "high"
-) {
+function getPriorityValue(priority?: "low" | "medium" | "high") {
   if (priority === "high") return 3;
   if (priority === "medium") return 2;
   if (priority === "low") return 1;
@@ -385,13 +293,8 @@ function getPriorityValue(
   return 0;
 }
 
-function getItemEnergy(
-  item: unknown
-): Energy | undefined {
-  if (
-    !item ||
-    typeof item !== "object"
-  ) {
+function getItemEnergy(item: unknown): Energy | undefined {
+  if (!item || typeof item !== "object") {
     return undefined;
   }
 
@@ -401,11 +304,7 @@ function getItemEnergy(
     }
   ).energy;
 
-  if (
-    value === "low" ||
-    value === "medium" ||
-    value === "high"
-  ) {
+  if (value === "low" || value === "medium" || value === "high") {
     return value;
   }
 
@@ -418,10 +317,7 @@ function getItemEnergy(
  * This is deliberately a preference curve rather than a hard rule.
  * Availability, working hours and explicit task windows are applied first.
  */
-function getExpectedEnergy(
-  minute: number,
-  pattern: EnergyPattern
-): Energy {
+function getExpectedEnergy(minute: number, pattern: EnergyPattern): Energy {
   const hour = minute / 60;
 
   if (pattern === "morning") {
@@ -449,25 +345,18 @@ function getEnergyMatchScore(
   taskEnergy: Energy | undefined,
   startMinutes: number,
   durationMinutes: number,
-  pattern: EnergyPattern
+  pattern: EnergyPattern,
 ) {
   if (!taskEnergy) {
     return 0;
   }
 
-  const midpoint =
-    startMinutes +
-    durationMinutes / 2;
+  const midpoint = startMinutes + durationMinutes / 2;
 
-  const expectedEnergy =
-    getExpectedEnergy(
-      midpoint,
-      pattern
-    );
+  const expectedEnergy = getExpectedEnergy(midpoint, pattern);
 
   const difference = Math.abs(
-    ENERGY_VALUE[taskEnergy] -
-      ENERGY_VALUE[expectedEnergy]
+    ENERGY_VALUE[taskEnergy] - ENERGY_VALUE[expectedEnergy],
   );
 
   if (difference === 0) {
@@ -485,30 +374,17 @@ function getUrgencyScore(
   candidate: ScheduleCandidate,
   dateKey: string,
   startMinutes: number,
-  earliestPossibleMinute: number
+  earliestPossibleMinute: number,
 ) {
-  if (
-    !candidate.dueDate ||
-    candidate.dueDate > dateKey
-  ) {
+  if (!candidate.dueDate || candidate.dueDate > dateKey) {
     return 0;
   }
 
   // When something is already due, earlier still matters.
   // This prevents energy preference from endlessly pushing urgent work later.
-  const delayMinutes = Math.max(
-    0,
-    startMinutes -
-      earliestPossibleMinute
-  );
+  const delayMinutes = Math.max(0, startMinutes - earliestPossibleMinute);
 
-  return Math.max(
-    0,
-    24 -
-      Math.floor(
-        delayMinutes / 60
-      ) * 4
-  );
+  return Math.max(0, 24 - Math.floor(delayMinutes / 60) * 4);
 }
 
 function getCandidateGaps(
@@ -517,22 +393,16 @@ function getCandidateGaps(
   settings: SchedulerSettings,
   dateKey: string,
   today: string,
-  currentTime: string
+  currentTime: string,
 ): TimeWindow[] {
   const gaps: TimeWindow[] = [];
 
-  const roundedCurrentMinute =
-    Math.ceil(
-      timeToMinutes(currentTime) / 5
-    ) * 5;
+  const roundedCurrentMinute = Math.ceil(timeToMinutes(currentTime) / 5) * 5;
 
   for (const window of windows) {
     let cursor =
       dateKey === today
-        ? Math.max(
-            window.start,
-            roundedCurrentMinute
-          )
+        ? Math.max(window.start, roundedCurrentMinute)
         : window.start;
 
     if (cursor >= window.end) {
@@ -540,21 +410,11 @@ function getCandidateGaps(
     }
 
     for (const block of blocksForDay) {
-      const blockStart =
-        timeToMinutes(
-          block.startTime
-        );
+      const blockStart = timeToMinutes(block.startTime);
 
-      const blockEnd =
-        timeToMinutes(
-          block.endTime
-        );
+      const blockEnd = timeToMinutes(block.endTime);
 
-      if (
-        blockEnd +
-          settings.bufferMinutes <=
-        cursor
-      ) {
+      if (blockEnd + settings.bufferMinutes <= cursor) {
         continue;
       }
 
@@ -562,11 +422,7 @@ function getCandidateGaps(
         break;
       }
 
-      const gapEnd = Math.min(
-        window.end,
-        blockStart -
-          settings.bufferMinutes
-      );
+      const gapEnd = Math.min(window.end, blockStart - settings.bufferMinutes);
 
       if (cursor < gapEnd) {
         gaps.push({
@@ -575,11 +431,7 @@ function getCandidateGaps(
         });
       }
 
-      cursor = Math.max(
-        cursor,
-        blockEnd +
-          settings.bufferMinutes
-      );
+      cursor = Math.max(cursor, blockEnd + settings.bufferMinutes);
 
       if (cursor >= window.end) {
         break;
@@ -597,32 +449,23 @@ function getCandidateGaps(
   return gaps;
 }
 
-function getPossibleStarts(
-  gap: TimeWindow
-) {
+function getPossibleStarts(gap: TimeWindow) {
   const starts = new Set<number>();
 
   starts.add(gap.start);
 
   const firstRoundedStart =
-    Math.ceil(
-      gap.start /
-        SLOT_STEP_MINUTES
-    ) * SLOT_STEP_MINUTES;
+    Math.ceil(gap.start / SLOT_STEP_MINUTES) * SLOT_STEP_MINUTES;
 
   for (
-    let minute =
-      firstRoundedStart;
+    let minute = firstRoundedStart;
     minute < gap.end;
     minute += SLOT_STEP_MINUTES
   ) {
     starts.add(minute);
   }
 
-  return [...starts].sort(
-    (first, second) =>
-      first - second
-  );
+  return [...starts].sort((first, second) => first - second);
 }
 
 function findAvailableSession(
@@ -632,31 +475,24 @@ function findAvailableSession(
   settings: SchedulerSettings,
   scheduledBlocks: ScheduledBlock[],
   today: string,
-  currentTime: string
+  currentTime: string,
 ) {
-  const availableWindows =
-    getAvailableWindows(
-      dateKey,
-      candidate.context,
-      settings
-    );
+  const availableWindows = getAvailableWindows(
+    dateKey,
+    candidate.context,
+    settings,
+  );
 
   const windows = applyTimeWindow(
     availableWindows,
     candidate.earliestStartTime,
-    candidate.latestEndTime
+    candidate.latestEndTime,
   );
 
   const blocksForDay = scheduledBlocks
-    .filter(
-      (block) =>
-        block.date === dateKey
-    )
-    .sort(
-      (firstBlock, secondBlock) =>
-        firstBlock.startTime.localeCompare(
-          secondBlock.startTime
-        )
+    .filter((block) => block.date === dateKey)
+    .sort((firstBlock, secondBlock) =>
+      firstBlock.startTime.localeCompare(secondBlock.startTime),
     );
 
   const gaps = getCandidateGaps(
@@ -665,98 +501,61 @@ function findAvailableSession(
     settings,
     dateKey,
     today,
-    currentTime
+    currentTime,
   );
 
   const taskIsSplittable =
-    candidate.durationMinutes >
-    candidate.maxSessionMinutes;
+    candidate.durationMinutes > candidate.maxSessionMinutes;
 
-  const targetSessionMinutes =
-    taskIsSplittable
-      ? Math.min(
-          remainingMinutes,
-          candidate.maxSessionMinutes
-        )
-      : remainingMinutes;
+  const targetSessionMinutes = taskIsSplittable
+    ? Math.min(remainingMinutes, candidate.maxSessionMinutes)
+    : remainingMinutes;
 
-  const minimumSessionMinutes =
-    taskIsSplittable
-      ? Math.min(
-          MINIMUM_SESSION_MINUTES,
-          targetSessionMinutes
-        )
-      : targetSessionMinutes;
+  const minimumSessionMinutes = taskIsSplittable
+    ? Math.min(MINIMUM_SESSION_MINUTES, targetSessionMinutes)
+    : targetSessionMinutes;
 
   const earliestPossibleMinute =
-    gaps.length > 0
-      ? Math.min(
-          ...gaps.map(
-            (gap) => gap.start
-          )
-        )
-      : 0;
+    gaps.length > 0 ? Math.min(...gaps.map((gap) => gap.start)) : 0;
 
-  const pattern =
-    settings.energyPattern ??
-    "balanced";
+  const pattern = settings.energyPattern ?? "balanced";
 
-  const options: SessionOption[] =
-    [];
+  const options: SessionOption[] = [];
 
   for (const gap of gaps) {
-    for (
-      const startMinutes of getPossibleStarts(
-        gap
-      )
-    ) {
-      const availableMinutes =
-        gap.end - startMinutes;
+    for (const startMinutes of getPossibleStarts(gap)) {
+      const availableMinutes = gap.end - startMinutes;
 
-      if (
-        availableMinutes <
-        minimumSessionMinutes
-      ) {
+      if (availableMinutes < minimumSessionMinutes) {
         continue;
       }
 
-      const durationMinutes =
-        taskIsSplittable
-          ? Math.min(
-              targetSessionMinutes,
-              availableMinutes
-            )
-          : targetSessionMinutes;
+      const durationMinutes = taskIsSplittable
+        ? Math.min(targetSessionMinutes, availableMinutes)
+        : targetSessionMinutes;
 
-      if (
-        durationMinutes >
-        availableMinutes
-      ) {
+      if (durationMinutes > availableMinutes) {
         continue;
       }
 
-      const energyScore =
-        getEnergyMatchScore(
-          candidate.energy,
-          startMinutes,
-          durationMinutes,
-          pattern
-        );
+      const energyScore = getEnergyMatchScore(
+        candidate.energy,
+        startMinutes,
+        durationMinutes,
+        pattern,
+      );
 
-      const urgencyScore =
-        getUrgencyScore(
-          candidate,
-          dateKey,
-          startMinutes,
-          earliestPossibleMinute
-        );
+      const urgencyScore = getUrgencyScore(
+        candidate,
+        dateKey,
+        startMinutes,
+        earliestPossibleMinute,
+      );
 
       options.push({
         startMinutes,
         durationMinutes,
-        score:
-          energyScore +
-          urgencyScore,
+        score: energyScore + urgencyScore,
       });
     }
   }
@@ -765,41 +564,26 @@ function findAvailableSession(
     return undefined;
   }
 
-  return options.sort(
-    (first, second) => {
-      if (
-        second.score !==
-        first.score
-      ) {
-        return (
-          second.score -
-          first.score
-        );
-      }
-
-      // For equally good slots, keep the schedule as early
-      // and compact as possible.
-      return (
-        first.startMinutes -
-        second.startMinutes
-      );
+  return options.sort((first, second) => {
+    if (second.score !== first.score) {
+      return second.score - first.score;
     }
-  )[0];
+
+    // For equally good slots, keep the schedule as early
+    // and compact as possible.
+    return first.startMinutes - second.startMinutes;
+  })[0];
 }
 
 function buildProjectCandidates(
   tasks: SchedulableProjectTask[],
   today: string,
-  horizonEnd: string
+  horizonEnd: string,
 ): ScheduleCandidate[] {
   return tasks
-    .filter(
-      (task) =>
-        !task.completed
-    )
+    .filter((task) => !task.completed)
     .map((task) => {
-      const usedDefaultDuration =
-        !task.durationMinutes;
+      const usedDefaultDuration = !task.durationMinutes;
 
       return {
         id: `task-${task.id}`,
@@ -807,42 +591,31 @@ function buildProjectCandidates(
         sourceId: task.id,
         parentId: task.projectId,
         parentName: task.projectName,
-        title:
-          task.title ||
-          "Untitled task",
+        title: task.title || "Untitled task",
 
-        durationMinutes:
-          task.durationMinutes ??
-          DEFAULT_TASK_MINUTES,
+        durationMinutes: task.durationMinutes ?? DEFAULT_TASK_MINUTES,
 
         maxSessionMinutes: Math.max(
           1,
-          task.maxSessionMinutes ??
-            DEFAULT_MAX_SESSION_MINUTES
+          task.maxSessionMinutes ?? DEFAULT_MAX_SESSION_MINUTES,
         ),
 
         usedDefaultDuration,
 
         context:
-          task.scheduleContext ??
-          task.projectScheduleContext ??
-          "personal",
+          task.scheduleContext ?? task.projectScheduleContext ?? "personal",
 
         earliestStartTime:
-          task.earliestStartTime ??
-          task.projectEarliestStartTime,
+          task.earliestStartTime ?? task.projectEarliestStartTime,
 
-        latestEndTime:
-          task.latestEndTime ??
-          task.projectLatestEndTime,
+        latestEndTime: task.latestEndTime ?? task.projectLatestEndTime,
 
         priority: task.priority,
         energy: getItemEnergy(task),
         dueDate: task.dueDate,
 
         earliestDate:
-          task.availableFrom &&
-          task.availableFrom > today
+          task.availableFrom && task.availableFrom > today
             ? task.availableFrom
             : today,
 
@@ -854,51 +627,35 @@ function buildProjectCandidates(
 function buildRoutineCandidates(
   routines: Routine[],
   today: string,
-  horizonEnd: string
+  horizonEnd: string,
 ): ScheduleCandidate[] {
-  const candidates:
-    ScheduleCandidate[] = [];
+  const candidates: ScheduleCandidate[] = [];
 
   routines
-    .filter(
-      (routine) =>
-        !routine.archived
-    )
+    .filter((routine) => !routine.archived)
     .forEach((routine) => {
       routine.tasks
-        .filter(
-          (task) =>
-            task.active
-        )
+        .filter((task) => task.active)
         .forEach((task) => {
-          const usedDefaultDuration =
-            !task.durationMinutes;
+          const usedDefaultDuration = !task.durationMinutes;
 
           let occurrenceDate =
-            task.nextDueDate < today
-              ? today
-              : task.nextDueDate;
+            task.nextDueDate < today ? today : task.nextDueDate;
 
-          while (
-            occurrenceDate <=
-            horizonEnd
-          ) {
-            const nextOccurrenceDate =
-              addRecurrence(
-                occurrenceDate,
-                task.interval,
-                task.recurrenceUnit
-              );
+          while (occurrenceDate <= horizonEnd) {
+            const nextOccurrenceDate = addRecurrence(
+              occurrenceDate,
+              task.interval,
+              task.recurrenceUnit,
+            );
 
-            const dayBeforeNextOccurrence =
-              addDaysToDateKey(
-                nextOccurrenceDate,
-                -1
-              );
+            const dayBeforeNextOccurrence = addDaysToDateKey(
+              nextOccurrenceDate,
+              -1,
+            );
 
             const latestDate =
-              dayBeforeNextOccurrence <
-              horizonEnd
+              dayBeforeNextOccurrence < horizonEnd
                 ? dayBeforeNextOccurrence
                 : horizonEnd;
 
@@ -907,52 +664,37 @@ function buildRoutineCandidates(
               sourceType: "routine",
               sourceId: task.id,
               parentId: routine.id,
-              parentName:
-                routine.name,
-              title:
-                task.title ||
-                "Untitled routine",
+              parentName: routine.name,
+              title: task.title || "Untitled routine",
 
-              durationMinutes:
-                task.durationMinutes ??
-                DEFAULT_TASK_MINUTES,
+              durationMinutes: task.durationMinutes ?? DEFAULT_TASK_MINUTES,
 
-              maxSessionMinutes:
-                Math.max(
-                  1,
-                  task.maxSessionMinutes ??
-                    DEFAULT_MAX_SESSION_MINUTES
-                ),
+              maxSessionMinutes: Math.max(
+                1,
+                task.maxSessionMinutes ?? DEFAULT_MAX_SESSION_MINUTES,
+              ),
 
               usedDefaultDuration,
 
-              context:
-                task.scheduleContext ??
-                "personal",
+              context: task.scheduleContext ?? "personal",
 
-              earliestStartTime:
-                task.earliestStartTime,
+              earliestStartTime: task.earliestStartTime,
 
-              latestEndTime:
-                task.latestEndTime,
+              latestEndTime: task.latestEndTime,
 
               priority: task.priority,
-              energy:
-                getItemEnergy(task),
+              energy: getItemEnergy(task),
 
-              dueDate:
-                occurrenceDate,
+              dueDate: occurrenceDate,
 
               occurrenceDate,
 
-              earliestDate:
-                occurrenceDate,
+              earliestDate: occurrenceDate,
 
               latestDate,
             });
 
-            occurrenceDate =
-              nextOccurrenceDate;
+            occurrenceDate = nextOccurrenceDate;
           }
         });
     });
@@ -963,17 +705,15 @@ function buildRoutineCandidates(
 function buildAdhocCandidates(
   adhocTasks: AdhocTask[],
   today: string,
-  horizonEnd: string
+  horizonEnd: string,
 ): ScheduleCandidate[] {
   return adhocTasks
     .filter((task) => !task.completed)
     .map((task) => {
-      const usedDefaultDuration =
-        !task.estimatedMinutes;
+      const usedDefaultDuration = !task.estimatedMinutes;
 
       const plannedDate =
-        task.plannedDate &&
-        task.plannedDate >= today
+        task.plannedDate && task.plannedDate >= today
           ? task.plannedDate
           : today;
 
@@ -988,49 +728,30 @@ function buildAdhocCandidates(
 
         parentName: "Ad hoc",
 
-        title:
-          task.title ||
-          "Untitled task",
+        title: task.title || "Untitled task",
 
-        durationMinutes:
-          task.estimatedMinutes ??
-          DEFAULT_TASK_MINUTES,
+        durationMinutes: task.estimatedMinutes ?? DEFAULT_TASK_MINUTES,
 
-        maxSessionMinutes:
-          DEFAULT_MAX_SESSION_MINUTES,
+        maxSessionMinutes: DEFAULT_MAX_SESSION_MINUTES,
 
         usedDefaultDuration,
 
-        context:
-          task.context ??
-          "personal",
+        context: task.context ?? "personal",
 
-        earliestStartTime:
-          task.earliestStart,
+        earliestStartTime: task.earliestStart,
 
-        latestEndTime:
-          task.latestEnd,
+        latestEndTime: task.latestEnd,
 
-        priority:
-          task.priority,
+        priority: task.priority,
 
-        energy:
-          getItemEnergy(task),
+        energy: getItemEnergy(task),
 
-        earliestDate:
-          plannedDate,
+        earliestDate: plannedDate,
 
-        latestDate:
-          plannedDate <= horizonEnd
-            ? plannedDate
-            : horizonEnd,
+        latestDate: plannedDate <= horizonEnd ? plannedDate : horizonEnd,
       };
     })
-    .filter(
-      (candidate) =>
-        candidate.earliestDate <=
-        candidate.latestDate
-    );
+    .filter((candidate) => candidate.earliestDate <= candidate.latestDate);
 }
 
 export function buildRollingSchedule({
@@ -1048,35 +769,16 @@ export function buildRollingSchedule({
   today: string;
   currentTime: string;
 }): ScheduleResult {
-  const horizonEnd =
-    addDaysToDateKey(
-      today,
-      Math.max(
-        1,
-        settings.planningHorizonDays
-      ) - 1
-    );
-
-  const projectCandidates =
-    buildProjectCandidates(
-      tasks,
-      today,
-      horizonEnd
-    );
-
-  const routineCandidates =
-    buildRoutineCandidates(
-      routines,
-      today,
-      horizonEnd
-    );
-
-  const adhocCandidates =
-  buildAdhocCandidates(
-    adhocTasks,
+  const horizonEnd = addDaysToDateKey(
     today,
-    horizonEnd
+    Math.max(1, settings.planningHorizonDays) - 1,
   );
+
+  const projectCandidates = buildProjectCandidates(tasks, today, horizonEnd);
+
+  const routineCandidates = buildRoutineCandidates(routines, today, horizonEnd);
+
+  const adhocCandidates = buildAdhocCandidates(adhocTasks, today, horizonEnd);
   /**
    * Candidate order still handles "what deserves space first":
    * due date first, then explicit priority.
@@ -1089,79 +791,44 @@ export function buildRollingSchedule({
     ...projectCandidates,
     ...routineCandidates,
     ...adhocCandidates,
-  ].sort(
-    (first, second) => {
-      const firstDue =
-        first.dueDate ??
-        horizonEnd;
+  ].sort((first, second) => {
+    const firstDue = first.dueDate ?? horizonEnd;
 
-      const secondDue =
-        second.dueDate ??
-        horizonEnd;
+    const secondDue = second.dueDate ?? horizonEnd;
 
-      const dueComparison =
-        firstDue.localeCompare(
-          secondDue
-        );
+    const dueComparison = firstDue.localeCompare(secondDue);
 
-      if (
-        dueComparison !== 0
-      ) {
-        return dueComparison;
-      }
-
-      return (
-        getPriorityValue(
-          second.priority
-        ) -
-        getPriorityValue(
-          first.priority
-        )
-      );
+    if (dueComparison !== 0) {
+      return dueComparison;
     }
-  );
 
-  const blocks:
-    ScheduledBlock[] = [];
+    return getPriorityValue(second.priority) - getPriorityValue(first.priority);
+  });
 
-  const unscheduled:
-    UnscheduledItem[] = [];
+  const blocks: ScheduledBlock[] = [];
 
-  for (
-    const candidate of candidates
-  ) {
-    let remainingMinutes =
-      candidate.durationMinutes;
+  const unscheduled: UnscheduledItem[] = [];
+
+  for (const candidate of candidates) {
+    let remainingMinutes = candidate.durationMinutes;
 
     let sessionIndex = 0;
 
     for (
-      let dateKey =
-        candidate.earliestDate;
-
-      dateKey <=
-        candidate.latestDate &&
-      remainingMinutes > 0;
-
-      dateKey =
-        addDaysToDateKey(
-          dateKey,
-          1
-        )
+      let dateKey = candidate.earliestDate;
+      dateKey <= candidate.latestDate && remainingMinutes > 0;
+      dateKey = addDaysToDateKey(dateKey, 1)
     ) {
-      while (
-        remainingMinutes > 0
-      ) {
-        const session =
-          findAvailableSession(
-            dateKey,
-            candidate,
-            remainingMinutes,
-            settings,
-            blocks,
-            today,
-            currentTime
-          );
+      while (remainingMinutes > 0) {
+        const session = findAvailableSession(
+          dateKey,
+          candidate,
+          remainingMinutes,
+          settings,
+          blocks,
+          today,
+          currentTime,
+        );
 
         if (!session) {
           break;
@@ -1169,105 +836,71 @@ export function buildRollingSchedule({
 
         sessionIndex += 1;
 
-        const endMinutes =
-          session.startMinutes +
-          session.durationMinutes;
+        const endMinutes = session.startMinutes + session.durationMinutes;
 
         blocks.push({
           id: `${candidate.id}-session-${sessionIndex}`,
 
-          sourceType:
-            candidate.sourceType,
+          sourceType: candidate.sourceType,
 
-          sourceId:
-            candidate.sourceId,
+          sourceId: candidate.sourceId,
 
-          parentId:
-            candidate.parentId,
+          parentId: candidate.parentId,
 
-          parentName:
-            candidate.parentName,
+          parentName: candidate.parentName,
 
-          title:
-            candidate.title,
+          title: candidate.title,
 
-          date:
-            dateKey,
+          date: dateKey,
 
-          startTime:
-            minutesToTime(
-              session.startMinutes
-            ),
+          startTime: minutesToTime(session.startMinutes),
 
-          endTime:
-            minutesToTime(
-              endMinutes
-            ),
+          endTime: minutesToTime(endMinutes),
 
-          timeZone:
-            settings.timeZone,
+          timeZone: settings.timeZone,
 
-          durationMinutes:
-            session.durationMinutes,
+          durationMinutes: session.durationMinutes,
 
-          usedDefaultDuration:
-            candidate.usedDefaultDuration,
+          usedDefaultDuration: candidate.usedDefaultDuration,
 
-          context:
-            candidate.context,
+          context: candidate.context,
 
-          dueDate:
-            candidate.dueDate,
+          dueDate: candidate.dueDate,
 
-          occurrenceDate:
-            candidate.occurrenceDate,
+          occurrenceDate: candidate.occurrenceDate,
 
           sessionIndex,
 
-          totalDurationMinutes:
-            candidate.durationMinutes,
+          totalDurationMinutes: candidate.durationMinutes,
         });
 
-        remainingMinutes -=
-          session.durationMinutes;
+        remainingMinutes -= session.durationMinutes;
       }
     }
 
-    if (
-      remainingMinutes > 0
-    ) {
-      const remainingHours =
-        remainingMinutes / 60;
+    if (remainingMinutes > 0) {
+      const remainingHours = remainingMinutes / 60;
 
       const remainingLabel =
         remainingMinutes < 60
           ? `${remainingMinutes} minutes`
-          : `${Number(
-              remainingHours.toFixed(
-                1
-              )
-            )} hours`;
+          : `${Number(remainingHours.toFixed(1))} hours`;
 
       unscheduled.push({
         id: candidate.id,
 
-        title:
-          candidate.title,
+        title: candidate.title,
 
-        sourceType:
-          candidate.sourceType,
+        sourceType: candidate.sourceType,
 
-        sourceId:
-          candidate.sourceId,
+        sourceId: candidate.sourceId,
 
-        parentId:
-          candidate.parentId,
+        parentId: candidate.parentId,
 
         reason:
           sessionIndex > 0
             ? `${remainingLabel} still need scheduling.`
-            : candidate.context ===
-                "work"
+            : candidate.context === "work"
               ? "No suitable space in your work hours or time window."
               : "No suitable space in your available hours or time window.",
       });
@@ -1275,11 +908,10 @@ export function buildRollingSchedule({
   }
 
   return {
-    blocks: blocks.sort(
-      (first, second) =>
-        `${first.date}-${first.startTime}`.localeCompare(
-          `${second.date}-${second.startTime}`
-        )
+    blocks: blocks.sort((first, second) =>
+      `${first.date}-${first.startTime}`.localeCompare(
+        `${second.date}-${second.startTime}`,
+      ),
     ),
 
     unscheduled,
