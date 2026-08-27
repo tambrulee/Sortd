@@ -25,6 +25,9 @@ import DreamsView from "@/components/DreamsView";
 import SettingsControlPanel from "@/components/SettingsControlPanel";
 import FoodView from "@/components/FoodView";
 
+// AskSortd
+import AskSortd from "@/components/AskSortd";
+
 // Types and storage utilities
 import {
   AppView,
@@ -269,6 +272,81 @@ export default function Home() {
       })),
     );
   }, [lists]);
+
+  // AI Brain
+  const aiContext = useMemo(() => {
+    return {
+      now: new Date().toISOString(),
+
+      timeZone:
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+
+      localTime: new Intl.DateTimeFormat(
+        "en-GB",
+        {
+          dateStyle: "full",
+          timeStyle: "short",
+        },
+      ).format(new Date()),
+
+      projects: lists.map((project) => ({
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        status: project.status,
+        goalId: project.goalId,
+        scheduleContext:
+          project.scheduleContext,
+        earliestStartTime:
+          project.earliestStartTime,
+        latestEndTime:
+          project.latestEndTime,
+
+        tasks: project.tasks
+          .filter(
+            (task) =>
+              !task.completed &&
+              task.title.trim().length > 0,
+          )
+          .map((task) => ({
+            id: task.id,
+            title: task.title,
+            completed: task.completed,
+            priority: task.priority,
+            energy: task.energy,
+            dueDate: task.dueDate,
+            durationMinutes:
+              task.durationMinutes,
+            maxSessionMinutes:
+              task.maxSessionMinutes,
+            scheduleContext:
+              task.scheduleContext,
+            earliestStartTime:
+              task.earliestStartTime,
+            latestEndTime:
+              task.latestEndTime,
+          }),
+        ),
+      })),
+
+      routines,
+
+      goals,
+
+      dreams,
+
+      adhocTasks,
+
+      scheduleSettings,
+    };
+  }, [
+    lists,
+    routines,
+    goals,
+    dreams,
+    adhocTasks,
+    scheduleSettings,
+  ]);
 
   const [taskFilter, setTaskFilter] = useState<"all" | "high" | "low-energy">(
     "all",
@@ -1052,6 +1130,8 @@ export default function Home() {
               activeView={activeView}
               onChangeView={setActiveView}
             />
+
+            <AskSortd context={aiContext} />
           </div>
 
           {activeView === "my-day" ? (
