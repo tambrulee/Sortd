@@ -61,13 +61,23 @@ export type AdhocTask = {
   order: number;
 };
 
-export type ProjectStatus = "active" | "paused" | "completed";
+export type ProjectStatus =
+  | "backlog"
+  | "planned"
+  | "active"
+  | "paused"
+  | "completed";
 
 export type SortdList = {
   id: string;
   name: string;
   description?: string;
+
   status?: ProjectStatus;
+
+  startDate?: string;
+  targetDate?: string;
+
   goalId?: string;
 
   tasks: Task[];
@@ -75,6 +85,8 @@ export type SortdList = {
   createdAt: string;
 
   scheduleContext?: ScheduleContext;
+  preferredPeriod?: SchedulePeriod;
+
   earliestStartTime?: string;
   latestEndTime?: string;
 };
@@ -83,7 +95,12 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
-  status: "active" | "paused" | "completed";
+
+  status: ProjectStatus;
+
+  startDate?: string;
+  targetDate?: string;
+
   goalId?: string;
   createdAt: string;
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import ArchivedTasks from "@/components/ArchivedTasks";
 import CollectionSwitcher from "@/components/CollectionSwitcher";
 import ControlPanel from "@/components/ControlPanel";
@@ -16,6 +18,69 @@ import {
 } from "@/lib/types";
 
 type TaskFilter = "all" | "high" | "low-energy";
+
+type ProjectViewMode = "board" | "list";
+
+const PROJECT_COLUMNS: {
+  status: ProjectStatus;
+  label: string;
+  description: string;
+}[] = [
+  {
+    status: "backlog",
+    label: "Backlog",
+    description: "Ideas and future projects",
+  },
+  {
+    status: "planned",
+    label: "Planned",
+    description: "Ready to start",
+  },
+  {
+    status: "active",
+    label: "In Progress",
+    description: "Currently moving",
+  },
+  {
+    status: "paused",
+    label: "Waiting",
+    description: "Paused or blocked",
+  },
+  {
+    status: "completed",
+    label: "Done",
+    description: "Finished projects",
+  },
+];
+
+function getProjectStatus(project: SortdList): ProjectStatus {
+  return project.status ?? "active";
+}
+
+function getProjectStatusLabel(status?: ProjectStatus) {
+  switch (status) {
+    case "backlog":
+      return "Backlog";
+    case "planned":
+      return "Planned";
+    case "paused":
+      return "Waiting";
+    case "completed":
+      return "Done";
+    case "active":
+    default:
+      return "In Progress";
+  }
+}
+
+function formatProjectDate(date?: string) {
+  if (!date) return undefined;
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${date}T12:00:00`));
+}
 
 type ProjectsViewProps = {
   projects: SortdList[];
@@ -45,6 +110,10 @@ type ProjectsViewProps = {
   onChangeProjectDescription: (description: string) => void;
 
   onChangeProjectStatus: (status: ProjectStatus) => void;
+
+  onChangeProjectStartDate: (startDate?: string) => void;
+
+  onChangeProjectTargetDate: (targetDate?: string) => void;
 
   onChangeProjectScheduleContext: (context: ScheduleContext) => void;
 
@@ -97,12 +166,19 @@ type ProjectsViewProps = {
 
 function getProjectStatusColour(project: SortdList) {
   switch (project.status) {
+    case "backlog":
+      return "bg-slate-300";
+
+    case "planned":
+      return "bg-sky-400";
+
     case "paused":
       return "bg-amber-400";
 
     case "completed":
-      return "bg-slate-400";
+      return "bg-slate-500";
 
+    case "active":
     default:
       return "bg-emerald-400";
   }
@@ -131,6 +207,8 @@ export default function ProjectsView({
   onChangeProjectName,
   onChangeProjectDescription,
   onChangeProjectStatus,
+  onChangeProjectStartDate,
+  onChangeProjectTargetDate,
   onChangeProjectGoal,
   onChangeProjectScheduleContext,
   onChangeProjectEarliestStartTime,
@@ -153,6 +231,8 @@ export default function ProjectsView({
   onReorderTasks,
   onRestoreTask,
 }: ProjectsViewProps) {
+  const [viewMode, setViewMode] = useState<ProjectViewMode>("board");
+  const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
   const openTaskCount = projects.reduce(
     (total, project) => total + getOpenTaskCount(project),
     0,
@@ -255,6 +335,33 @@ export default function ProjectsView({
     onChangeProject(destinationProjectId);
   }
 
+  function moveProjectToStatus(
+    projectId: string,
+    status: ProjectStatus,
+  ) {
+    const project = projects.find((item) => item.id === projectId);
+
+    if (!project || getProjectStatus(project) === status) {
+      return;
+    }
+
+    const updatedProjects = projects.map((item) =>
+      item.id === projectId
+        ? {
+            ...item,
+            status,
+          }
+        : item,
+    );
+
+    onReorderProjects(updatedProjects);
+  }
+
+  function openProject(projectId: string) {
+    onChangeProject(projectId);
+    setViewMode("list");
+  }
+
   return (
     <div className="min-w-0 rounded-3xl bg-white/90 p-5 shadow-xl backdrop-blur-md md:p-7">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -268,26 +375,208 @@ export default function ProjectsView({
           </p>
         </div>
 
-        <div className="flex items-center gap-3 pt-1 text-sm text-slate-500">
-          <span>
-            <span className="font-semibold text-slate-900">
-              {projects.length}
-            </span>{" "}
-            {projects.length === 1 ? "project" : "projects"}
-          </span>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <span>
+              <span className="font-semibold text-slate-900">
+                {projects.length}
+              </span>{" "}
+              {projects.length === 1 ? "project" : "projects"}
+            </span>
 
-          <span aria-hidden="true" className="text-slate-300">
-            ·
-          </span>
+            <span aria-hidden="true" className="text-slate-300">
+              ·
+            </span>
 
-          <span>
-            <span className="font-semibold text-slate-900">
-              {openTaskCount}
-            </span>{" "}
-            open
-          </span>
+            <span>
+              <span className="font-semibold text-slate-900">
+                {openTaskCount}
+              </span>{" "}
+              open
+            </span>
+          </div>
+
+          <div className="flex rounded-xl bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setViewMode("board")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                viewMode === "board"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              Board
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                viewMode === "list"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              List
+            </button>
+          </div>
         </div>
       </header>
+
+      {viewMode === "board" && (
+        <div className="mb-6 overflow-x-auto pb-2">
+          <div className="grid min-w-[1100px] grid-cols-5 gap-3">
+            {PROJECT_COLUMNS.map((column) => {
+              const columnProjects = projects.filter(
+                (project) => getProjectStatus(project) === column.status,
+              );
+
+              return (
+                <section
+                  key={column.status}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+
+                    if (draggedProjectId) {
+                      moveProjectToStatus(
+                        draggedProjectId,
+                        column.status,
+                      );
+                    }
+
+                    setDraggedProjectId(null);
+                  }}
+                  className="min-h-[360px] rounded-2xl bg-slate-50 p-3"
+                >
+                  <div className="mb-3 flex items-start justify-between gap-2 px-1">
+                    <div>
+                      <h2 className="text-sm font-semibold text-slate-900">
+                        {column.label}
+                      </h2>
+
+                      <p className="mt-0.5 text-[11px] text-slate-400">
+                        {column.description}
+                      </p>
+                    </div>
+
+                    <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-500 shadow-sm">
+                      {columnProjects.length}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {columnProjects.map((project) => {
+                      const openTasks = getOpenTaskCount(project);
+
+                      const completedTasks = project.tasks.filter(
+                        (task) => task.completed,
+                      ).length;
+
+                      const totalTasks = project.tasks.length;
+
+                      const progress =
+                        totalTasks > 0
+                          ? Math.round(
+                              (completedTasks / totalTasks) * 100,
+                            )
+                          : 0;
+
+                      return (
+                        <article
+                          key={project.id}
+                          draggable
+                          onDragStart={() => {
+                            setDraggedProjectId(project.id);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedProjectId(null);
+                          }}
+                          onClick={() => openProject(project.id)}
+                          className={`cursor-pointer rounded-xl border bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md ${
+                            draggedProjectId === project.id
+                              ? "opacity-40"
+                              : "border-slate-200"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="min-w-0 truncate text-sm font-semibold text-slate-900">
+                              {project.name || "Untitled project"}
+                            </h3>
+
+                            {project.id === activeProjectId && (
+                              <span
+                                className="mt-1 h-2 w-2 shrink-0 rounded-full bg-fuchsia-400"
+                                title="Current project"
+                              />
+                            )}
+                          </div>
+
+                          {project.description && (
+                            <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-slate-500">
+                              {project.description}
+                            </p>
+                          )}
+
+                          {(project.startDate || project.targetDate) && (
+                            <div className="mt-3 flex items-center gap-1 text-[11px] text-slate-500">
+                              <span>
+                                {formatProjectDate(project.startDate) ??
+                                  "No start"}
+                              </span>
+
+                              <span className="text-slate-300">→</span>
+
+                              <span>
+                                {formatProjectDate(project.targetDate) ??
+                                  "No target"}
+                              </span>
+                            </div>
+                          )}
+
+                          {totalTasks > 0 && (
+                            <div className="mt-3">
+                              <div className="mb-1.5 flex items-center justify-between text-[11px] text-slate-500">
+                                <span>
+                                  {openTasks}{" "}
+                                  {openTasks === 1 ? "task" : "tasks"} left
+                                </span>
+
+                                <span>{progress}%</span>
+                              </div>
+
+                              <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                  className="h-full rounded-full bg-slate-400 transition-all"
+                                  style={{
+                                    width: `${progress}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+
+                    {columnProjects.length === 0 && (
+                      <div className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
+                        Drop a project here
+                      </div>
+                    )}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {viewMode === "list" && (
+       <>
 
       <CollectionSwitcher
         items={projects}
@@ -353,14 +642,18 @@ export default function ProjectsView({
 
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs ${
-                    activeProject.status === "paused"
-                      ? "bg-amber-50 text-amber-700"
-                      : activeProject.status === "completed"
-                        ? "bg-slate-100 text-slate-600"
-                        : "bg-emerald-50 text-emerald-700"
+                    activeProject.status === "backlog"
+                      ? "bg-slate-100 text-slate-600"
+                      : activeProject.status === "planned"
+                        ? "bg-sky-50 text-sky-700"
+                        : activeProject.status === "paused"
+                          ? "bg-amber-50 text-amber-700"
+                          : activeProject.status === "completed"
+                            ? "bg-slate-200 text-slate-600"
+                            : "bg-emerald-50 text-emerald-700"
                   }`}
                 >
-                  {activeProject.status ?? "active"}
+                  {getProjectStatusLabel(activeProject.status)}
                 </span>
               </span>
 
@@ -404,11 +697,15 @@ export default function ProjectsView({
               <ProjectDetails
                 description={activeProject.description ?? ""}
                 status={activeProject.status ?? "active"}
+                startDate={activeProject.startDate}
+                targetDate={activeProject.targetDate}
                 scheduleContext={activeProject.scheduleContext ?? "personal"}
                 earliestStartTime={activeProject.earliestStartTime}
                 latestEndTime={activeProject.latestEndTime}
                 onChangeDescription={onChangeProjectDescription}
                 onChangeStatus={onChangeProjectStatus}
+                onChangeStartDate={onChangeProjectStartDate}
+                onChangeTargetDate={onChangeProjectTargetDate}
                 onChangeScheduleContext={onChangeProjectScheduleContext}
                 onChangeEarliestStartTime={onChangeProjectEarliestStartTime}
                 onChangeLatestEndTime={onChangeProjectLatestEndTime}
@@ -485,6 +782,9 @@ export default function ProjectsView({
           </p>
         </div>
       )}
+        </>
+)}
     </div>
+    
   );
 }

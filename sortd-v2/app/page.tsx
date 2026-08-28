@@ -293,10 +293,12 @@ export default function Home() {
         id: project.id,
         name: project.name,
         description: project.description,
-        status: project.status,
-        goalId: project.goalId,
-        scheduleContext:
-          project.scheduleContext,
+       status: project.status,
+       startDate: project.startDate,
+       targetDate: project.targetDate,
+       goalId: project.goalId,
+       scheduleContext:
+        project.scheduleContext,
         earliestStartTime:
           project.earliestStartTime,
         latestEndTime:
@@ -937,6 +939,24 @@ export default function Home() {
     });
   }
 
+  function updateProjectStartDate(startDate?: string) {
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      startDate,
+    });
+  }
+
+  function updateProjectTargetDate(targetDate?: string) {
+    if (!activeList) return;
+
+    updateActiveList({
+      ...activeList,
+      targetDate,
+    });
+  }
+
   function updateProjectGoal(goalId?: string) {
     if (!activeList) return;
 
@@ -978,7 +998,7 @@ export default function Home() {
       id: crypto.randomUUID(),
       name: "Untitled project",
       description: "",
-      status: "active",
+      status: "backlog",
       tasks: [],
       archivedTasks: [],
       createdAt: new Date().toISOString(),
@@ -1188,6 +1208,10 @@ export default function Home() {
 
               onChangeProjectStatus={updateProjectStatus}
 
+              onChangeProjectStartDate={updateProjectStartDate}
+
+              onChangeProjectTargetDate={updateProjectTargetDate}
+
               onChangeProjectScheduleContext={updateProjectScheduleContext}
 
               onChangeProjectEarliestStartTime={updateProjectEarliestStartTime}
@@ -1250,7 +1274,7 @@ export default function Home() {
                   description: "",
                   tasks: [],
                   archivedTasks: [],
-                  status: "active" as const,
+                  status: "backlog" as const,
                   goalId,
                   scheduleContext: "personal" as const,
                   createdAt: new Date().toISOString(),

@@ -25,9 +25,39 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    let mounted = true;
+
+    async function checkSession() {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (!mounted) return;
+
+        if (error) {
+          console.error("Unable to check auth session:", error);
+        }
+
+        const nextUser = session?.user ?? null;
+
+        setUser(nextUser);
+        onUserChange(nextUser);
+      } finally {
+        if (mounted) {
+          setCheckingSession(false);
+        }
+      }
+    }
+
+    checkSession();
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+
       const nextUser = session?.user ?? null;
 
       setUser(nextUser);
@@ -36,6 +66,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [onUserChange]);

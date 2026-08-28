@@ -8,6 +8,9 @@ type ProjectDetailsProps = {
   description: string;
   status: ProjectStatus;
 
+  startDate?: string;
+  targetDate?: string;
+
   scheduleContext: ScheduleContext;
 
   earliestStartTime?: string;
@@ -16,6 +19,9 @@ type ProjectDetailsProps = {
   onChangeDescription: (description: string) => void;
 
   onChangeStatus: (status: ProjectStatus) => void;
+
+  onChangeStartDate: (date?: string) => void;
+  onChangeTargetDate: (date?: string) => void;
 
   onChangeScheduleContext: (context: ScheduleContext) => void;
 
@@ -27,17 +33,52 @@ type ProjectDetailsProps = {
 export default function ProjectDetails({
   description,
   status,
+
+  startDate,
+  targetDate,
+
   scheduleContext,
   earliestStartTime,
   latestEndTime,
+
   onChangeDescription,
   onChangeStatus,
+
+  onChangeStartDate,
+  onChangeTargetDate,
+
   onChangeScheduleContext,
   onChangeEarliestStartTime,
   onChangeLatestEndTime,
 }: ProjectDetailsProps) {
   return (
     <div className="mb-6 space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-600">
+          Start project
+          <input
+            type="date"
+            value={startDate ?? ""}
+            onChange={(event) =>
+              onChangeStartDate(event.target.value || undefined)
+            }
+            className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-600">
+          Target finish
+          <input
+            type="date"
+            value={targetDate ?? ""}
+            min={startDate || undefined}
+            onChange={(event) =>
+              onChangeTargetDate(event.target.value || undefined)
+            }
+            className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
+          />
+        </label>
+      </div>
       <div className="grid gap-3 md:grid-cols-[1fr_180px]">
         <textarea
           value={description}
@@ -54,11 +95,11 @@ export default function ProjectDetails({
           }
           className="rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
         >
-          <option value="active">Active</option>
-
-          <option value="paused">Paused</option>
-
-          <option value="completed">Completed</option>
+          <option value="backlog">Backlog</option>
+          <option value="planned">Planned</option>
+          <option value="active">In Progress</option>
+          <option value="paused">Waiting</option>
+          <option value="completed">Done</option>
         </select>
       </div>
 
