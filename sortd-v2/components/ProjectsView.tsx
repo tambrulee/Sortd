@@ -19,7 +19,7 @@ import {
 
 type TaskFilter = "all" | "high" | "low-energy";
 
-type ProjectViewMode = "board" | "list";
+type ProjectViewMode = "board" | "timeline" | "list";
 
 const PROJECT_COLUMNS: {
   status: ProjectStatus;
@@ -80,6 +80,24 @@ function formatProjectDate(date?: string) {
     day: "numeric",
     month: "short",
   }).format(new Date(`${date}T12:00:00`));
+}
+
+function parseProjectDate(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+
+  return new Date(year, month - 1, day);
+}
+
+function differenceInDays(start: Date, end: Date) {
+  const DAY_MS = 1000 * 60 * 60 * 24;
+
+  return Math.max(
+    0,
+    Math.round(
+      (end.getTime() - start.getTime()) /
+        DAY_MS,
+    ),
+  );
 }
 
 type ProjectsViewProps = {
@@ -233,6 +251,73 @@ export default function ProjectsView({
 }: ProjectsViewProps) {
   const [viewMode, setViewMode] = useState<ProjectViewMode>("board");
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
+  const datedProjects = projects.filter(
+    (project) =>
+      project.startDate ||
+      project.targetDate,
+  );
+
+  const timelineStart = (() => {
+    const dates = datedProjects
+      .flatMap((project) => [
+        project.startDate,
+        project.targetDate,
+      ])
+      .filter(Boolean)
+      .map((date) =>
+        parseProjectDate(date as string),
+      );
+
+    if (dates.length === 0) {
+      return new Date();
+    }
+
+    return new Date(
+      Math.min(
+        ...dates.map((date) =>
+          date.getTime(),
+        ),
+      ),
+    );
+  })();
+
+  const timelineEnd = (() => {
+    const dates = datedProjects
+      .flatMap((project) => [
+        project.startDate,
+        project.targetDate,
+      ])
+      .filter(Boolean)
+      .map((date) =>
+        parseProjectDate(date as string),
+      );
+
+    if (dates.length === 0) {
+      const fallback = new Date();
+
+      fallback.setDate(
+        fallback.getDate() + 30,
+      );
+
+      return fallback;
+    }
+
+    return new Date(
+      Math.max(
+        ...dates.map((date) =>
+          date.getTime(),
+        ),
+      ),
+    );
+  })();
+
+  const timelineDays = Math.max(
+    1,
+    differenceInDays(
+      timelineStart,
+      timelineEnd,
+    ),
+  );
   const openTaskCount = projects.reduce(
     (total, project) => total + getOpenTaskCount(project),
     0,
@@ -420,6 +505,20 @@ export default function ProjectsView({
             >
               List
             </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setViewMode("timeline")
+              }
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                viewMode === "timeline"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              Timeline
+            </button>
           </div>
         </div>
       </header>
@@ -574,6 +673,203 @@ export default function ProjectsView({
           </div>
         </div>
       )}
+
+      {viewMode === "timeline" && (
+      <div className="mb-6">
+        {datedProjects.length > 0 ? (
+          <>
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">
+                  Project timeline
+                </h2>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  {timelineStart.toLocaleDateString(
+                    "en-GB",
+                    {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    },
+                  )}
+                  {" → "}
+                  {timelineEnd.toLocaleDateString(
+                    "en-GB",
+                    {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    },
+                  )}
+                </p>
+              </div>
+
+              <span className="text-xs text-slate-400">
+                Click a project to open it
+              </span>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50">
+              <div className="min-w-[800px]">
+                {projects.map((project) => {
+                  if (
+                    !project.startDate &&
+                    !project.targetDate
+                  ) {
+                    return null;
+                  }
+
+                  const projectStart =
+                    parseProjectDate(
+                      project.startDate ??
+                        project.targetDate!,
+                    );
+
+                  const projectEnd =
+                    parseProjectDate(
+                      project.targetDate ??
+                        project.startDate!,
+                    );
+
+                  const startOffset =
+                    differenceInDays(
+                      timelineStart,
+                      projectStart,
+                    );
+
+                  const duration = Math.max(
+                    1,
+                    differenceInDays(
+                      projectStart,
+                      projectEnd,
+                    ) + 1,
+                  );
+
+                  const left =
+                    (startOffset /
+                      timelineDays) *
+                    100;
+
+                  const width = Math.max(
+                    2,
+                    (duration /
+                      timelineDays) *
+                      100,
+                  );
+
+                  return (
+                    <div
+                      key={project.id}
+                      className="grid grid-cols-[180px_1fr] border-b border-slate-200 last:border-b-0"
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openProject(
+                            project.id,
+                          )
+                        }
+                        className="min-w-0 border-r border-slate-200 bg-white px-4 py-4 text-left transition hover:bg-slate-50"
+                      >
+                        <p className="truncate text-sm font-medium text-slate-900">
+                          {project.name ||
+                            "Untitled project"}
+                        </p>
+
+                        <p className="mt-1 text-[11px] text-slate-400">
+                          {getProjectStatusLabel(
+                            project.status,
+                          )}
+                        </p>
+                      </button>
+
+                      <div className="relative min-h-[72px] bg-white/40 px-3 py-4">
+                        <div className="absolute inset-x-3 top-1/2 h-px bg-slate-200" />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openProject(
+                              project.id,
+                            )
+                          }
+                          style={{
+                            left: `${left}%`,
+                            width: `${width}%`,
+                          }}
+                          className="absolute top-1/2 min-w-[24px] -translate-y-1/2 rounded-lg bg-slate-700 px-2 py-2 text-left text-xs text-white shadow-sm transition hover:bg-slate-900"
+                        >
+                          <span className="block truncate font-medium">
+                            {project.name}
+                          </span>
+
+                          <span className="mt-0.5 block truncate text-[10px] text-slate-200">
+                            {formatProjectDate(
+                              project.startDate,
+                            ) ??
+                              "?"}
+                            {" → "}
+                            {formatProjectDate(
+                              project.targetDate,
+                            ) ??
+                              "?"}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-12 text-center">
+            <p className="font-medium text-slate-700">
+              No projects have dates yet.
+            </p>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Add a start or target date
+              to see projects here.
+            </p>
+          </div>
+        )}
+
+        {projects.some(
+          (project) =>
+            !project.startDate &&
+            !project.targetDate,
+        ) && (
+          <div className="mt-5">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+              Not scheduled
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {projects
+                .filter(
+                  (project) =>
+                    !project.startDate &&
+                    !project.targetDate,
+                )
+                .map((project) => (
+                  <button
+                    key={project.id}
+                    type="button"
+                    onClick={() =>
+                      openProject(project.id)
+                    }
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                  >
+                    {project.name}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )}
 
       {viewMode === "list" && (
        <>

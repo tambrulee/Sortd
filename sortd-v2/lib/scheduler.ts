@@ -1,6 +1,6 @@
 import {
-  AdhocTask,
   Energy,
+  ProjectStatus,
   RecurrenceUnit,
   Routine,
   ScheduleContext,
@@ -8,16 +8,22 @@ import {
   ScheduleSettings,
   Task,
   Weekday,
+  AdhocTask
 } from "@/lib/types";
 
-export type SchedulableProjectTask = Task & {
-  projectId: string;
-  projectName: string;
+export type SchedulableProjectTask =
+  Task & {
+    projectId: string;
+    projectName: string;
 
-  projectScheduleContext?: ScheduleContext;
-  projectEarliestStartTime?: string;
-  projectLatestEndTime?: string;
-};
+    projectStatus?: ProjectStatus;
+    projectStartDate?: string;
+    projectTargetDate?: string;
+
+    projectScheduleContext?: ScheduleContext;
+    projectEarliestStartTime?: string;
+    projectLatestEndTime?: string;
+  };
 
 export type UnscheduledItem = {
   id: string;
@@ -575,15 +581,84 @@ function findAvailableSession(
   })[0];
 }
 
+function getLatestDate(
+  dates: Array<string | undefined>,
+) {
+  const validDates = dates.filter(
+    (date): date is string => Boolean(date),
+  );
+
+  if (validDates.length === 0) {
+    return undefined;
+  }
+
+  return validDates.reduce((latest, date) =>
+    date > latest ? date : latest,
+  );
+}
+
+function getEarliestDate(
+  dates: Array<string | undefined>,
+) {
+  const validDates = dates.filter(
+    (date): date is string => Boolean(date),
+  );
+
+  if (validDates.length === 0) {
+    return undefined;
+  }
+
+  return validDates.reduce((earliest, date) =>
+    date < earliest ? date : earliest,
+  );
+}
+
 function buildProjectCandidates(
   tasks: SchedulableProjectTask[],
   today: string,
   horizonEnd: string,
 ): ScheduleCandidate[] {
   return tasks
-    .filter((task) => !task.completed)
+    .filter((task) => {
+      if (task.completed) {
+        return false;
+      }
+
+      const status =
+        task.projectStatus ?? "active";
+
+      return (
+        status === "active" ||
+        status === "planned"
+      );
+    })
     .map((task) => {
-      const usedDefaultDuration = !task.durationMinutes;
+      const usedDefaultDuration =
+        !task.durationMinutes;
+
+      const earliestDate =
+        getLatestDate([
+          today,
+          task.projectStartDate,
+          task.availableFrom,
+        ]) ?? today;
+
+      const requestedLatestDate =
+        getEarliestDate([
+          horizonEnd,
+          task.projectTargetDate,
+          task.dueDate,
+        ]) ?? horizonEnd;
+
+      /*
+       * If a deadline is already in the past, we don't
+       * throw the task away. It becomes "do it ASAP",
+       * so today is the last available scheduling day.
+       */
+      const latestDate =
+        requestedLatestDate < today
+          ? today
+          : requestedLatestDate;
 
       return {
         id: `task-${task.id}`,
@@ -591,35 +666,45 @@ function buildProjectCandidates(
         sourceId: task.id,
         parentId: task.projectId,
         parentName: task.projectName,
-        title: task.title || "Untitled task",
 
-        durationMinutes: task.durationMinutes ?? DEFAULT_TASK_MINUTES,
+        title:
+          task.title ||
+          "Untitled task",
+
+        durationMinutes:
+          task.durationMinutes ??
+          DEFAULT_TASK_MINUTES,
 
         maxSessionMinutes: Math.max(
           1,
-          task.maxSessionMinutes ?? DEFAULT_MAX_SESSION_MINUTES,
+          task.maxSessionMinutes ??
+            DEFAULT_MAX_SESSION_MINUTES,
         ),
 
         usedDefaultDuration,
 
         context:
-          task.scheduleContext ?? task.projectScheduleContext ?? "personal",
+          task.scheduleContext ??
+          task.projectScheduleContext ??
+          "personal",
 
         earliestStartTime:
-          task.earliestStartTime ?? task.projectEarliestStartTime,
+          task.earliestStartTime ??
+          task.projectEarliestStartTime,
 
-        latestEndTime: task.latestEndTime ?? task.projectLatestEndTime,
+        latestEndTime:
+          task.latestEndTime ??
+          task.projectLatestEndTime,
 
         priority: task.priority,
         energy: getItemEnergy(task),
-        dueDate: task.dueDate,
 
-        earliestDate:
-          task.availableFrom && task.availableFrom > today
-            ? task.availableFrom
-            : today,
+        dueDate:
+          task.dueDate ??
+          task.projectTargetDate,
 
-        latestDate: horizonEnd,
+        earliestDate,
+        latestDate,
       };
     });
 }

@@ -137,6 +137,10 @@ type TaskWithProject = Task & {
   projectId: string;
   projectName: string;
 
+  projectStatus?: ProjectStatus;
+  projectStartDate?: string;
+  projectTargetDate?: string;
+
   projectScheduleContext?: ScheduleContext;
   projectEarliestStartTime?: string;
   projectLatestEndTime?: string;
@@ -263,6 +267,10 @@ export default function Home() {
 
         projectId: project.id,
         projectName: project.name,
+
+        projectStatus: project.status,
+        projectStartDate: project.startDate,
+        projectTargetDate: project.targetDate,
 
         projectScheduleContext: project.scheduleContext,
 
