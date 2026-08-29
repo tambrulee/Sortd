@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { FoodData, Meal, MealPlanEntry, MealType } from "@/lib/types";
 
 import MealDetailsModal from "@/components/MealDetailsModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type FoodViewProps = {
   foodData: FoodData;
@@ -86,6 +87,11 @@ export default function FoodView({
 
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
 
+  const [
+    mealToDeleteId,
+    setMealToDeleteId,
+  ] = useState<string | null>(null);
+
   const weekDates = useMemo(() => getWeekDates(weekAnchor), [weekAnchor]);
 
   function addMeal() {
@@ -127,26 +133,29 @@ export default function FoodView({
     });
   }
 
-  function deleteMeal(mealId: string) {
-    const meal = foodData.meals.find((item) => item.id === mealId);
-
-    if (!meal) return;
-
-    const confirmed = window.confirm(`Delete "${meal.name}"?`);
-
-    if (!confirmed) {
-      return;
-    }
-
+  function deleteMeal(
+    mealId: string,
+  ) {
     onChangeFoodData({
       ...foodData,
 
-      meals: foodData.meals.filter((item) => item.id !== mealId),
+      meals:
+        foodData.meals.filter(
+          (item) =>
+            item.id !== mealId,
+        ),
 
-      mealPlan: foodData.mealPlan.filter((entry) => entry.mealId !== mealId),
+      mealPlan:
+        foodData.mealPlan.filter(
+          (entry) =>
+            entry.mealId !== mealId,
+        ),
     });
 
-    if (selectedMeal?.id === mealId) {
+    if (
+      selectedMeal?.id ===
+      mealId
+    ) {
       setSelectedMeal(null);
     }
   }
@@ -522,7 +531,7 @@ export default function FoodView({
                                 onClick={(event) => {
                                   event.stopPropagation();
 
-                                  deleteMeal(meal.id);
+                                  setMealToDeleteId(meal.id);
                                 }}
                                 className="text-slate-400 hover:text-red-500"
                                 aria-label={`Delete ${meal.name}`}
@@ -706,6 +715,30 @@ export default function FoodView({
           }}
         />
       )}
+      <ConfirmDialog
+        open={Boolean(mealToDeleteId)}
+        title="Delete meal?"
+        description={
+          mealToDeleteId
+            ? `Delete “${
+                foodData.meals.find(
+                  (meal) =>
+                    meal.id === mealToDeleteId,
+                )?.name ?? "this meal"
+              }”? It will also be removed from your meal plan. This can't be undone.`
+            : undefined
+        }
+        confirmLabel="Delete meal"
+        onCancel={() => {
+          setMealToDeleteId(null);
+        }}
+        onConfirm={() => {
+          if (!mealToDeleteId) return;
+
+          deleteMeal(mealToDeleteId);
+          setMealToDeleteId(null);
+        }}
+      />
     </div>
   );
 }

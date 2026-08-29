@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 
 import { Dream, Goal, SortdList } from "@/lib/types";
 
+import ConfirmDialog from "@/components/ConfirmDialog";
+
 type DreamsViewProps = {
   dreams: Dream[];
   goals: Goal[];
@@ -27,6 +29,9 @@ export default function DreamsView({
   const [newDreamTitle, setNewDreamTitle] = useState("");
 
   const [expandedDreamId, setExpandedDreamId] = useState<string | null>(null);
+
+  const [dreamToDeleteId, setDreamToDeleteId] =
+    useState<string | null>(null);
 
   const dreamProgress = useMemo(
     () =>
@@ -113,26 +118,11 @@ export default function DreamsView({
   }
 
   function deleteDream(id: string) {
-    const dream = dreams.find((item) => item.id === id);
-
-    if (!dream) {
-      return;
-    }
-
-    const linkedGoals = goals.filter((goal) => goal.dreamId === id);
-
-    const message =
-      linkedGoals.length > 0
-        ? `"${dream.title}" has ${linkedGoals.length} linked goal${
-            linkedGoals.length === 1 ? "" : "s"
-          }. Delete the dream anyway?`
-        : `Delete "${dream.title}"?`;
-
-    if (!window.confirm(message)) {
-      return;
-    }
-
-    onChangeDreams(dreams.filter((dream) => dream.id !== id));
+    onChangeDreams(
+      dreams.filter(
+        (dream) => dream.id !== id,
+      ),
+    );
   }
 
   return (
@@ -224,7 +214,9 @@ export default function DreamsView({
 
                     <button
                       type="button"
-                      onClick={() => deleteDream(dream.id)}
+                      onClick={() =>
+                        setDreamToDeleteId(dream.id)
+                      }
                       className="text-sm text-slate-400 transition hover:text-red-600"
                     >
                       Delete
@@ -376,6 +368,45 @@ export default function DreamsView({
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={Boolean(dreamToDeleteId)}
+        title="Delete dream?"
+        description={(() => {
+          const dream = dreams.find(
+            (item) =>
+              item.id === dreamToDeleteId,
+          );
+
+          if (!dream) {
+            return "Delete this dream? This can't be undone.";
+          }
+
+          const linkedGoals = goals.filter(
+            (goal) =>
+              goal.dreamId === dream.id,
+          );
+
+          if (linkedGoals.length > 0) {
+            return `Delete “${dream.title}”? It has ${linkedGoals.length} linked ${
+              linkedGoals.length === 1
+                ? "goal"
+                : "goals"
+            }. This can't be undone.`;
+          }
+
+          return `Delete “${dream.title}”? This can't be undone.`;
+        })()}
+        confirmLabel="Delete dream"
+        onCancel={() =>
+          setDreamToDeleteId(null)
+        }
+        onConfirm={() => {
+          if (!dreamToDeleteId) return;
+
+          deleteDream(dreamToDeleteId);
+          setDreamToDeleteId(null);
+        }}
+      />
     </section>
   );
 }

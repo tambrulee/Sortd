@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import CollectionSwitcher from "@/components/CollectionSwitcher";
 import ShoppingItemModal from "@/components/ShoppingItemModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 import {
   ShoppingCategory,
@@ -106,6 +107,19 @@ export default function ShoppingView({
   const [newItemIntent, setNewItemIntent] = useState<ShoppingIntent>("need");
 
   const [newItemEstimatedCost, setNewItemEstimatedCost] = useState("");
+
+  const [
+    shoppingListToDeleteId,
+    setShoppingListToDeleteId,
+  ] = useState<string | null>(null);
+
+  const [
+    shoppingItemToDelete,
+    setShoppingItemToDelete,
+  ] = useState<{
+    listId: string;
+    itemId: string;
+  } | null>(null);
 
   const isAllView = activeShoppingListId === "all";
 
@@ -299,29 +313,21 @@ export default function ShoppingView({
   }
 
   function deleteShoppingList(id: string) {
-    const list = shoppingLists.find((currentList) => currentList.id === id);
+    const list = shoppingLists.find(
+      (currentList) => currentList.id === id,
+    );
 
     if (!list) return;
 
-    const confirmed = window.confirm(
-      `Delete the shopping list "${list.name}" and all of its items?`,
-    );
-
-    if (!confirmed) return;
-
     onChangeShoppingLists(
-      shoppingLists.filter((currentList) => currentList.id !== id),
+      shoppingLists.filter(
+        (currentList) => currentList.id !== id,
+      ),
     );
 
     if (activeShoppingListId === id) {
       setActiveShoppingListId("all");
     }
-  }
-
-  function deleteActiveList() {
-    if (!activeList) return;
-
-    deleteShoppingList(activeList.id);
   }
 
   function addItem() {
@@ -455,25 +461,26 @@ export default function ShoppingView({
     });
   }
 
-  function deleteItem(listId: string, itemId: string) {
-    const list = shoppingLists.find((currentList) => currentList.id === listId);
-
-    const item = list?.items.find((currentItem) => currentItem.id === itemId);
-
-    if (!list || !item) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Remove "${item.title}" from this shopping list?`,
+  function deleteItem(
+    listId: string,
+    itemId: string,
+  ) {
+    const list = shoppingLists.find(
+      (currentList) =>
+        currentList.id === listId,
     );
 
-    if (!confirmed) return;
+    if (!list) {
+      return;
+    }
 
     updateList({
       ...list,
 
-      items: list.items.filter((currentItem) => currentItem.id !== itemId),
+      items: list.items.filter(
+        (currentItem) =>
+          currentItem.id !== itemId,
+      ),
     });
   }
 
@@ -629,7 +636,13 @@ export default function ShoppingView({
               createShoppingList(name);
             }
           }}
-          onDeleteItem={deleteActiveList}
+          onDeleteItem={() => {
+            if (!activeList) return;
+
+            setShoppingListToDeleteId(
+              activeList.id,
+            );
+          }}
           onRenameItem={renameShoppingList}
           onReorderItems={reorderShoppingLists}
           getCount={(list) =>
@@ -1060,12 +1073,98 @@ export default function ShoppingView({
             moveItem(selectedItem.listId, selectedItem.id, destinationListId)
           }
           onDelete={() => {
-            deleteItem(selectedItem.listId, selectedItem.id);
-            setSelectedItemRef(null);
+            setShoppingItemToDelete({
+              listId: selectedItem.listId,
+              itemId: selectedItem.id,
+            });
           }}
-          onClose={() => setSelectedItemRef(null)}
         />
       )}
+      <ConfirmDialog
+  open={Boolean(
+    shoppingListToDeleteId,
+  )}
+  title="Delete shopping list?"
+  description={(() => {
+    const list = shoppingLists.find(
+      (item) =>
+        item.id ===
+        shoppingListToDeleteId,
+    );
+
+    if (!list) {
+      return "Delete this shopping list? This can't be undone.";
+    }
+
+    return `Delete “${list.name}” and all of its items? This can't be undone.`;
+  })()}
+  confirmLabel="Delete list"
+  onCancel={() => {
+    setShoppingListToDeleteId(
+      null,
+    );
+  }}
+  onConfirm={() => {
+    if (!shoppingListToDeleteId) {
+      return;
+    }
+
+    deleteShoppingList(
+      shoppingListToDeleteId,
+    );
+
+    setShoppingListToDeleteId(
+      null,
+    );
+  }}
+/>
+
+<ConfirmDialog
+    open={Boolean(
+      shoppingItemToDelete,
+    )}
+    title="Remove shopping item?"
+    description={(() => {
+      if (!shoppingItemToDelete) {
+        return undefined;
+      }
+
+      const list =
+        shoppingLists.find(
+          (item) =>
+            item.id ===
+            shoppingItemToDelete.listId,
+        );
+
+      const item =
+        list?.items.find(
+          (item) =>
+            item.id ===
+            shoppingItemToDelete.itemId,
+        );
+
+      return item
+        ? `Remove “${item.title}” from this shopping list?`
+        : "Remove this shopping item?";
+    })()}
+    confirmLabel="Remove item"
+    onCancel={() => {
+      setShoppingItemToDelete(null);
+    }}
+    onConfirm={() => {
+      if (!shoppingItemToDelete) {
+        return;
+      }
+
+      deleteItem(
+        shoppingItemToDelete.listId,
+        shoppingItemToDelete.itemId,
+      );
+
+      setShoppingItemToDelete(null);
+      setSelectedItemRef(null);
+    }}
+  />
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 
 import { Dream, Goal, SortdList } from "@/lib/types";
 
+import ConfirmDialog from "@/components/ConfirmDialog";
+
 type GoalsViewProps = {
   goals: Goal[];
   dreams: Dream[];
@@ -58,6 +60,9 @@ export default function GoalsView({
     "active" | "paused" | "completed" | "all"
   >("active");
 
+  const [goalToDeleteId, setGoalToDeleteId] =
+    useState<string | null>(null);
+
   const visibleGoals = useMemo(
     () => goals.filter((goal) => filter === "all" || goal.status === filter),
     [goals, filter],
@@ -97,17 +102,9 @@ export default function GoalsView({
   }
 
   function deleteGoal(id: string) {
-    const goal = goals.find((item) => item.id === id);
-
-    if (!goal) {
-      return;
-    }
-
-    if (!window.confirm(`Delete "${goal.title}"?`)) {
-      return;
-    }
-
-    onChangeGoals(goals.filter((goal) => goal.id !== id));
+    onChangeGoals(
+      goals.filter((goal) => goal.id !== id),
+    );
   }
 
   return (
@@ -229,7 +226,9 @@ export default function GoalsView({
 
                     <button
                       type="button"
-                      onClick={() => deleteGoal(goal.id)}
+                      onClick={() =>
+                        setGoalToDeleteId(goal.id)
+                      }
                       className="text-sm text-slate-400 transition hover:text-red-600"
                     >
                       Delete
@@ -362,6 +361,30 @@ export default function GoalsView({
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={Boolean(goalToDeleteId)}
+        title="Delete goal?"
+        description={
+          goalToDeleteId
+            ? `Delete “${
+                goals.find(
+                  (goal) =>
+                    goal.id === goalToDeleteId,
+                )?.title ?? "this goal"
+              }”? This can't be undone.`
+            : undefined
+        }
+        confirmLabel="Delete goal"
+        onCancel={() =>
+          setGoalToDeleteId(null)
+        }
+        onConfirm={() => {
+          if (!goalToDeleteId) return;
+
+          deleteGoal(goalToDeleteId);
+          setGoalToDeleteId(null);
+        }}
+      />
     </section>
   );
 }

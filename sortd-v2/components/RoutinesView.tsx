@@ -6,6 +6,7 @@ import { RecurrenceUnit, Routine, RoutineTask } from "@/lib/types";
 
 import CollectionSwitcher from "@/components/CollectionSwitcher";
 import ItemDetailsModal from "@/components/ItemDetailsModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 import { closestCenter, DndContext, DragEndEvent } from "@dnd-kit/core";
 
@@ -293,6 +294,14 @@ export default function RoutinesView({
 
   const [routineFilter, setRoutineFilter] = useState<RoutineFilter>("all");
 
+  const [deleteRoutineOpen, setDeleteRoutineOpen] =
+    useState(false);
+
+  const [
+    deleteRoutineTaskId,
+    setDeleteRoutineTaskId,
+  ] = useState<string | null>(null);
+
   const resolvedActiveRoutineId = routines.some(
     (routine) => routine.id === activeRoutineId,
   )
@@ -388,21 +397,19 @@ export default function RoutinesView({
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete the routine "${activeRoutine.name}" and all of its tasks?`,
+    const remainingRoutines =
+      routines.filter(
+        (routine) =>
+          routine.id !== activeRoutine.id,
+      );
+
+    onChangeRoutines(
+      remainingRoutines,
     );
 
-    if (!confirmed) {
-      return;
-    }
-
-    const remainingRoutines = routines.filter(
-      (routine) => routine.id !== activeRoutine.id,
+    setActiveRoutineId(
+      remainingRoutines[0]?.id ?? "",
     );
-
-    onChangeRoutines(remainingRoutines);
-
-    setActiveRoutineId(remainingRoutines[0]?.id ?? "");
   }
 
   function renameRoutine(routineId: string, name: string) {
@@ -507,31 +514,19 @@ export default function RoutinesView({
     });
   }
 
-  function deleteRoutineTask(taskId: string) {
+  function deleteRoutineTask(
+    taskId: string,
+  ) {
     if (!activeRoutine) {
-      return;
-    }
-
-    const task = activeRoutine.tasks.find(
-      (routineTask) => routineTask.id === taskId,
-    );
-
-    if (!task) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Delete the routine task "${task.title}"?`,
-    );
-
-    if (!confirmed) {
       return;
     }
 
     updateRoutine({
       ...activeRoutine,
+
       tasks: activeRoutine.tasks.filter(
-        (routineTask) => routineTask.id !== taskId,
+        (routineTask) =>
+          routineTask.id !== taskId,
       ),
     });
   }
@@ -668,7 +663,9 @@ export default function RoutinesView({
         deleteLabel="Delete routine"
         onChangeItem={setActiveRoutineId}
         onCreateItem={() => setShowCreateRoutine(true)}
-        onDeleteItem={deleteRoutine}
+        onDeleteItem={() => {
+          setDeleteRoutineOpen(true);
+        }}
         onRenameItem={renameRoutine}
         onReorderItems={reorderRoutines}
         getCount={getRoutineTaskCount}
@@ -936,12 +933,57 @@ export default function RoutinesView({
               onChange={(updates) =>
                 updateRoutineTask(editingRoutineTask.id, updates)
               }
-              onDelete={() => deleteRoutineTask(editingRoutineTask.id)}
+              onDelete={() => {
+                setDeleteRoutineTaskId(
+                  editingRoutineTask.id,
+                );
+              }}
               onClose={() => setEditingRoutineTaskId(null)}
             />
           )}
         </>
       )}
+      <ConfirmDialog
+        open={deleteRoutineOpen}
+        title="Delete routine?"
+        description={
+          activeRoutine
+            ? `Delete “${activeRoutine.name}” and all of its tasks? This can't be undone.`
+            : "Delete this routine? This can't be undone."
+        }
+        confirmLabel="Delete routine"
+        onCancel={() => {
+          setDeleteRoutineOpen(false);
+        }}
+        onConfirm={() => {
+          setDeleteRoutineOpen(false);
+          deleteRoutine();
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteRoutineTaskId)}
+        title="Delete routine task?"
+        description={
+          editingRoutineTask
+            ? `Delete “${editingRoutineTask.title}”? This can't be undone.`
+            : "Delete this routine task? This can't be undone."
+        }
+        confirmLabel="Delete task"
+        onCancel={() => {
+          setDeleteRoutineTaskId(null);
+        }}
+        onConfirm={() => {
+          if (!deleteRoutineTaskId) return;
+
+          deleteRoutineTask(
+            deleteRoutineTaskId,
+          );
+
+          setDeleteRoutineTaskId(null);
+          setEditingRoutineTaskId(null);
+        }}
+      />
     </div>
   );
 }

@@ -808,17 +808,10 @@ export default function Home() {
     );
   }
 
-  function deleteProjectTaskById(projectId: string, taskId: string) {
-    const project = lists.find((item) => item.id === projectId);
-
-    const task = project?.tasks.find((item) => item.id === taskId);
-
-    if (!project || !task) return;
-
-    const confirmed = window.confirm(`Delete "${task.title || "this task"}"?`);
-
-    if (!confirmed) return;
-
+  function deleteProjectTaskById(
+    projectId: string,
+    taskId: string,
+  ) {
     setLists((currentLists) =>
       currentLists.map((item) => {
         if (item.id !== projectId) {
@@ -827,7 +820,10 @@ export default function Home() {
 
         return {
           ...item,
-          tasks: item.tasks.filter((projectTask) => projectTask.id !== taskId),
+          tasks: item.tasks.filter(
+            (projectTask) =>
+              projectTask.id !== taskId,
+          ),
         };
       }),
     );
@@ -860,23 +856,10 @@ export default function Home() {
     );
   }
 
-  function deleteRoutineTaskById(routineId: string, taskId: string) {
-    const routine = routines.find((item) => item.id === routineId);
-
-    const task = routine?.tasks.find((item) => item.id === taskId);
-
-    if (!routine || !task) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Delete the routine task "${task.title}"?`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+  function deleteRoutineTaskById(
+    routineId: string,
+    taskId: string,
+  ) {
     setRoutines((currentRoutines) =>
       currentRoutines.map((item) => {
         if (item.id !== routineId) {
@@ -886,7 +869,10 @@ export default function Home() {
         return {
           ...item,
 
-          tasks: item.tasks.filter((routineTask) => routineTask.id !== taskId),
+          tasks: item.tasks.filter(
+            (routineTask) =>
+              routineTask.id !== taskId,
+          ),
         };
       }),
     );
@@ -894,16 +880,6 @@ export default function Home() {
 
   function deleteTask(id: string) {
     if (!activeList) return;
-
-    const taskToDelete = tasks.find((task) => task.id === id);
-
-    if (!taskToDelete) return;
-
-    const confirmed = window.confirm(
-      `Delete "${taskToDelete.title || "this task"}"?`,
-    );
-
-    if (!confirmed) return;
 
     updateActiveList({
       ...activeList,
@@ -1019,13 +995,9 @@ export default function Home() {
   function deleteActiveList() {
     if (!activeList || lists.length === 1) return;
 
-    const confirmed = window.confirm(
-      `Delete the project "${activeList.name}" and all of its tasks? This cannot be undone.`,
+    const remainingLists = lists.filter(
+      (list) => list.id !== activeList.id,
     );
-
-    if (!confirmed) return;
-
-    const remainingLists = lists.filter((list) => list.id !== activeList.id);
 
     setLists(remainingLists);
     setActiveListId(remainingLists[0].id);

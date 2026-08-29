@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { Task } from "@/lib/types";
 
 import { useSortable } from "@dnd-kit/sortable";
-
 import { CSS } from "@dnd-kit/utilities";
 
 import ItemDetailsModal from "@/components/ItemDetailsModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type ProjectOption = {
   id: string;
@@ -82,6 +82,9 @@ export default function TaskItem({
   onMoveTask,
 }: TaskItemProps) {
   const [showDetails, setShowDetails] = useState(false);
+
+  const [showDeleteConfirm, setShowDeleteConfirm] =
+    useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -224,13 +227,30 @@ export default function TaskItem({
           }}
           onChange={(updates) => onChangeTask(task.id, updates)}
           onDelete={() => {
-            onDeleteTask(task.id);
-
-            setShowDetails(false);
+            setShowDeleteConfirm(true);
           }}
           onClose={() => setShowDetails(false)}
+
         />
       )}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Delete task?"
+        description={
+          task.title
+            ? `Delete “${task.title}”? This can't be undone.`
+            : "Delete this task? This can't be undone."
+        }
+        confirmLabel="Delete task"
+        onCancel={() => {
+          setShowDeleteConfirm(false);
+        }}
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          setShowDetails(false);
+          onDeleteTask(task.id);
+        }}
+      />
     </>
   );
 }

@@ -11,6 +11,7 @@ import CollectionSwitcher from "@/components/CollectionSwitcher";
 import ControlPanel from "@/components/ControlPanel";
 import ProjectDetails from "@/components/ProjectDetails";
 import TaskList from "@/components/TaskList";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 import {
   Dream,
@@ -467,6 +468,16 @@ export default function ProjectsView({
       null,
     );
 
+  const [
+    projectCardOpen,
+    setProjectCardOpen,
+  ] = useState(false);
+
+  const [
+    deleteProjectOpen,
+    setDeleteProjectOpen,
+  ] = useState(false);
+
   const suppressTimelineClick =
     useRef(false);
 
@@ -881,6 +892,57 @@ export default function ProjectsView({
     );
   }
 
+  function reorderProject(
+  draggedId: string,
+  targetId: string,
+) {
+  if (draggedId === targetId) {
+    return;
+  }
+
+  const nextProjects = [...projects];
+
+  const draggedIndex =
+    nextProjects.findIndex(
+      (project) =>
+        project.id === draggedId,
+    );
+
+  const targetIndex =
+    nextProjects.findIndex(
+      (project) =>
+        project.id === targetId,
+    );
+
+  if (
+    draggedIndex === -1 ||
+    targetIndex === -1
+  ) {
+    return;
+  }
+
+  const [movedProject] =
+    nextProjects.splice(
+      draggedIndex,
+      1,
+    );
+
+  nextProjects.splice(
+    targetIndex,
+    0,
+    movedProject,
+  );
+
+  onReorderProjects(
+    nextProjects.map(
+      (project, index) => ({
+        ...project,
+        order: index + 1,
+      }),
+    ),
+  );
+}
+
   function moveProjectToStatus(
     projectId: string,
     status: ProjectStatus,
@@ -941,16 +1003,9 @@ export default function ProjectsView({
     );
   }
 
-  function openProject(
-    projectId: string,
-  ) {
-    onChangeProject(
-      projectId,
-    );
-
-    setViewMode(
-      "list",
-    );
+  function openProject(projectId: string) {
+    onChangeProject(projectId);
+    setProjectCardOpen(true);
   }
 
   function beginTimelineInteraction(
@@ -1693,36 +1748,67 @@ export default function ProjectsView({
                             gridTemplateColumns: `220px ${timelineWidth}px`,
                           }}
                         >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openProject(
-                                project.id,
-                              )
-                            }
-                            className="sticky left-0 z-20 min-w-0 border-r border-slate-200 bg-white px-4 py-4 text-left transition hover:bg-slate-50"
+                          <div
+                            draggable
+                            onDragStart={() => {
+                              setDraggedProjectId(project.id);
+                            }}
+                            onDragOver={(event) => {
+                              event.preventDefault();
+                            }}
+                            onDrop={(event) => {
+                              event.preventDefault();
+
+                              if (draggedProjectId) {
+                                reorderProject(
+                                  draggedProjectId,
+                                  project.id,
+                                );
+                              }
+
+                              setDraggedProjectId(null);
+                            }}
+                            onDragEnd={() => {
+                              setDraggedProjectId(null);
+                            }}
+                            className="sticky left-0 z-40 flex min-w-0 items-center gap-2 border-r border-slate-200 bg-white px-4 py-4"
                           >
-                            <p className="truncate text-sm font-medium text-slate-900">
-                              {project.name ||
-                                "Untitled project"}
-                            </p>
+                            <span
+                              className="shrink-0 cursor-grab select-none text-slate-300 active:cursor-grabbing"
+                              title="Drag to reorder"
+                            >
+                              ⋮⋮
+                            </span>
 
-                            <div className="mt-1 flex items-center gap-2">
-                              <span
-                                className={`h-2 w-2 rounded-full ${getProjectStatusColour(
-                                  project,
-                                )}`}
-                              />
-
-                              <p className="text-[11px] text-slate-400">
-                                {getProjectStatusLabel(
-                                  project.status,
-                                )}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openProject(project.id)
+                              }
+                              className="min-w-0 flex-1 text-left"
+                            >
+                              <p className="truncate text-sm font-medium text-slate-900">
+                                {project.name ||
+                                  "Untitled project"}
                               </p>
-                            </div>
-                          </button>
 
-                          <div className="relative h-[76px] bg-white/50">
+                              <div className="mt-1 flex items-center gap-2">
+                                <span
+                                  className={`h-2 w-2 rounded-full ${getProjectStatusColour(
+                                    project,
+                                  )}`}
+                                />
+
+                                <p className="text-[11px] text-slate-400">
+                                  {getProjectStatusLabel(
+                                    project.status,
+                                  )}
+                                </p>
+                              </div>
+                            </button>
+                          </div>
+
+                          <div className="relative h-[76px] overflow-hidden bg-white/50">
                             {/* Weekly grid */}
 
                             {weekMarkers.map(
@@ -1813,7 +1899,7 @@ export default function ProjectsView({
                               onPointerCancel={
                                 cancelTimelineInteraction
                               }
-                              className={`absolute top-1/2 z-20 flex h-[48px] -translate-y-1/2 touch-none select-none items-center overflow-hidden rounded-xl bg-slate-700 text-white shadow-sm transition ${
+                              className={`absolute top-1/2 z-10 flex h-[48px] -translate-y-1/2 touch-none select-none items-center overflow-hidden rounded-xl bg-slate-700 text-white shadow-sm transition ${
                                 interaction?.mode ===
                                 "move"
                                   ? "cursor-grabbing shadow-md"
@@ -1991,9 +2077,9 @@ export default function ProjectsView({
             onCreateItem={
               onCreateProject
             }
-            onDeleteItem={
-              onDeleteProject
-            }
+            onDeleteItem={() => {
+              setDeleteProjectOpen(true);
+            }}
             onRenameItem={
               onRenameProject
             }
@@ -2382,6 +2468,130 @@ export default function ProjectsView({
           )}
         </>
       )}
+      {projectCardOpen && activeProject && (
+  <div
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/30 p-4 backdrop-blur-sm"
+    onMouseDown={(event) => {
+      if (event.target === event.currentTarget) {
+        setProjectCardOpen(false);
+      }
+    }}
+  >
+    <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Project
+          </p>
+
+          <input
+            value={activeProject.name}
+            onChange={(event) =>
+              onChangeProjectName(event.target.value)
+            }
+            className="mt-1 w-full bg-transparent text-xl font-semibold text-slate-950 outline-none"
+          />
+
+          <div className="mt-2 flex items-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full ${getProjectStatusColour(
+                activeProject,
+              )}`}
+            />
+
+            <span className="text-sm text-slate-500">
+              {getProjectStatusLabel(activeProject.status)}
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setProjectCardOpen(false)}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900"
+          aria-label="Close project"
+        >
+          ✕
+        </button>
+      </div>
+
+      <ProjectDetails
+        description={activeProject.description ?? ""}
+        status={activeProject.status ?? "active"}
+        startDate={activeProject.startDate}
+        targetDate={activeProject.targetDate}
+        scheduleContext={
+          activeProject.scheduleContext ?? "personal"
+        }
+        earliestStartTime={
+          activeProject.earliestStartTime
+        }
+        latestEndTime={
+          activeProject.latestEndTime
+        }
+        onChangeDescription={
+          onChangeProjectDescription
+        }
+        onChangeStatus={
+          onChangeProjectStatus
+        }
+        onChangeStartDate={
+          onChangeProjectStartDate
+        }
+        onChangeTargetDate={
+          onChangeProjectTargetDate
+        }
+        onChangeScheduleContext={
+          onChangeProjectScheduleContext
+        }
+        onChangeEarliestStartTime={
+          onChangeProjectEarliestStartTime
+        }
+        onChangeLatestEndTime={
+          onChangeProjectLatestEndTime
+        }
+      />
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+        <span className="text-sm text-slate-500">
+          {getOpenTaskCount(activeProject)} open{" "}
+          {getOpenTaskCount(activeProject) === 1
+            ? "task"
+            : "tasks"}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => {
+            setProjectCardOpen(false);
+            setViewMode("list");
+          }}
+          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+        >
+          View project tasks →
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+<ConfirmDialog
+  open={deleteProjectOpen}
+  title="Delete project?"
+  description={
+    activeProject
+      ? `Delete “${activeProject.name}” and its tasks? This can't be undone.`
+      : "Delete this project? This can't be undone."
+  }
+  confirmLabel="Delete project"
+  onCancel={() => {
+    setDeleteProjectOpen(false);
+  }}
+  onConfirm={() => {
+    setDeleteProjectOpen(false);
+    setProjectCardOpen(false);
+    onDeleteProject();
+  }}
+/>
     </div>
   );
 }
