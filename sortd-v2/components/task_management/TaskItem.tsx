@@ -7,7 +7,7 @@ import { Task } from "@/lib/types";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-import ItemDetailsModal from "@/components/ItemDetailsModal";
+import ItemDetailsModal from "@/components/task_management/ItemDetailsModal";
 import ConfirmDialog from "@/components/prompts/ConfirmDialog";
 
 type ProjectOption = {

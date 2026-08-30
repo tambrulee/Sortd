@@ -10,7 +10,7 @@ import {
 
 import { Task } from "@/lib/types";
 
-import TaskItem from "@/components/TaskItem";
+import TaskItem from "@/components/task_management/TaskItem";
 
 type ProjectOption = {
   id: string;

@@ -16,7 +16,7 @@ import {
   SchedulableProjectTask,
 } from "@/lib/scheduler";
 
-import ItemDetailsModal from "@/components/ItemDetailsModal";
+import ItemDetailsModal from "@/components/task_management/ItemDetailsModal";
 
 type PlannerViewProps = {
   tasks: SchedulableProjectTask[];

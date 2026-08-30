@@ -2,7 +2,7 @@
 
 import { ScheduleSettings } from "@/lib/types";
 
-import ScheduleSettingsView from "@/components/ScheduleSettingsView";
+import ScheduleSettingsView from "@/components/settings/ScheduleSettingsView";
 
 type EnergyPattern = "morning" | "balanced" | "evening";
 

@@ -8,9 +8,9 @@ import {
 
 import ArchivedTasks from "@/components/task_management/ArchivedTasks";
 import CollectionSwitcher from "@/components/planner/CollectionSwitcher";
-import ControlPanel from "@/components/ControlPanel";
+import ControlPanel from "@/components/settings/ControlPanel";
 import ProjectDetails from "@/components/planner/ProjectDetails";
-import TaskList from "@/components/TaskList";
+import TaskList from "@/components/task_management/TaskList";
 import ConfirmDialog from "@/components/prompts/ConfirmDialog";
 
 import {
