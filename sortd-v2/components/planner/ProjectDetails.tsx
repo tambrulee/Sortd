@@ -2,7 +2,7 @@
 
 import { ProjectStatus, ScheduleContext } from "@/lib/types";
 
-import TimeWindowInput from "@/components/TimeWindowInput";
+import TimeWindowInput from "@/components/planner/TimeWindowInput";
 
 type ProjectDetailsProps = {
   description: string;

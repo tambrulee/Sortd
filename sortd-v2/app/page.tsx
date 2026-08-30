@@ -10,23 +10,23 @@ import {
 } from "react";
 
 // Components
-import Header from "@/components/Header";
-import ProjectsView from "@/components/ProjectsView";
-import Footer from "@/components/Footer";
-import WorkspaceNav from "@/components/WorkspaceNav";
-import MyDayView from "@/components/MyDayView";
-import AuthPanel from "@/components/AuthPanel";
-import RoutinesView from "@/components/RoutinesView";
+import Header from "@/components/general/Header";
+import ProjectsView from "@/components/planner/ProjectsView";
+import Footer from "@/components/general/Footer";
+import WorkspaceNav from "@/components/planner/WorkspaceNav";
+import MyDayView from "@/components/planner/MyDayView";
+import AuthPanel from "@/components/general/AuthPanel";
+import RoutinesView from "@/components/planner/RoutinesView";
 import { createDefaultScheduleSettings } from "@/lib/schedule";
-import PlannerView from "@/components/PlannerView";
-import ShoppingView from "@/components/ShoppingView";
-import GoalsView from "@/components/GoalsView";
-import DreamsView from "@/components/DreamsView";
-import SettingsControlPanel from "@/components/SettingsControlPanel";
-import FoodView from "@/components/FoodView";
+import PlannerView from "@/components/planner/PlannerView";
+import ShoppingView from "@/components/food_shopping/ShoppingView";
+import GoalsView from "@/components/planner/GoalsView";
+import DreamsView from "@/components/planner/DreamsView";
+import SettingsControlPanel from "@/components/settings/SettingsControlPanel";
+import FoodView from "@/components/food_shopping/FoodView";
 
 // AskSortd
-import AskSortd from "@/components/AskSortd";
+import AskSortd from "@/components/ai/AskSortd";
 
 // Types and storage utilities
 import {

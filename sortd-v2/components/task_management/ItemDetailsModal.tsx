@@ -14,7 +14,7 @@ import {
 
 import { DURATION_OPTIONS } from "@/lib/durations";
 
-import TimeWindowInput from "@/components/TimeWindowInput";
+import TimeWindowInput from "@/components/planner/TimeWindowInput";
 
 export type ItemContainerOption = {
   id: string;

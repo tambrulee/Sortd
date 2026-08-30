@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 
 import { FoodData, Meal, MealPlanEntry, MealType } from "@/lib/types";
 
-import MealDetailsModal from "@/components/MealDetailsModal";
-import ConfirmDialog from "@/components/ConfirmDialog";
+import MealDetailsModal from "@/components/food_shopping/MealDetailsModal";
+import ConfirmDialog from "@/components/prompts/ConfirmDialog";
 
 type FoodViewProps = {
   foodData: FoodData;

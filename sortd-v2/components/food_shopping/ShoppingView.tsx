@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 
-import CollectionSwitcher from "@/components/CollectionSwitcher";
-import ShoppingItemModal from "@/components/ShoppingItemModal";
-import ConfirmDialog from "@/components/ConfirmDialog";
+import CollectionSwitcher from "@/components/planner/CollectionSwitcher";
+import ShoppingItemModal from "@/components/food_shopping/ShoppingItemModal";
+import ConfirmDialog from "@/components/prompts/ConfirmDialog";
 
 import {
   ShoppingCategory,
@@ -1072,6 +1072,9 @@ export default function ShoppingView({
           onMove={(destinationListId) =>
             moveItem(selectedItem.listId, selectedItem.id, destinationListId)
           }
+          onClose={() => {
+            setSelectedItemRef(null);
+          }}
           onDelete={() => {
             setShoppingItemToDelete({
               listId: selectedItem.listId,

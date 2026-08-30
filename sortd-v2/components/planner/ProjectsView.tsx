@@ -6,12 +6,12 @@ import {
   useState,
 } from "react";
 
-import ArchivedTasks from "@/components/ArchivedTasks";
-import CollectionSwitcher from "@/components/CollectionSwitcher";
+import ArchivedTasks from "@/components/task_management/ArchivedTasks";
+import CollectionSwitcher from "@/components/planner/CollectionSwitcher";
 import ControlPanel from "@/components/ControlPanel";
-import ProjectDetails from "@/components/ProjectDetails";
+import ProjectDetails from "@/components/planner/ProjectDetails";
 import TaskList from "@/components/TaskList";
-import ConfirmDialog from "@/components/ConfirmDialog";
+import ConfirmDialog from "@/components/prompts/ConfirmDialog";
 
 import {
   Dream,

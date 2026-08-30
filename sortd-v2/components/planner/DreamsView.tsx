@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import { Dream, Goal, SortdList } from "@/lib/types";
 
-import ConfirmDialog from "@/components/ConfirmDialog";
+import ConfirmDialog from "@/components/prompts/ConfirmDialog";
 
 type DreamsViewProps = {
   dreams: Dream[];

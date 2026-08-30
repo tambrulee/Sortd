@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 
 import { RecurrenceUnit, Routine, RoutineTask } from "@/lib/types";
 
-import CollectionSwitcher from "@/components/CollectionSwitcher";
-import ItemDetailsModal from "@/components/ItemDetailsModal";
-import ConfirmDialog from "@/components/ConfirmDialog";
+import CollectionSwitcher from "@/components/planner/CollectionSwitcher";
+import ItemDetailsModal from "@/components/task_management/ItemDetailsModal";
+import ConfirmDialog from "@/components/prompts/ConfirmDialog";
 
 import { closestCenter, DndContext, DragEndEvent } from "@dnd-kit/core";
 

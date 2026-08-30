@@ -8,7 +8,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 import ItemDetailsModal from "@/components/ItemDetailsModal";
-import ConfirmDialog from "@/components/ConfirmDialog";
+import ConfirmDialog from "@/components/prompts/ConfirmDialog";
 
 type ProjectOption = {
   id: string;
