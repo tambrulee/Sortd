@@ -92,6 +92,13 @@ export default function FoodView({
     setMealToDeleteId,
   ] = useState<string | null>(null);
 
+ const [shoppingSort, setShoppingSort] = useState<
+    "manual" | "unpurchased" | "az" | "recent" | "purchased"
+  >("manual");
+
+  const [draggedShoppingItemId, setDraggedShoppingItemId] =
+    useState<string | null>(null);
+
   const weekDates = useMemo(() => getWeekDates(weekAnchor), [weekAnchor]);
 
   function addMeal() {
@@ -258,7 +265,55 @@ export default function FoodView({
     setWeekAnchor(next);
   }
 
-  const shoppingList = foodData.shoppingList ?? [];
+const shoppingList = foodData.shoppingList ?? [];
+
+const sortedShoppingList = [...shoppingList].sort((a, b) => {
+  switch (shoppingSort) {
+    case "manual":
+      return 0;
+
+    case "az":
+      return a.title.localeCompare(b.title);
+
+    case "recent":
+      return (
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime()
+      );
+
+    case "purchased":
+      return Number(b.purchased) - Number(a.purchased);
+
+    case "unpurchased":
+    default:
+      return Number(a.purchased) - Number(b.purchased);
+  }
+});
+
+function moveShoppingItem(draggedId: string, targetId: string) {
+  if (draggedId === targetId) return;
+
+  const currentList = [...shoppingList];
+
+  const draggedIndex = currentList.findIndex(
+    (item) => item.id === draggedId,
+  );
+
+  const targetIndex = currentList.findIndex(
+    (item) => item.id === targetId,
+  );
+
+  if (draggedIndex === -1 || targetIndex === -1) return;
+
+  const [draggedItem] = currentList.splice(draggedIndex, 1);
+
+  currentList.splice(targetIndex, 0, draggedItem);
+
+  onChangeFoodData({
+    ...foodData,
+    shoppingList: currentList,
+  });
+}
 
   return (
     <div className="space-y-6">
@@ -626,9 +681,32 @@ export default function FoodView({
             </div>
 
             {shoppingList.length > 0 && (
-              <span className="text-sm text-slate-400">
-                {shoppingList.filter((item) => !item.purchased).length} left
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-slate-400">
+                  {shoppingList.filter((item) => !item.purchased).length} left
+                </span>
+
+                <select
+                  value={shoppingSort}
+                  onChange={(event) =>
+                    setShoppingSort(
+                      event.target.value as
+                        | "manual"
+                        | "unpurchased"
+                        | "az"
+                        | "recent"
+                        | "purchased",
+                    )
+                  }
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                >
+                  <option value="manual">Manual order</option>
+                  <option value="unpurchased">Unbought first</option>
+                  <option value="az">A–Z</option>
+                  <option value="recent">Recently added</option>
+                  <option value="purchased">Purchased first</option>
+                </select>
+              </div>
             )}
           </div>
 
@@ -638,15 +716,62 @@ export default function FoodView({
             </div>
           ) : (
             <div className="space-y-2">
-              {shoppingList.map((item) => (
+              {sortedShoppingList.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
+                  draggable={shoppingSort === "manual"}
+                  onDragStart={() => {
+                    if (shoppingSort !== "manual") return;
+
+                    setDraggedShoppingItemId(item.id);
+                  }}
+                  onDragOver={(event) => {
+                    if (shoppingSort !== "manual") return;
+
+                    event.preventDefault();
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+
+                    if (
+                      shoppingSort !== "manual" ||
+                      !draggedShoppingItemId
+                    ) {
+                      return;
+                    }
+
+                    moveShoppingItem(
+                      draggedShoppingItemId,
+                      item.id,
+                    );
+
+                    setDraggedShoppingItemId(null);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedShoppingItemId(null);
+                  }}
+                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition ${
+                    shoppingSort === "manual"
+                      ? "cursor-grab active:cursor-grabbing"
+                      : ""
+                  } ${
+                    draggedShoppingItemId === item.id
+                      ? "opacity-50"
+                      : ""
+                  } ${
                     item.purchased
                       ? "border-emerald-100 bg-emerald-50/40"
                       : "border-slate-200 bg-white"
                   }`}
                 >
+                  {shoppingSort === "manual" && (
+                    <span
+                      className="select-none text-lg text-slate-300"
+                      aria-hidden="true"
+                    >
+                      ⋮⋮
+                    </span>
+                  )}
                   <input
                     type="checkbox"
                     checked={item.purchased}

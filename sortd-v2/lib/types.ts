@@ -145,6 +145,7 @@ export type RoutineTask = {
   id: string;
   title: string;
   order: number;
+  myDayOrder?: number;
 
   interval: number;
   recurrenceUnit: RecurrenceUnit;

@@ -1138,8 +1138,13 @@ export default function Home() {
             <MyDayView
               tasks={allTasks}
               routines={routines}
-              onCompleteProjectTask={completeProjectTask}
-              onCompleteRoutineTask={completeRoutineTask}
+              onChangeRoutines={setRoutines}
+              onCompleteProjectTask={
+                completeProjectTask
+              }
+              onCompleteRoutineTask={
+                completeRoutineTask
+              }
               onOpenProject={(projectId) => {
                 setActiveListId(projectId);
                 setActiveView("projects");

@@ -4,6 +4,21 @@ import { useState } from "react";
 import { Routine, Task } from "@/lib/types";
 import { createPortal } from "react-dom";
 
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+} from "@dnd-kit/core";
+
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
+import { CSS } from "@dnd-kit/utilities";
+
 type TaskWithProject = Task & {
   projectId: string;
   projectName: string;
@@ -18,11 +33,23 @@ type MyDayViewProps = {
   tasks: TaskWithProject[];
   routines: Routine[];
 
-  onOpenProject: (projectId: string) => void;
+  onChangeRoutines: (
+    routines: Routine[],
+  ) => void;
 
-  onCompleteProjectTask: (projectId: string, taskId: string) => void;
+  onOpenProject: (
+    projectId: string,
+  ) => void;
 
-  onCompleteRoutineTask: (routineId: string, taskId: string) => void;
+  onCompleteProjectTask: (
+    projectId: string,
+    taskId: string,
+  ) => void;
+
+  onCompleteRoutineTask: (
+    routineId: string,
+    taskId: string,
+  ) => void;
 };
 
 function getLocalDateKey() {
@@ -44,9 +71,106 @@ function formatDuration(minutes?: number) {
   return Number.isInteger(hours) ? `${hours} hr` : `${hours.toFixed(1)} hrs`;
 }
 
+function SortableMyDayRoutineTask({
+  task,
+  today,
+  onComplete,
+}: {
+  task: RoutineTaskForDay;
+  today: string;
+  onComplete: (
+    routineId: string,
+    taskId: string,
+  ) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: `${task.routineId}-${task.id}`,
+  });
+
+  const style = {
+    transform:
+      CSS.Transform.toString(
+        transform,
+      ),
+
+    transition,
+  };
+
+  const isOverdue =
+    task.nextDueDate < today;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 rounded-xl bg-[#eeeaea] px-4 py-3 transition ${
+        isDragging
+          ? "z-50 opacity-60 shadow-lg"
+          : ""
+      }`}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="shrink-0 cursor-grab rounded-lg px-1.5 py-1 text-slate-400 active:cursor-grabbing"
+        aria-label={`Reorder ${task.title}`}
+        title="Drag to reorder"
+      >
+        ⋮⋮
+      </button>
+
+      <button
+        type="button"
+        onClick={() =>
+          onComplete(
+            task.routineId,
+            task.id,
+          )
+        }
+        aria-label={`Complete ${task.title}`}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+      >
+        ✓
+      </button>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-slate-900">
+          {task.title ||
+            "Untitled routine task"}
+        </p>
+
+        <p className="mt-1 text-xs text-slate-500">
+          {task.routineName}
+        </p>
+      </div>
+
+      <span
+        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+          isOverdue
+            ? "bg-red-100 text-red-700"
+            : "bg-amber-100 text-amber-800"
+        }`}
+      >
+        {isOverdue
+          ? "Overdue"
+          : "Due today"}
+      </span>
+    </div>
+  );
+}
+
 export default function MyDayView({
   tasks,
   routines,
+  onChangeRoutines,
   onOpenProject,
   onCompleteProjectTask,
   onCompleteRoutineTask,
@@ -82,7 +206,24 @@ export default function MyDayView({
   const actionableRoutineTasks = [
     ...overdueRoutineTasks,
     ...routineTasksDueToday,
-  ];
+  ].sort((a, b) => {
+    const aOrder =
+      a.myDayOrder ??
+      Number.MAX_SAFE_INTEGER;
+
+    const bOrder =
+      b.myDayOrder ??
+      Number.MAX_SAFE_INTEGER;
+
+    if (aOrder !== bOrder) {
+      return aOrder - bOrder;
+    }
+
+    return (
+      (a.order ?? 0) -
+      (b.order ?? 0)
+    );
+  });
 
   const dueToday = openTasks.filter((task) => task.dueDate === today);
 
@@ -126,6 +267,83 @@ export default function MyDayView({
     day: "numeric",
     month: "long",
   }).format(new Date());
+
+  function handleRoutineDragEnd(
+    event: DragEndEvent,
+  ) {
+    const { active, over } = event;
+
+    if (
+      !over ||
+      active.id === over.id
+    ) {
+      return;
+    }
+
+    const oldIndex =
+      actionableRoutineTasks.findIndex(
+        (task) =>
+          `${task.routineId}-${task.id}` ===
+          active.id,
+      );
+
+    const newIndex =
+      actionableRoutineTasks.findIndex(
+        (task) =>
+          `${task.routineId}-${task.id}` ===
+          over.id,
+      );
+
+    if (
+      oldIndex < 0 ||
+      newIndex < 0
+    ) {
+      return;
+    }
+
+    const reordered =
+      arrayMove(
+        actionableRoutineTasks,
+        oldIndex,
+        newIndex,
+      );
+
+    const orderMap = new Map(
+      reordered.map(
+        (task, index) => [
+          `${task.routineId}-${task.id}`,
+          index + 1,
+        ],
+      ),
+    );
+
+    onChangeRoutines(
+      routines.map((routine) => ({
+        ...routine,
+
+        tasks: routine.tasks.map(
+          (task) => {
+            const nextOrder =
+              orderMap.get(
+                `${routine.id}-${task.id}`,
+              );
+
+            if (
+              nextOrder === undefined
+            ) {
+              return task;
+            }
+
+            return {
+              ...task,
+              myDayOrder:
+                nextOrder,
+            };
+          },
+        ),
+      })),
+    );
+  }
 
   function renderTask(task: TaskWithProject) {
     return (
@@ -279,7 +497,39 @@ export default function MyDayView({
 
         <div className="space-y-2">
           {actionableRoutineTasks.length > 0 ? (
-            actionableRoutineTasks.map(renderRoutineTask)
+            <DndContext
+              collisionDetection={
+                closestCenter
+              }
+              onDragEnd={
+                handleRoutineDragEnd
+              }
+            >
+              <SortableContext
+                items={actionableRoutineTasks.map(
+                  (task) =>
+                    `${task.routineId}-${task.id}`,
+                )}
+                strategy={
+                  verticalListSortingStrategy
+                }
+              >
+                <div className="space-y-2">
+                  {actionableRoutineTasks.map(
+                    (task) => (
+                      <SortableMyDayRoutineTask
+                        key={`${task.routineId}-${task.id}`}
+                        task={task}
+                        today={today}
+                        onComplete={
+                          onCompleteRoutineTask
+                        }
+                      />
+                    ),
+                  )}
+                </div>
+              </SortableContext>
+            </DndContext>
           ) : (
             <p className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center text-sm text-slate-500">
               No routines need your attention today.
