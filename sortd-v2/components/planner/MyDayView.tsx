@@ -19,6 +19,8 @@ import {
 
 import { CSS } from "@dnd-kit/utilities";
 
+import ItemDetailsModal from "@/components/task_management/ItemDetailsModal";
+
 type TaskWithProject = Task & {
   projectId: string;
   projectName: string;
@@ -50,6 +52,17 @@ type MyDayViewProps = {
     routineId: string,
     taskId: string,
   ) => void;
+
+  onUpdateRoutineTask: (
+    routineId: string,
+    taskId: string,
+    updates: Partial<Routine["tasks"][number]>,
+  ) => void;
+
+  onDeleteRoutineTask: (
+    routineId: string,
+    taskId: string,
+  ) => void;
 };
 
 function getLocalDateKey() {
@@ -75,12 +88,18 @@ function SortableMyDayRoutineTask({
   task,
   today,
   onComplete,
+  onEdit,
 }: {
   task: RoutineTaskForDay;
   today: string;
+
   onComplete: (
     routineId: string,
     taskId: string,
+  ) => void;
+
+  onEdit: (
+    task: RoutineTaskForDay,
   ) => void;
 }) {
   const {
@@ -163,6 +182,16 @@ function SortableMyDayRoutineTask({
           ? "Overdue"
           : "Due today"}
       </span>
+
+      <button
+        type="button"
+        onClick={() => onEdit(task)}
+        aria-label={`Edit ${task.title}`}
+        title="Routine task details"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-white hover:text-slate-900"
+      >
+        •••
+      </button>
     </div>
   );
 }
@@ -174,12 +203,19 @@ export default function MyDayView({
   onOpenProject,
   onCompleteProjectTask,
   onCompleteRoutineTask,
+  onUpdateRoutineTask,
+  onDeleteRoutineTask,
 }: MyDayViewProps) {
   const today = getLocalDateKey();
 
   const [activeSummary, setActiveSummary] = useState<
     "due-today" | "overdue" | "workload" | null
   >(null);
+
+  const [
+    selectedRoutineTask,
+    setSelectedRoutineTask,
+  ] = useState<RoutineTaskForDay | null>(null);
 
   const openTasks = tasks.filter((task) => !task.completed);
 
@@ -418,6 +454,18 @@ export default function MyDayView({
         >
           {isOverdue ? "Overdue" : "Due today"}
         </span>
+
+        <button
+          type="button"
+          onClick={() =>
+            setSelectedRoutineTask(task)
+          }
+          aria-label={`Edit ${task.title}`}
+          title="Routine task details"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-white hover:text-slate-900"
+        >
+          •••
+        </button>
       </div>
     );
   }
@@ -517,14 +565,17 @@ export default function MyDayView({
                 <div className="space-y-2">
                   {actionableRoutineTasks.map(
                     (task) => (
-                      <SortableMyDayRoutineTask
-                        key={`${task.routineId}-${task.id}`}
-                        task={task}
-                        today={today}
-                        onComplete={
-                          onCompleteRoutineTask
-                        }
-                      />
+                    <SortableMyDayRoutineTask
+                      key={`${task.routineId}-${task.id}`}
+                      task={task}
+                      today={today}
+                      onComplete={
+                        onCompleteRoutineTask
+                      }
+                      onEdit={
+                        setSelectedRoutineTask
+                      }
+                    />
                     ),
                   )}
                 </div>
@@ -681,6 +732,126 @@ export default function MyDayView({
             </section>
           </div>,
           document.body,
+        )}
+        {selectedRoutineTask && (
+          <ItemDetailsModal
+            kind="routine"
+            item={selectedRoutineTask}
+            containerLabel="Routine"
+            currentContainerId={
+              selectedRoutineTask.routineId
+            }
+            containerOptions={routines.map(
+              (routine) => ({
+                id: routine.id,
+                name:
+                  routine.name ||
+                  "Untitled routine",
+              }),
+            )}
+            onMove={(destinationRoutineId) => {
+              const sourceRoutine =
+                routines.find(
+                  (routine) =>
+                    routine.id ===
+                    selectedRoutineTask.routineId,
+                );
+
+              const destinationRoutine =
+                routines.find(
+                  (routine) =>
+                    routine.id ===
+                    destinationRoutineId,
+                );
+
+              if (
+                !sourceRoutine ||
+                !destinationRoutine ||
+                sourceRoutine.id ===
+                  destinationRoutine.id
+              ) {
+                return;
+              }
+
+              const taskToMove =
+                sourceRoutine.tasks.find(
+                  (task) =>
+                    task.id ===
+                    selectedRoutineTask.id,
+                );
+
+              if (!taskToMove) {
+                return;
+              }
+
+              const nextOrder =
+                destinationRoutine.tasks.length > 0
+                  ? Math.max(
+                      ...destinationRoutine.tasks.map(
+                        (task) =>
+                          task.order ?? 0,
+                      ),
+                    ) + 1
+                  : 1;
+
+              onChangeRoutines(
+                routines.map((routine) => {
+                  if (
+                    routine.id ===
+                    sourceRoutine.id
+                  ) {
+                    return {
+                      ...routine,
+                      tasks:
+                        routine.tasks.filter(
+                          (task) =>
+                            task.id !==
+                            selectedRoutineTask.id,
+                        ),
+                    };
+                  }
+
+                  if (
+                    routine.id ===
+                    destinationRoutine.id
+                  ) {
+                    return {
+                      ...routine,
+                      tasks: [
+                        ...routine.tasks,
+                        {
+                          ...taskToMove,
+                          order: nextOrder,
+                        },
+                      ],
+                    };
+                  }
+
+                  return routine;
+                }),
+              );
+
+              setSelectedRoutineTask(null);
+            }}
+            onChange={(updates) =>
+              onUpdateRoutineTask(
+                selectedRoutineTask.routineId,
+                selectedRoutineTask.id,
+                updates,
+              )
+            }
+            onDelete={() => {
+              onDeleteRoutineTask(
+                selectedRoutineTask.routineId,
+                selectedRoutineTask.id,
+              );
+
+              setSelectedRoutineTask(null);
+            }}
+            onClose={() =>
+              setSelectedRoutineTask(null)
+            }
+          />
         )}
     </div>
   );

@@ -1149,6 +1149,8 @@ export default function Home() {
                 setActiveListId(projectId);
                 setActiveView("projects");
               }}
+              onUpdateRoutineTask={updateRoutineTaskById}
+              onDeleteRoutineTask={deleteRoutineTaskById}
             />
           ) : activeView === "projects" ? (
             <ProjectsView
