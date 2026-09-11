@@ -60,10 +60,10 @@ export default function MealDetailsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-[var(--sortd-bg)] p-6 shadow-xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-[#a93ac5]">Meal</p>
+            <p className="text-sm font-medium text-[var(--sortd-teal-dark)]">Meal</p>
 
             <h2 className="mt-1 text-2xl font-bold text-slate-900">
               Edit meal
@@ -102,7 +102,7 @@ export default function MealDetailsModal({
                   mealType: event.target.value as MealType,
                 })
               }
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-slate-900"
             >
               <option value="breakfast">Breakfast</option>
 

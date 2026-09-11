@@ -57,7 +57,7 @@ export default function SettingsControlPanel({
 
   return (
     <div className="space-y-6">
-      <header className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
+      <header className="rounded-3xl bg-[var(--sortd-bg)]/85 p-5 shadow-xl backdrop-blur-md md:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
           Settings
         </p>
@@ -72,7 +72,7 @@ export default function SettingsControlPanel({
         </p>
       </header>
 
-      <section className="rounded-3xl bg-white/85 p-5 shadow-lg backdrop-blur-md md:p-7">
+      <section className="rounded-3xl bg-[var(--sortd-bg)]/85 p-5 shadow-lg backdrop-blur-md md:p-7">
         <div className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
             Your rhythm
@@ -118,7 +118,7 @@ export default function SettingsControlPanel({
         </div>
       </section>
 
-      <section className="rounded-3xl bg-white/85 p-5 shadow-lg backdrop-blur-md md:p-7">
+      <section className="rounded-3xl bg-[var(--sortd-bg)]/85 p-5 shadow-lg backdrop-blur-md md:p-7">
         <div className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
             Availability & working hours

@@ -252,7 +252,7 @@ function SortableMyDayRoutineTask({
         onClick={() => onEdit(task)}
         aria-label={`Edit ${task.title}`}
         title="Routine task details"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs text-slate-500 transition hover:bg-white hover:text-slate-900"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs text-slate-500 transition hover:bg-[var(--sortd-bg)] hover:text-slate-900"
       >
         •••
       </button>
@@ -769,7 +769,7 @@ export default function MyDayView({
           }
           aria-label={`Edit ${task.title}`}
           title="Routine task details"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-white hover:text-slate-900"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[var(--sortd-bg)] hover:text-slate-900"
         >
           •••
         </button>
@@ -778,7 +778,7 @@ export default function MyDayView({
   }
 
   return (
-    <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
+    <div className="rounded-3xl bg-[var(--sortd-bg)]/85 p-5 shadow-xl backdrop-blur-md md:p-8">
       <div className="mb-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -809,7 +809,7 @@ export default function MyDayView({
               className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                 dayViewMode ===
                 "today"
-                  ? "bg-white text-slate-900 shadow-sm"
+                  ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
@@ -826,7 +826,7 @@ export default function MyDayView({
               className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                 dayViewMode ===
                 "review"
-                  ? "bg-white text-slate-900 shadow-sm"
+                  ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
@@ -1025,7 +1025,7 @@ export default function MyDayView({
 
             {currentMonthProjects.length >
             0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-white px-4">
+              <div className="rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] px-4">
                 {currentMonthProjects.map(
                   renderReviewProject,
                 )}
@@ -1269,7 +1269,7 @@ export default function MyDayView({
               role="dialog"
               aria-modal="true"
               aria-labelledby="my-day-summary-title"
-              className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl md:p-7"
+              className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-[var(--sortd-bg)] p-5 shadow-2xl md:p-7"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>

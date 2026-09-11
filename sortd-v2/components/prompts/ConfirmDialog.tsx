@@ -44,7 +44,7 @@ export default function ConfirmDialog({
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
-        className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-sm rounded-3xl bg-[var(--sortd-bg)] p-6 shadow-2xl"
       >
         <div className="flex items-start gap-4">
           {danger && (

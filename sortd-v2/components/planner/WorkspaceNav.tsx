@@ -64,7 +64,7 @@ export default function WorkspaceNav({
   onChangeView,
 }: WorkspaceNavProps) {
   return (
-    <nav className="rounded-3xl bg-white/85 p-4 shadow-xl backdrop-blur-md">
+    <nav className="rounded-3xl bg-[var(--sortd-bg)]/85 p-4 shadow-xl backdrop-blur-md">
       <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
         Workspace
       </p>

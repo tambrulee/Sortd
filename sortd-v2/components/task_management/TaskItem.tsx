@@ -115,7 +115,7 @@ export default function TaskItem({
       <div
         ref={setNodeRef}
         style={style}
-        className={`rounded-2xl border border-slate-200 bg-white p-3 transition ${
+        className={`rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] p-3 transition ${
           isDragging ? "z-50 opacity-60 shadow-lg" : ""
         }`}
       >

@@ -131,7 +131,7 @@ function SortableProjectOption({
             }
           }}
           placeholder="Untitled project"
-          className="min-w-0 flex-1 rounded-lg border border-[var(--sortd-teal-dark)] bg-white px-2 py-1 text-sm text-slate-900 outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--sortd-teal-dark)] bg-[var(--sortd-bg)] px-2 py-1 text-sm text-slate-900 outline-none"
         />
       ) : (
         <button
@@ -152,7 +152,7 @@ function SortableProjectOption({
         onClick={() => setIsRenaming(true)}
         aria-label={`Rename ${project.name}`}
         title="Rename project"
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-slate-700"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-[var(--sortd-bg)] hover:text-slate-700"
       >
         ✎
       </button>
@@ -249,7 +249,7 @@ export default function ListSwitcher({
             aria-labelledby="project-switcher-label"
             aria-expanded={isOpen}
             aria-haspopup="listbox"
-            className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-[var(--sortd-teal-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/25"
+            className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 text-left transition hover:border-[var(--sortd-teal-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/25"
           >
             {activeProject && (
               <span
@@ -281,7 +281,7 @@ export default function ListSwitcher({
           </button>
 
           {isOpen && (
-            <div className="absolute left-0 right-0 z-40 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+            <div className="absolute left-0 right-0 z-40 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] p-2 shadow-xl">
               <p className="px-2 py-2 text-xs font-medium text-slate-500">
                 Select a project or drag to reorder.
               </p>
@@ -330,7 +330,7 @@ export default function ListSwitcher({
             disabled={lists.length === 1}
             aria-label="Delete current project"
             title="Delete current project"
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-500 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 text-sm text-slate-500 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Delete
           </button>

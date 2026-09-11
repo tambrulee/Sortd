@@ -62,7 +62,7 @@ export default function ProjectDetails({
             onChange={(event) =>
               onChangeStartDate(event.target.value || undefined)
             }
-            className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
+            className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)]/70 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
           />
         </label>
 
@@ -75,7 +75,7 @@ export default function ProjectDetails({
             onChange={(event) =>
               onChangeTargetDate(event.target.value || undefined)
             }
-            className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
+            className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)]/70 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
           />
         </label>
       </div>
@@ -85,7 +85,7 @@ export default function ProjectDetails({
           onChange={(event) => onChangeDescription(event.target.value)}
           placeholder="What does this project aim to achieve?"
           rows={2}
-          className="resize-none rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
+          className="resize-none rounded-xl border border-slate-200 bg-[var(--sortd-bg)]/70 px-4 py-3 text-sm outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
         />
 
         <select
@@ -93,7 +93,7 @@ export default function ProjectDetails({
           onChange={(event) =>
             onChangeStatus(event.target.value as ProjectStatus)
           }
-          className="rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
+          className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)]/70 px-4 py-3 text-sm outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
         >
           <option value="backlog">Backlog</option>
           <option value="planned">Planned</option>
@@ -111,7 +111,7 @@ export default function ProjectDetails({
             onChange={(event) =>
               onChangeScheduleContext(event.target.value as ScheduleContext)
             }
-            className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-900"
+            className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)]/70 px-3 py-2 text-sm text-slate-900"
           >
             <option value="personal">Personal hours</option>
 

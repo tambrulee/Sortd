@@ -38,7 +38,7 @@ export default function ControlPanel({
             onChangeTaskFilter(event.target.value as TaskFilter)
           }
           aria-label="Filter tasks"
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[var(--sortd-teal-dark)]"
+          className="rounded-lg border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--sortd-teal-dark)]"
         >
           <option value="all">All tasks</option>
           <option value="high">High priority</option>

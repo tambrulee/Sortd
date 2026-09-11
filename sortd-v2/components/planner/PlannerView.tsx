@@ -313,12 +313,12 @@ function CalendarTaskBlock({
         isShortBlock ? "px-1.5 py-0" : "px-2 py-1.5"
       } ${
         isDragging
-          ? "z-50 border-[#b53fd0] bg-white opacity-90 shadow-xl"
+          ? "z-50 border-[#b53fd0] bg-[var(--sortd-bg)] opacity-90 shadow-xl"
           : anchored
             ? "border-slate-200 bg-slate-100"
             : manuallyPlaced
               ? "border-[#d9a7e7] bg-purple-50"
-              : "border-slate-200 bg-white"
+              : "border-slate-200 bg-[var(--sortd-bg)]"
       }`}
     >
       <div className="flex h-full min-w-0 items-start gap-1.5">
@@ -593,7 +593,7 @@ export default function PlannerView({
 
   return (
     <div className="w-full min-w-0 max-w-full space-y-5 overflow-hidden">
-      <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-7">
+      <div className="rounded-3xl bg-[var(--sortd-bg)]/85 p-5 shadow-xl backdrop-blur-md md:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
@@ -612,7 +612,7 @@ export default function PlannerView({
             <button
               type="button"
               onClick={replan}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[var(--sortd-teal-dark)] transition hover:bg-purple-50"
+              className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-4 py-3 text-sm font-semibold text-[var(--sortd-teal-dark)] transition hover:bg-purple-50"
               title="Rebuild the schedule now"
             >
               ↻ Replan
@@ -634,19 +634,19 @@ export default function PlannerView({
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <div className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pb-2">
           <div
-            className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] shadow-sm"
             style={{
               width: TIME_COLUMN_WIDTH + DAY_COLUMN_WIDTH * dateKeys.length,
               minWidth: TIME_COLUMN_WIDTH + DAY_COLUMN_WIDTH * dateKeys.length,
             }}
           >
             <div
-              className="grid border-b border-slate-200 bg-white"
+              className="grid border-b border-slate-200 bg-[var(--sortd-bg)]"
               style={{
                 gridTemplateColumns: `${TIME_COLUMN_WIDTH}px repeat(${dateKeys.length}, ${DAY_COLUMN_WIDTH}px)`,
               }}
             >
-              <div className="border-r border-slate-200 bg-white" />
+              <div className="border-r border-slate-200 bg-[var(--sortd-bg)]" />
 
               {dateKeys.map((dateKey) => {
                 const { weekday, date } = formatDayHeader(
@@ -658,7 +658,7 @@ export default function PlannerView({
                   <div
                     key={dateKey}
                     className={`relative border-r border-slate-200 px-2 py-3 last:border-r-0 ${
-                      dateKey === today ? "bg-purple-50/70" : "bg-white"
+                      dateKey === today ? "bg-purple-50/70" : "bg-[var(--sortd-bg)]"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -690,7 +690,7 @@ export default function PlannerView({
                     </div>
 
                     {newAdhocDate === dateKey && (
-                      <div className="absolute left-1 right-1 top-full z-40 mt-1 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                      <div className="absolute left-1 right-1 top-full z-40 mt-1 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] p-2 shadow-xl">
                         <input
                           value={newAdhocTitle}
                           onChange={(event) =>
@@ -746,7 +746,7 @@ export default function PlannerView({
               }}
             >
               <div
-                className="relative border-r border-slate-200 bg-white"
+                className="relative border-r border-slate-200 bg-[var(--sortd-bg)]"
                 style={{ height: GRID_HEIGHT }}
               >
                 {Array.from({
@@ -761,7 +761,7 @@ export default function PlannerView({
                       className="absolute left-0 right-0 border-t border-slate-200"
                       style={{ top }}
                     >
-                      <span className="absolute right-2 -translate-y-1/2 bg-white px-1 text-[10px] text-slate-400">
+                      <span className="absolute right-2 -translate-y-1/2 bg-[var(--sortd-bg)] px-1 text-[10px] text-slate-400">
                         {minutesToTime(hour * 60)}
                       </span>
                     </div>
@@ -778,7 +778,7 @@ export default function PlannerView({
                   <div
                     key={dateKey}
                     className={`relative border-r border-slate-200 last:border-r-0 ${
-                      dateKey === today ? "bg-purple-50/20" : "bg-white"
+                      dateKey === today ? "bg-purple-50/20" : "bg-[var(--sortd-bg)]"
                     }`}
                     style={{ height: GRID_HEIGHT }}
                   >
@@ -860,7 +860,7 @@ export default function PlannerView({
             {schedule.unscheduled.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between gap-4 rounded-xl bg-white/70 px-4 py-3"
+                className="flex items-center justify-between gap-4 rounded-xl bg-[var(--sortd-bg)]/70 px-4 py-3"
               >
                 <div>
                   <p className="font-medium text-slate-900">{item.title}</p>

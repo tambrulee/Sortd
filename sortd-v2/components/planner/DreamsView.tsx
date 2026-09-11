@@ -126,7 +126,7 @@ export default function DreamsView({
   }
 
   return (
-    <section className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
+    <section className="rounded-3xl bg-[var(--sortd-bg)]/85 p-5 shadow-xl backdrop-blur-md md:p-8">
       <div className="space-y-8">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -160,7 +160,7 @@ export default function DreamsView({
               }
             }}
             placeholder="What would you love to make happen?"
-            className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
+            className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] px-4 py-3 outline-none transition focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-100"
           />
 
           <button
@@ -207,7 +207,7 @@ export default function DreamsView({
               return (
                 <article
                   key={dream.id}
-                  className="flex min-h-[280px] flex-col rounded-3xl border border-slate-200 bg-white p-6"
+                  className="flex min-h-[280px] flex-col rounded-3xl border border-slate-200 bg-[var(--sortd-bg)] p-6"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <span className="text-xl text-fuchsia-700">✦</span>

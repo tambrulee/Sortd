@@ -1204,7 +1204,7 @@ export default function ProjectsView({
   }
 
   return (
-    <div className="min-w-0 rounded-3xl bg-white/90 p-5 shadow-xl backdrop-blur-md md:p-7">
+    <div className="min-w-0 rounded-3xl bg-[var(--sortd-bg)]/90 p-5 shadow-xl backdrop-blur-md md:p-7">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
@@ -1262,7 +1262,7 @@ export default function ProjectsView({
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                 viewMode ===
                 "list"
-                  ? "bg-white text-slate-900 shadow-sm"
+                  ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
@@ -1279,7 +1279,7 @@ export default function ProjectsView({
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                 viewMode ===
                 "board"
-                  ? "bg-white text-slate-900 shadow-sm"
+                  ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
@@ -1296,7 +1296,7 @@ export default function ProjectsView({
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                 viewMode ===
                 "timeline"
-                  ? "bg-white text-slate-900 shadow-sm"
+                  ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
@@ -1370,7 +1370,7 @@ export default function ProjectsView({
                         </p>
                       </div>
 
-                      <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-500 shadow-sm">
+                      <span className="rounded-full bg-[var(--sortd-bg)] px-2 py-0.5 text-xs font-medium text-slate-500 shadow-sm">
                         {
                           columnProjects.length
                         }
@@ -1431,7 +1431,7 @@ export default function ProjectsView({
                                   project.id,
                                 )
                               }
-                              className={`cursor-pointer rounded-xl border bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md ${
+                              className={`cursor-pointer rounded-xl border bg-[var(--sortd-bg)] p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md ${
                                 draggedProjectId ===
                                 project.id
                                   ? "opacity-40"
@@ -1585,12 +1585,12 @@ export default function ProjectsView({
                   {/* Calendar header */}
 
                   <div
-                    className="grid border-b border-slate-200 bg-white"
+                    className="grid border-b border-slate-200 bg-[var(--sortd-bg)]"
                     style={{
                       gridTemplateColumns: `220px ${timelineWidth}px`,
                     }}
                   >
-                    <div className="sticky left-0 z-30 flex items-end border-r border-slate-200 bg-white px-4 py-3">
+                    <div className="sticky left-0 z-30 flex items-end border-r border-slate-200 bg-[var(--sortd-bg)] px-4 py-3">
                       <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                         Project
                       </span>
@@ -1771,7 +1771,7 @@ export default function ProjectsView({
                             onDragEnd={() => {
                               setDraggedProjectId(null);
                             }}
-                            className="sticky left-0 z-40 flex min-w-0 items-center gap-2 border-r border-slate-200 bg-white px-4 py-4"
+                            className="sticky left-0 z-40 flex min-w-0 items-center gap-2 border-r border-slate-200 bg-[var(--sortd-bg)] px-4 py-4"
                           >
                             <span
                               className="shrink-0 cursor-grab select-none text-slate-300 active:cursor-grabbing"
@@ -1808,7 +1808,7 @@ export default function ProjectsView({
                             </button>
                           </div>
 
-                          <div className="relative h-[76px] overflow-hidden bg-white/50">
+                          <div className="relative h-[76px] overflow-hidden bg-[var(--sortd-bg)]/50">
                             {/* Weekly grid */}
 
                             {weekMarkers.map(
@@ -1935,9 +1935,9 @@ export default function ProjectsView({
                                 onPointerCancel={
                                   cancelTimelineInteraction
                                 }
-                                className="flex h-full w-3 shrink-0 cursor-ew-resize touch-none items-center justify-center bg-white/10 hover:bg-white/20"
+                                className="flex h-full w-3 shrink-0 cursor-ew-resize touch-none items-center justify-center bg-[var(--sortd-bg)]/10 hover:bg-[var(--sortd-bg)]/20"
                               >
-                                <span className="h-5 w-px rounded-full bg-white/60" />
+                                <span className="h-5 w-px rounded-full bg-[var(--sortd-bg)]/60" />
                               </span>
 
                               <div className="min-w-0 flex-1 px-2">
@@ -1980,9 +1980,9 @@ export default function ProjectsView({
                                 onPointerCancel={
                                   cancelTimelineInteraction
                                 }
-                                className="flex h-full w-3 shrink-0 cursor-ew-resize touch-none items-center justify-center bg-white/10 hover:bg-white/20"
+                                className="flex h-full w-3 shrink-0 cursor-ew-resize touch-none items-center justify-center bg-[var(--sortd-bg)]/10 hover:bg-[var(--sortd-bg)]/20"
                               >
-                                <span className="h-5 w-px rounded-full bg-white/60" />
+                                <span className="h-5 w-px rounded-full bg-[var(--sortd-bg)]/60" />
                               </span>
                             </div>
                           </div>
@@ -2042,7 +2042,7 @@ export default function ProjectsView({
                             project.id,
                           )
                         }
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                        className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                       >
                         {
                           project.name
@@ -2218,7 +2218,7 @@ export default function ProjectsView({
                         )
                       }
                       placeholder="Project name"
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
+                      className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
                     />
                   </label>
 
@@ -2240,7 +2240,7 @@ export default function ProjectsView({
                             undefined,
                         )
                       }
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
+                      className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
                     >
                       <option value="">
                         No linked
@@ -2477,7 +2477,7 @@ export default function ProjectsView({
       }
     }}
   >
-    <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+    <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-[var(--sortd-bg)] p-6 shadow-2xl">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">

@@ -130,7 +130,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
 
   if (checkingSession) {
     return (
-      <div className="rounded-3xl bg-white/85 p-4 text-sm text-slate-500 shadow-xl backdrop-blur-md">
+      <div className="rounded-3xl bg-[var(--sortd-bg)]/85 p-4 text-sm text-slate-500 shadow-xl backdrop-blur-md">
         Checking account…
       </div>
     );
@@ -138,7 +138,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
 
   if (user) {
     return (
-      <div className="rounded-3xl bg-white/85 p-4 shadow-xl backdrop-blur-md">
+      <div className="rounded-3xl bg-[var(--sortd-bg)]/85 p-4 shadow-xl backdrop-blur-md">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
           Signed in
         </p>
@@ -161,7 +161,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
   }
 
   return (
-    <div className="rounded-3xl bg-white/85 p-4 shadow-xl backdrop-blur-md">
+    <div className="rounded-3xl bg-[var(--sortd-bg)]/85 p-4 shadow-xl backdrop-blur-md">
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
         {mode === "login" ? "Welcome back" : "Create account"}
       </p>
@@ -175,7 +175,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[var(--sortd-teal-dark)]"
+            className="mt-1 w-full rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--sortd-teal-dark)]"
           />
         </label>
 
@@ -190,7 +190,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
             }
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[var(--sortd-teal-dark)]"
+            className="mt-1 w-full rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm outline-none focus:border-[var(--sortd-teal-dark)]"
           />
         </label>
 

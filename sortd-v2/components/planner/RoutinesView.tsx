@@ -214,7 +214,7 @@ function SortableRoutineTask({
       style={style}
       className={`w-full rounded-xl border px-3 py-2.5 transition ${
         task.active
-          ? "border-slate-200 bg-white"
+          ? "border-slate-200 bg-[var(--sortd-bg)]"
           : "border-slate-100 bg-slate-50 opacity-60"
       } ${isDragging ? "z-30 opacity-60 shadow-lg" : ""}`}
     >
@@ -235,7 +235,7 @@ function SortableRoutineTask({
           onClick={() => onComplete(task.id)}
           disabled={!task.active}
           aria-label={`Complete ${task.title}`}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-base text-[#a93ac5] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white disabled:cursor-not-allowed"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-base text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white disabled:cursor-not-allowed"
         >
           ✓
         </button>
@@ -724,7 +724,7 @@ export default function RoutinesView({
   }
 
   return (
-    <div className="min-w-0 rounded-3xl bg-white/90 p-5 shadow-xl backdrop-blur-md md:p-7">
+    <div className="min-w-0 rounded-3xl bg-[var(--sortd-bg)]/90 p-5 shadow-xl backdrop-blur-md md:p-7">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
@@ -811,7 +811,7 @@ export default function RoutinesView({
             value={newRoutineName}
             onChange={(event) => setNewRoutineName(event.target.value)}
             placeholder="Routine name, e.g. Home care"
-            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
+            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-4 py-2.5 outline-none focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
           />
 
           <button
@@ -828,7 +828,7 @@ export default function RoutinesView({
 
               setNewRoutineName("");
             }}
-            className="rounded-xl px-4 py-2.5 text-sm text-slate-500 transition hover:bg-white hover:text-slate-900"
+            className="rounded-xl px-4 py-2.5 text-sm text-slate-500 transition hover:bg-[var(--sortd-bg)] hover:text-slate-900"
           >
             Cancel
           </button>
@@ -875,7 +875,7 @@ export default function RoutinesView({
                   onChange={(event) =>
                     renameRoutine(activeRoutine.id, event.target.value)
                   }
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
+                  className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
                 />
               </label>
 
@@ -887,7 +887,7 @@ export default function RoutinesView({
                     archived: !activeRoutine.archived,
                   })
                 }
-                className="self-end rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                className="self-end rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
               >
                 {activeRoutine.archived ? "Restore routine" : "Archive routine"}
               </button>
@@ -956,7 +956,7 @@ export default function RoutinesView({
                       event.target.value as RoutineSort,
                     )
                   }
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
+                  className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-600"
                 >
                   <option value="due-date">
                     Due date
@@ -992,7 +992,7 @@ export default function RoutinesView({
                   value={newTaskTitle}
                   onChange={(event) => setNewTaskTitle(event.target.value)}
                   placeholder="e.g. Change the bedding"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-[var(--sortd-teal-dark)]"
+                  className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 outline-none focus:border-[var(--sortd-teal-dark)]"
                 />
 
                 <input
@@ -1003,7 +1003,7 @@ export default function RoutinesView({
                     setNewInterval(Math.max(1, Number(event.target.value)))
                   }
                   aria-label="Repeat interval"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2"
+                  className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2"
                 />
 
                 <select
@@ -1011,7 +1011,7 @@ export default function RoutinesView({
                   onChange={(event) =>
                     setNewUnit(event.target.value as RecurrenceUnit)
                   }
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2"
+                  className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2"
                 >
                   <option value="day">Day(s)</option>
                   <option value="week">Week(s)</option>
@@ -1023,7 +1023,7 @@ export default function RoutinesView({
                   value={newDueDate}
                   onChange={(event) => setNewDueDate(event.target.value)}
                   aria-label="First due date"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2"
+                  className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2"
                 />
 
                 <div className="flex gap-2">
@@ -1037,7 +1037,7 @@ export default function RoutinesView({
                   <button
                     type="button"
                     onClick={() => setShowAddTask(false)}
-                    className="rounded-xl px-3 py-2 text-sm text-slate-500 transition hover:bg-white hover:text-slate-900"
+                    className="rounded-xl px-3 py-2 text-sm text-slate-500 transition hover:bg-[var(--sortd-bg)] hover:text-slate-900"
                   >
                     Cancel
                   </button>

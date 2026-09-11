@@ -319,7 +319,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-[#a93ac5]">Food</p>
+          <p className="text-sm font-medium text-[var(--sortd-teal-dark)]">Food</p>
 
           <h1 className="mt-1 text-3xl font-bold text-slate-900">
             Plan food without overthinking it.
@@ -337,7 +337,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             onClick={() => setActiveTab("week")}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               activeTab === "week"
-                ? "bg-white text-slate-900 shadow-sm"
+                ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
                 : "text-slate-500"
             }`}
           >
@@ -349,7 +349,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             onClick={() => setActiveTab("meals")}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               activeTab === "meals"
-                ? "bg-white text-slate-900 shadow-sm"
+                ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
                 : "text-slate-500"
             }`}
           >
@@ -361,7 +361,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             onClick={() => setActiveTab("shopping")}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               activeTab === "shopping"
-                ? "bg-white text-slate-900 shadow-sm"
+                ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
                 : "text-slate-500"
             }`}
           >
@@ -376,7 +376,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             <button
               type="button"
               onClick={() => moveWeek(-1)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
+              className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-600"
             >
               ← Previous
             </button>
@@ -384,7 +384,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             <button
               type="button"
               onClick={() => setWeekAnchor(new Date())}
-              className="text-sm font-medium text-[#a93ac5]"
+              className="text-sm font-medium text-[var(--sortd-teal-dark)]"
             >
               This week
             </button>
@@ -392,7 +392,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             <button
               type="button"
               onClick={() => moveWeek(1)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
+              className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-600"
             >
               Next →
             </button>
@@ -409,7 +409,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
               return (
                 <article
                   key={dateKey}
-                  className="rounded-2xl border border-slate-200 bg-white p-5"
+                  className="rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] p-5"
                 >
                   <h2 className="text-lg font-semibold text-slate-900">
                     {formatter.format(date)}
@@ -467,7 +467,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
 
                                 event.target.value = "";
                               }}
-                              className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-sm text-slate-500"
+                              className="w-full rounded-xl border border-dashed border-slate-300 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-500"
                             >
                               <option value="">
                                 + Add {label.toLowerCase()}
@@ -491,7 +491,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
         </section>
       ) : activeTab === "meals" ? (
         <section className="space-y-6">
-          <div className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+          <div className="flex gap-2 rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] p-3">
             <input
               value={newMealName}
               onChange={(event) => setNewMealName(event.target.value)}
@@ -509,7 +509,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
               onChange={(event) =>
                 setNewMealType(event.target.value as MealType)
               }
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+              className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm"
             >
               <option value="breakfast">Breakfast</option>
 
@@ -528,7 +528,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
           </div>
 
           {foodData.meals.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-[var(--sortd-bg)] p-10 text-center">
               <p className="font-semibold text-slate-700">
                 No meals saved yet.
               </p>
@@ -558,7 +558,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                     </div>
 
                     {meals.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 text-sm text-slate-400">
+                      <div className="rounded-2xl border border-dashed border-slate-200 bg-[var(--sortd-bg)] p-5 text-sm text-slate-400">
                         No {label.toLowerCase()} meals saved yet.
                       </div>
                     ) : (
@@ -567,7 +567,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                           <article
                             key={meal.id}
                             onClick={() => setSelectedMeal(meal)}
-                            className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-slate-300"
+                            className="cursor-pointer rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] p-5 transition hover:border-slate-300"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <input
@@ -650,7 +650,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                                 }}
                                 className={`font-medium ${
                                   meal.ingredients.length > 0
-                                    ? "text-[#a93ac5] hover:text-[#8d2fa8]"
+                                    ? "text-[var(--sortd-teal-dark)] hover:text-[#8d2fa8]"
                                     : "cursor-not-allowed text-slate-300"
                                 }`}
                               >
@@ -698,7 +698,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                         | "purchased",
                     )
                   }
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                  className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-700"
                 >
                   <option value="manual">Manual order</option>
                   <option value="unpurchased">Unbought first</option>
@@ -711,7 +711,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
           </div>
 
           {shoppingList.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-[var(--sortd-bg)] p-8 text-center text-sm text-slate-400">
               Nothing to buy yet.
             </div>
           ) : (
@@ -761,7 +761,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                   } ${
                     item.purchased
                       ? "border-emerald-100 bg-emerald-50/40"
-                      : "border-slate-200 bg-white"
+                      : "border-slate-200 bg-[var(--sortd-bg)]"
                   }`}
                 >
                   {shoppingSort === "manual" && (

@@ -99,7 +99,7 @@ export default function AskSortd({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section className="rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] shadow-sm">
       <div className="border-b border-slate-100 px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">✦</span>

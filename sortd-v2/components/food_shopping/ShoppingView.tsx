@@ -504,7 +504,7 @@ export default function ShoppingView({
         className={`rounded-2xl border px-4 py-3 transition ${
           item.purchased
             ? "border-emerald-100 bg-emerald-50/40"
-            : "border-slate-200 bg-white hover:border-slate-300"
+            : "border-slate-200 bg-[var(--sortd-bg)] hover:border-slate-300"
         }`}
       >
         <div className="flex items-center gap-3">
@@ -593,7 +593,7 @@ export default function ShoppingView({
   }
 
   return (
-    <div className="w-full max-w-5xl rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
+    <div className="w-full max-w-5xl rounded-3xl bg-[var(--sortd-bg)]/85 p-5 shadow-xl backdrop-blur-md md:p-8">
       <datalist id="known-shopping-shops">
         {knownShops.map((shop) => (
           <option key={shop} value={shop} />
@@ -685,7 +685,7 @@ export default function ShoppingView({
             <select
               value={shopFilter}
               onChange={(event) => setShopFilter(event.target.value)}
-              className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="min-w-0 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 text-sm"
             >
               <option value="all">All shops</option>
 
@@ -703,7 +703,7 @@ export default function ShoppingView({
                   event.target.value as ShoppingCategory | "all",
                 )
               }
-              className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="min-w-0 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 text-sm"
             >
               <option value="all">All categories</option>
 
@@ -719,7 +719,7 @@ export default function ShoppingView({
               onChange={(event) =>
                 setStatusFilter(event.target.value as StatusFilter)
               }
-              className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="min-w-0 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 text-sm"
             >
               <option value="remaining">Remaining</option>
 
@@ -731,7 +731,7 @@ export default function ShoppingView({
             <select
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value as SortOption)}
-              className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="min-w-0 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 text-sm"
             >
               <option value="name">Sort: Name</option>
 
@@ -778,7 +778,7 @@ export default function ShoppingView({
                 className={`rounded-2xl border p-5 text-left transition ${
                   intentFilter === "need"
                     ? "border-emerald-300 bg-emerald-50"
-                    : "border-transparent bg-white hover:border-emerald-200"
+                    : "border-transparent bg-[var(--sortd-bg)] hover:border-emerald-200"
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -802,7 +802,7 @@ export default function ShoppingView({
                 className={`rounded-2xl border p-5 text-left transition ${
                   intentFilter === "want"
                     ? "border-purple-300 bg-purple-50"
-                    : "border-transparent bg-white hover:border-purple-200"
+                    : "border-transparent bg-[var(--sortd-bg)] hover:border-purple-200"
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -825,8 +825,8 @@ export default function ShoppingView({
                 onClick={() => setIntentFilter("all")}
                 className={`rounded-2xl border p-5 text-left transition ${
                   intentFilter === "all"
-                    ? "border-[var(--sortd-teal-dark)] bg-white"
-                    : "border-transparent bg-white hover:border-[#e4b8ee]"
+                    ? "border-[var(--sortd-teal-dark)] bg-[var(--sortd-bg)]"
+                    : "border-transparent bg-[var(--sortd-bg)] hover:border-[#e4b8ee]"
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -928,7 +928,7 @@ export default function ShoppingView({
                       onClick={() => setNewItemIntent("need")}
                       className={`rounded-md px-3 py-1.5 text-xs font-medium ${
                         newItemIntent === "need"
-                          ? "bg-white text-emerald-700 shadow-sm"
+                          ? "bg-[var(--sortd-bg)] text-emerald-700 shadow-sm"
                           : "text-slate-500"
                       }`}
                     >
@@ -940,7 +940,7 @@ export default function ShoppingView({
                       onClick={() => setNewItemIntent("want")}
                       className={`rounded-md px-3 py-1.5 text-xs font-medium ${
                         newItemIntent === "want"
-                          ? "bg-white text-purple-700 shadow-sm"
+                          ? "bg-[var(--sortd-bg)] text-purple-700 shadow-sm"
                           : "text-slate-500"
                       }`}
                     >
@@ -958,14 +958,14 @@ export default function ShoppingView({
                         ? "What do you need?"
                         : "What do you want?"
                     }
-                    className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 sm:col-span-2"
+                    className="min-w-0 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 sm:col-span-2"
                   />
 
                   <input
                     value={newItemQuantity}
                     onChange={(event) => setNewItemQuantity(event.target.value)}
                     placeholder="Quantity"
-                    className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5"
+                    className="min-w-0 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5"
                   />
 
                   <input
@@ -973,7 +973,7 @@ export default function ShoppingView({
                     onChange={(event) => setNewItemShop(event.target.value)}
                     list="known-shopping-shops"
                     placeholder="Shop"
-                    className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5"
+                    className="min-w-0 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5"
                   />
 
                   <select
@@ -981,7 +981,7 @@ export default function ShoppingView({
                     onChange={(event) =>
                       setNewItemCategory(event.target.value as ShoppingCategory)
                     }
-                    className="min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5"
+                    className="min-w-0 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5"
                   >
                     {categories.map((category) => (
                       <option key={category.value} value={category.value}>
@@ -991,7 +991,7 @@ export default function ShoppingView({
                   </select>
 
                   <div className="flex min-w-0">
-                    <div className="flex min-w-0 flex-1 items-center rounded-l-xl border border-r-0 border-slate-200 bg-white px-3">
+                    <div className="flex min-w-0 flex-1 items-center rounded-l-xl border border-r-0 border-slate-200 bg-[var(--sortd-bg)] px-3">
                       <span className="text-slate-400">£</span>
 
                       <input

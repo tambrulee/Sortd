@@ -150,7 +150,7 @@ function SortableOption<T extends CollectionSwitcherItem>({
             }
           }}
           placeholder="Untitled"
-          className="min-w-0 flex-1 rounded-lg border border-[var(--sortd-teal-dark)] bg-white px-2 py-1 text-sm text-slate-900 outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--sortd-teal-dark)] bg-[var(--sortd-bg)] px-2 py-1 text-sm text-slate-900 outline-none"
         />
       ) : (
         <button
@@ -173,7 +173,7 @@ function SortableOption<T extends CollectionSwitcherItem>({
         onClick={() => setIsRenaming(true)}
         aria-label={`Rename ${item.name}`}
         title="Rename"
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-slate-700"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-[var(--sortd-bg)] hover:text-slate-700"
       >
         ✎
       </button>
@@ -302,7 +302,7 @@ export default function CollectionSwitcher<T extends CollectionSwitcherItem>({
             }}
             aria-expanded={isOpen}
             aria-haspopup="listbox"
-            className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-[var(--sortd-teal-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/25"
+            className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 text-left transition hover:border-[var(--sortd-teal-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/25"
           >
             {activeStatusColour && (
               <span
@@ -334,7 +334,7 @@ export default function CollectionSwitcher<T extends CollectionSwitcherItem>({
           </button>
 
           {isOpen && (
-            <div className="absolute left-0 right-0 z-40 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+            <div className="absolute left-0 right-0 z-40 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] p-2 shadow-xl">
               <p className="px-2 py-2 text-xs font-medium text-slate-500">
                 Select or drag to reorder.
               </p>
@@ -408,13 +408,13 @@ export default function CollectionSwitcher<T extends CollectionSwitcherItem>({
             }}
             aria-label="More actions"
             title="More actions"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-[var(--sortd-bg)] text-sm text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
           >
             •••
           </button>
 
           {isActionsOpen && (
-            <div className="absolute right-0 top-full z-50 mt-2 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+            <div className="absolute right-0 top-full z-50 mt-2 w-44 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] p-1.5 shadow-xl">
               <button
                 type="button"
                 onClick={() => {

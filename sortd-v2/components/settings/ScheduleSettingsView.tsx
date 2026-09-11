@@ -36,7 +36,7 @@ export default function ScheduleSettingsView({
   }
 
   return (
-    <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
+    <div className="rounded-3xl bg-[var(--sortd-bg)]/85 p-5 shadow-xl backdrop-blur-md md:p-8">
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
           Planner
@@ -67,7 +67,7 @@ export default function ScheduleSettingsView({
                     timeZone: event.target.value,
                   })
                 }
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-slate-900"
               />
 
               <button
@@ -90,7 +90,7 @@ export default function ScheduleSettingsView({
                   planningHorizonDays: Number(event.target.value),
                 })
               }
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900"
+              className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-slate-900"
             >
               <option value="7">1 week</option>
               <option value="14">2 weeks</option>
@@ -108,7 +108,7 @@ export default function ScheduleSettingsView({
                   bufferMinutes: Number(event.target.value),
                 })
               }
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900"
+              className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-slate-900"
             >
               <option value="0">No buffer</option>
               <option value="5">5 minutes</option>
@@ -120,7 +120,7 @@ export default function ScheduleSettingsView({
         </div>
       </section>
 
-      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] p-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="font-semibold text-slate-900">
@@ -190,7 +190,7 @@ export default function ScheduleSettingsView({
                 key={weekday}
                 className={`rounded-2xl border p-4 ${
                   day.enabled
-                    ? "border-slate-200 bg-white"
+                    ? "border-slate-200 bg-[var(--sortd-bg)]"
                     : "border-slate-100 bg-slate-50 opacity-60"
                 }`}
               >
@@ -221,7 +221,7 @@ export default function ScheduleSettingsView({
                           wakeTime: event.target.value,
                         })
                       }
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                      className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-900"
                     />
                   </label>
 
@@ -236,7 +236,7 @@ export default function ScheduleSettingsView({
                           workStart: event.target.value || undefined,
                         })
                       }
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                      className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-900"
                     />
                   </label>
 
@@ -251,7 +251,7 @@ export default function ScheduleSettingsView({
                           workEnd: event.target.value || undefined,
                         })
                       }
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                      className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-900"
                     />
                   </label>
 
@@ -266,7 +266,7 @@ export default function ScheduleSettingsView({
                           bedTime: event.target.value,
                         })
                       }
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                      className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-900"
                     />
                   </label>
                 </div>

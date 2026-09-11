@@ -39,7 +39,7 @@ export default function ArchivedTasks({
             {tasks.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center justify-between gap-3 rounded-xl bg-white/70 px-3 py-2 text-sm text-slate-600"
+                className="flex items-center justify-between gap-3 rounded-xl bg-[var(--sortd-bg)]/70 px-3 py-2 text-sm text-slate-600"
               >
                 <span className="line-through">
                   {task.title || "Untitled task"}

@@ -74,7 +74,7 @@ export default function TimeWindowInput({
         placeholder={placeholder}
         onChange={handleChange}
         onBlur={handleBlur}
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
+        className="w-full rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
       />
 
       <datalist id={listId}>

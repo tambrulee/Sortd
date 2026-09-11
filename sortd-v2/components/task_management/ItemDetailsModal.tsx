@@ -109,7 +109,7 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
   }
 
   const fieldClassName =
-    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20";
+    "w-full rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20";
 
   const labelClassName =
     "flex flex-col gap-1.5 text-xs font-medium text-slate-600";
@@ -127,7 +127,7 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="item-details-title"
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl md:p-7"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-[var(--sortd-bg)] p-5 shadow-2xl md:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -449,7 +449,7 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
                       active: !props.item.active,
                     })
                   }
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                  className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                 >
                   {props.item.active ? "Pause" : "Resume"}
                 </button>
