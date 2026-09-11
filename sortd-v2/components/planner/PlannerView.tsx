@@ -175,15 +175,11 @@ function getBlockHeight(
     timeToMinutes(endTime),
   );
 
-  const durationMinutes =
-    Math.max(1, end - start);
+  const durationMinutes = Math.max(1, end - start);
 
   const realHeight =
-    (durationMinutes / SLOT_MINUTES) *
-    SLOT_HEIGHT;
+    (durationMinutes / SLOT_MINUTES) * SLOT_HEIGHT;
 
-  // Aim for a readable chip even for
-  // 5–15 minute routines.
   const desiredHeight = Math.max(
     24,
     realHeight - 2,
@@ -193,23 +189,15 @@ function getBlockHeight(
     return desiredHeight;
   }
 
-  const nextStart =
-    timeToMinutes(nextStartTime);
-
-  const gapMinutes =
-    nextStart - start;
+  const nextStart = timeToMinutes(nextStartTime);
+  const gapMinutes = nextStart - start;
 
   const availableHeight =
-    (gapMinutes / SLOT_MINUTES) *
-      SLOT_HEIGHT -
-    4;
+    (gapMinutes / SLOT_MINUTES) * SLOT_HEIGHT - 4;
 
   return Math.max(
     12,
-    Math.min(
-      desiredHeight,
-      availableHeight,
-    ),
+    Math.min(desiredHeight, availableHeight),
   );
 }
 
@@ -278,6 +266,7 @@ function CalendarSlot({
 
 function CalendarTaskBlock({
   block,
+  nextStartTime,
   anchored,
   manuallyPlaced,
   onComplete,
@@ -285,6 +274,7 @@ function CalendarTaskBlock({
   onResetToAuto,
 }: {
   block: ScheduledBlock;
+  nextStartTime?: string;
   anchored: boolean;
   manuallyPlaced: boolean;
   onComplete: () => void;
@@ -298,7 +288,11 @@ function CalendarTaskBlock({
       data: { block },
     });
 
-  const height = getBlockHeight(block.startTime, block.endTime);
+  const height = getBlockHeight(
+    block.startTime,
+    block.endTime,
+    nextStartTime,
+  );
 
   const isShortBlock =
     block.durationMinutes < 20;
@@ -315,12 +309,10 @@ function CalendarTaskBlock({
     <article
       ref={setNodeRef}
       style={style}
-      className={`absolute left-1 right-1 z-10 overflow-hidden rounded-md border shadow-sm transition ${
-        isShortBlock
-          ? "px-1.5 py-0"
-          : "px-2 py-1.5"
+      className={`absolute left-1 right-1 z-10 overflow-hidden rounded-lg border shadow-sm transition ${
+        isShortBlock ? "px-1.5 py-0" : "px-2 py-1.5"
       } ${
-    isDragging
+        isDragging
           ? "z-50 border-[#b53fd0] bg-white opacity-90 shadow-xl"
           : anchored
             ? "border-slate-200 bg-slate-100"
@@ -329,124 +321,69 @@ function CalendarTaskBlock({
               : "border-slate-200 bg-white"
       }`}
     >
-      {isShortBlock ? (
-  <div className="flex h-full min-w-0 items-center gap-1 px-1">
-    <button
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        onComplete();
-      }}
-      aria-label={`Complete ${block.title}`}
-      className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border border-[#cd6ce7] text-[8px] font-bold text-[#9d3db7]"
-    >
-      ✓
-    </button>
+      <div className="flex h-full min-w-0 items-start gap-1.5">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onComplete();
+          }}
+          aria-label={`Complete ${block.title}`}
+          className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[#cd6ce7] text-[9px] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+        >
+          ✓
+        </button>
 
-    <button
-      type="button"
-      onClick={onEdit}
-      title={block.title}
-      className="min-w-0 flex-1 text-left"
-    >
-      <p className="truncate text-[10px] font-semibold leading-none text-slate-900">
-        {block.title}
-      </p>
-    </button>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="min-w-0 flex-1 text-left"
+          title={block.title}
+        >
+          <p className="truncate text-[12px] font-semibold leading-tight text-slate-900">
+            {block.title}
+          </p>
 
-    <button
-      type="button"
-      {...(!anchored ? attributes : {})}
-      {...(!anchored ? listeners : {})}
-      aria-label={
-        anchored
-          ? `${block.title} is anchored`
-          : `Move ${block.title}`
-      }
-      className={`shrink-0 text-[8px] leading-none ${
-        anchored
-          ? "cursor-default text-slate-300"
-          : "cursor-grab text-slate-400"
-      }`}
-    >
-      {anchored ? "🔒" : "⋮"}
-    </button>
-  </div>
-) : (
-  <div className="flex h-full min-w-0 items-start gap-1.5">
-    <button
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        onComplete();
-      }}
-      aria-label={`Complete ${block.title}`}
-      className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[#cd6ce7] text-[9px] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
-    >
-      ✓
-    </button>
-
-    <button
-      type="button"
-      onClick={onEdit}
-      className="min-w-0 flex-1 text-left"
-      title={block.title}
-    >
-      <p className="truncate text-[12px] font-semibold leading-tight text-slate-900">
-        {block.title}
-      </p>
-
-      {manuallyPlaced &&
-        !anchored &&
-        height >= 48 && (
-          <span
-            role="button"
-            tabIndex={0}
-            onClick={(event) => {
-              event.stopPropagation();
-              onResetToAuto();
-            }}
-            onKeyDown={(event) => {
-              if (
-                event.key === "Enter" ||
-                event.key === " "
-              ) {
-                event.preventDefault();
+          {manuallyPlaced && !anchored && height >= 48 && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(event) => {
                 event.stopPropagation();
                 onResetToAuto();
-              }
-            }}
-            className="mt-1 inline-block text-[9px] font-medium text-purple-600"
-          >
-            ↺ auto
-          </span>
-        )}
-    </button>
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onResetToAuto();
+                }
+              }}
+              className="mt-1 inline-block text-[9px] font-medium text-purple-600 hover:text-purple-800"
+              title="Let Sort'd choose again"
+            >
+              ↺ auto
+            </span>
+          )}
+        </button>
 
-    <button
-      type="button"
-      {...(!anchored ? attributes : {})}
-      {...(!anchored ? listeners : {})}
-      aria-label={
-        anchored
-          ? `${block.title} is anchored`
-          : `Move ${block.title}`
-      }
-      title={
-        anchored
-          ? "Anchored routine"
-          : "Drag to reschedule"
-      }
-      className={`shrink-0 rounded px-0.5 text-[10px] leading-none ${
-        anchored
-          ? "cursor-default text-slate-300"
-          : "cursor-grab text-slate-400 hover:text-slate-700 active:cursor-grabbing"
-      }`}
-    >
-      {anchored ? "🔒" : "⋮⋮"}
-    </button>
-  </div>
-)}
+        <button
+          type="button"
+          {...(!anchored ? attributes : {})}
+          {...(!anchored ? listeners : {})}
+          aria-label={
+            anchored ? `${block.title} is anchored` : `Move ${block.title}`
+          }
+          title={anchored ? "Anchored routine" : "Drag to reschedule"}
+          className={`shrink-0 rounded px-0.5 text-[10px] leading-none ${
+            anchored
+              ? "cursor-default text-slate-300"
+              : "cursor-grab text-slate-400 hover:text-slate-700 active:cursor-grabbing"
+          }`}
+        >
+          {anchored ? "🔒" : "⋮⋮"}
+        </button>
+      </div>
     </article>
   );
 }
@@ -484,6 +421,8 @@ export default function PlannerView({
   const [newAdhocDate, setNewAdhocDate] = useState<string | null>(null);
   const [newAdhocTitle, setNewAdhocTitle] = useState("");
 
+  const [replanVersion, setReplanVersion] = useState(0);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
@@ -518,6 +457,7 @@ export default function PlannerView({
       today,
       currentTime,
       plannerOverrides,
+      replanVersion,
     ],
   );
 
@@ -549,18 +489,25 @@ export default function PlannerView({
       ? adhocTasks.find((task) => task.id === selectedItem.sourceId)
       : undefined;
 
+  function replan() {
+    setReplanVersion((version) => version + 1);
+  }
+
   function completeBlock(block: ScheduledBlock) {
     if (block.sourceType === "routine") {
       onCompleteRoutineTask(block.parentId, block.sourceId);
+      replan();
       return;
     }
 
     if (block.sourceType === "adhoc") {
       onCompleteAdhocTask(block.sourceId);
+      replan();
       return;
     }
 
     onCompleteProjectTask(block.parentId, block.sourceId);
+    replan();
   }
 
   function openBlock(block: ScheduledBlock) {
@@ -575,6 +522,8 @@ export default function PlannerView({
     onChangePlannerOverrides(
       plannerOverrides.filter((override) => !matchesOverride(block, override)),
     );
+
+    replan();
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -612,6 +561,7 @@ export default function PlannerView({
     );
 
     onChangePlannerOverrides([...withoutPrevious, nextOverride]);
+    replan();
   }
 
   function addAdhocForDate(dateKey: string) {
@@ -631,6 +581,7 @@ export default function PlannerView({
 
     setNewAdhocTitle("");
     setNewAdhocDate(null);
+    replan();
   }
 
   const currentMinutes = timeToMinutes(currentTime);
@@ -657,7 +608,16 @@ export default function PlannerView({
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={replan}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#9d3db7] transition hover:bg-purple-50"
+              title="Rebuild the schedule now"
+            >
+              ↻ Replan
+            </button>
+
             <div className="rounded-xl bg-[#f3eeee] px-4 py-3 text-center">
               <p className="text-xl font-bold">{schedule.blocks.length}</p>
               <p className="text-xs text-slate-500">Planned</p>
@@ -845,7 +805,9 @@ export default function PlannerView({
                       </div>
                     )}
 
-                    {dayBlocks.map((block) => {
+                    {dayBlocks.map((block, index) => {
+                      const nextStartTime =
+                        dayBlocks[index + 1]?.startTime;
                       const routineTask = getRoutineTaskForBlock(
                         routines,
                         block,
@@ -866,6 +828,7 @@ export default function PlannerView({
                         <CalendarTaskBlock
                           key={block.id}
                           block={block}
+                          nextStartTime={nextStartTime}
                           anchored={anchored}
                           manuallyPlaced={manuallyPlaced}
                           onComplete={() => completeBlock(block)}
