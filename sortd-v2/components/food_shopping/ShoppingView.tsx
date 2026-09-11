@@ -513,7 +513,7 @@ export default function ShoppingView({
             checked={item.purchased}
             onChange={() => toggleItem(item.listId, item.id)}
             aria-label={`Mark ${item.title} as bought`}
-            className="h-5 w-5 shrink-0 accent-[#cd6ce7]"
+            className="h-5 w-5 shrink-0 accent-[var(--sortd-teal-dark)]"
           />
 
           <div className="min-w-0 flex-1">
@@ -601,7 +601,7 @@ export default function ShoppingView({
       </datalist>
 
       <header>
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
           Shopping
         </p>
 
@@ -748,7 +748,7 @@ export default function ShoppingView({
           <section className="mt-5 rounded-3xl bg-[#f7f3f7] p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9d3db7]">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--sortd-teal-dark)]">
                   Overview
                 </p>
 
@@ -764,7 +764,7 @@ export default function ShoppingView({
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="text-sm text-[#9d3db7] hover:text-[#74258a]"
+                  className="text-sm text-[var(--sortd-teal-dark)] hover:text-[#74258a]"
                 >
                   Clear filters
                 </button>
@@ -825,7 +825,7 @@ export default function ShoppingView({
                 onClick={() => setIntentFilter("all")}
                 className={`rounded-2xl border p-5 text-left transition ${
                   intentFilter === "all"
-                    ? "border-[#cd6ce7] bg-white"
+                    ? "border-[var(--sortd-teal-dark)] bg-white"
                     : "border-transparent bg-white hover:border-[#e4b8ee]"
                 }`}
               >
@@ -856,7 +856,7 @@ export default function ShoppingView({
                     <button
                       type="button"
                       onClick={() => setShowAllShops((current) => !current)}
-                      className="text-xs font-medium text-[#9d3db7] transition hover:text-[#74258a]"
+                      className="text-xs font-medium text-[var(--sortd-teal-dark)] transition hover:text-[#74258a]"
                     >
                       {showAllShops
                         ? "Show less"
@@ -1036,7 +1036,7 @@ export default function ShoppingView({
                   <button
                     type="button"
                     onClick={() => setIntentFilter("all")}
-                    className="mt-1 text-xs text-[#9d3db7]"
+                    className="mt-1 text-xs text-[var(--sortd-teal-dark)]"
                   >
                     Show all items
                   </button>

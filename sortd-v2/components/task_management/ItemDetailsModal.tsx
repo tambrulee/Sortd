@@ -109,7 +109,7 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
   }
 
   const fieldClassName =
-    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#cd6ce7] focus:ring-2 focus:ring-[#cd6ce7]/20";
+    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20";
 
   const labelClassName =
     "flex flex-col gap-1.5 text-xs font-medium text-slate-600";
@@ -131,7 +131,7 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
               {props.kind === "routine" ? "Routine task" : "Project task"}
             </p>
 

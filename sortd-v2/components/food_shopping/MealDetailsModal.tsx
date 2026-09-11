@@ -278,7 +278,7 @@ export default function MealDetailsModal({
               onSave(draft);
               onClose();
             }}
-            className="rounded-xl bg-[#cd6ce7] px-5 py-2 text-sm font-semibold text-white"
+            className="rounded-xl bg-[var(--sortd-teal-dark)] px-5 py-2 text-sm font-semibold text-white"
           >
             Save meal
           </button>

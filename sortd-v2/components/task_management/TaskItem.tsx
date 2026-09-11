@@ -135,7 +135,7 @@ export default function TaskItem({
             type="checkbox"
             checked={task.completed}
             onChange={() => onToggleTask(task.id)}
-            className="h-5 w-5 shrink-0 accent-[#cd6ce7]"
+            className="h-5 w-5 shrink-0 accent-[var(--sortd-teal-dark)]"
           />
 
           <div className="min-w-0 flex-1">
@@ -157,7 +157,7 @@ export default function TaskItem({
                 onAddTask();
               }}
               placeholder="Enter task..."
-              className={`w-full rounded-lg bg-transparent px-1 py-1 text-sm font-medium outline-none transition focus:bg-slate-50 focus:ring-2 focus:ring-[#cd6ce7]/20 ${
+              className={`w-full rounded-lg bg-transparent px-1 py-1 text-sm font-medium outline-none transition focus:bg-slate-50 focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20 ${
                 task.completed
                   ? "text-slate-400 line-through"
                   : "text-slate-900"

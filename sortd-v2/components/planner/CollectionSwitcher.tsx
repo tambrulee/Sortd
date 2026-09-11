@@ -150,7 +150,7 @@ function SortableOption<T extends CollectionSwitcherItem>({
             }
           }}
           placeholder="Untitled"
-          className="min-w-0 flex-1 rounded-lg border border-[#cd6ce7] bg-white px-2 py-1 text-sm text-slate-900 outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--sortd-teal-dark)] bg-white px-2 py-1 text-sm text-slate-900 outline-none"
         />
       ) : (
         <button
@@ -302,7 +302,7 @@ export default function CollectionSwitcher<T extends CollectionSwitcherItem>({
             }}
             aria-expanded={isOpen}
             aria-haspopup="listbox"
-            className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-[#cd6ce7] focus:outline-none focus:ring-2 focus:ring-[#cd6ce7]/25"
+            className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-[var(--sortd-teal-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/25"
           >
             {activeStatusColour && (
               <span

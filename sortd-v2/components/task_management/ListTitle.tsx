@@ -12,7 +12,7 @@ export default function ListTitle({
       <input
         value={listName}
         onChange={(e) => onChangeListName(e.target.value)}
-        className="w-full rounded-2xl bg-[#eeeaea] px-4 py-3 text-lg font-semibold outline-none focus:ring-2 focus:ring-[#cd6ce7]"
+        className="w-full rounded-2xl bg-[#eeeaea] px-4 py-3 text-lg font-semibold outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]"
         placeholder="Name your list..."
       />
     </div>

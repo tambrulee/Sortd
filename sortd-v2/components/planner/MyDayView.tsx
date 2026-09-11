@@ -219,7 +219,7 @@ function SortableMyDayRoutineTask({
           )
         }
         aria-label={`Complete ${task.title}`}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] text-sm font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-sm font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
       >
         ✓
       </button>
@@ -676,7 +676,7 @@ export default function MyDayView({
 
             <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-[#cd6ce7] transition-all"
+                className="h-full rounded-full bg-[var(--sortd-teal-dark)] transition-all"
                 style={{
                   width: `${progress}%`,
                 }}
@@ -699,7 +699,7 @@ export default function MyDayView({
           onClick={() => onCompleteProjectTask(task.projectId, task.id)}
           aria-label={`Complete ${task.title}`}
           title="Mark task complete"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
         </button>
@@ -739,7 +739,7 @@ export default function MyDayView({
           type="button"
           onClick={() => onCompleteRoutineTask(task.routineId, task.id)}
           aria-label={`Complete ${task.title}`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
         </button>
@@ -782,7 +782,7 @@ export default function MyDayView({
       <div className="mb-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-[#9d3db7]">
+            <p className="text-sm font-medium text-[var(--sortd-teal-dark)]">
               {formattedDate}
             </p>
 
@@ -844,7 +844,7 @@ export default function MyDayView({
         <button
           type="button"
           onClick={() => setActiveSummary("due-today")}
-          className="rounded-2xl bg-[#f3eeee] p-4 text-left transition hover:bg-[#e9dfe9] focus:outline-none focus:ring-2 focus:ring-[#cd6ce7]"
+          className="rounded-2xl bg-[#f3eeee] p-4 text-left transition hover:bg-[#e9dfe9] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]"
         >
           <p className="text-2xl font-bold">
             {dueToday.length + routineTasksDueToday.length}
@@ -852,13 +852,13 @@ export default function MyDayView({
 
           <p className="text-sm text-slate-500">Due today</p>
 
-          <p className="mt-2 text-xs text-[#9d3db7]">View items →</p>
+          <p className="mt-2 text-xs text-[var(--sortd-teal-dark)]">View items →</p>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveSummary("overdue")}
-          className="rounded-2xl bg-[#f3eeee] p-4 text-left transition hover:bg-[#e9dfe9] focus:outline-none focus:ring-2 focus:ring-[#cd6ce7]"
+          className="rounded-2xl bg-[#f3eeee] p-4 text-left transition hover:bg-[#e9dfe9] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]"
         >
           <p className="text-2xl font-bold text-red-600">
             {overdue.length + overdueRoutineTasks.length}
@@ -866,13 +866,13 @@ export default function MyDayView({
 
           <p className="text-sm text-slate-500">Overdue</p>
 
-          <p className="mt-2 text-xs text-[#9d3db7]">View items →</p>
+          <p className="mt-2 text-xs text-[var(--sortd-teal-dark)]">View items →</p>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveSummary("workload")}
-          className="rounded-2xl bg-[#f3eeee] p-4 text-left transition hover:bg-[#e9dfe9] focus:outline-none focus:ring-2 focus:ring-[#cd6ce7]"
+          className="rounded-2xl bg-[#f3eeee] p-4 text-left transition hover:bg-[#e9dfe9] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]"
         >
           <p className="text-2xl font-bold">
             {formatDuration(workloadMinutes)}
@@ -880,7 +880,7 @@ export default function MyDayView({
 
           <p className="text-sm text-slate-500">Estimated workload</p>
 
-          <p className="mt-2 text-xs text-[#9d3db7]">View breakdown →</p>
+          <p className="mt-2 text-xs text-[var(--sortd-teal-dark)]">View breakdown →</p>
         </button>
       </div>
 
@@ -987,7 +987,7 @@ export default function MyDayView({
           <section className="mb-10">
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9d3db7]">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--sortd-teal-dark)]">
                   This month
                 </p>
 
@@ -1045,7 +1045,7 @@ export default function MyDayView({
 
           <section className="mb-10">
             <div className="mb-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9d3db7]">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--sortd-teal-dark)]">
                 Needs attention
               </p>
 
@@ -1132,7 +1132,7 @@ export default function MyDayView({
 
           <section>
             <div className="mb-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9d3db7]">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--sortd-teal-dark)]">
                 Coming up
               </p>
 
@@ -1173,7 +1173,7 @@ export default function MyDayView({
                             task,
                           )}
 
-                          <p className="mt-1 px-3 text-right text-[11px] text-[#9d3db7]">
+                          <p className="mt-1 px-3 text-right text-[11px] text-[var(--sortd-teal-dark)]">
                             Due{" "}
                             {formatShortDate(
                               task.dueDate,
@@ -1233,7 +1233,7 @@ export default function MyDayView({
                             </p>
                           </div>
 
-                          <span className="shrink-0 text-xs font-medium text-[#9d3db7]">
+                          <span className="shrink-0 text-xs font-medium text-[var(--sortd-teal-dark)]">
                             {formatShortDate(
                               task.nextDueDate,
                             )}
@@ -1273,7 +1273,7 @@ export default function MyDayView({
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
                     My Day
                   </p>
 

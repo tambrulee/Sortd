@@ -38,7 +38,7 @@ export default function ScheduleSettingsView({
   return (
     <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
           Planner
         </p>
 
@@ -137,7 +137,7 @@ export default function ScheduleSettingsView({
             <span
               className={`text-sm font-medium ${
                 settings.annualLeave
-                  ? "text-[#9d3db7]"
+                  ? "text-[var(--sortd-teal-dark)]"
                   : "text-slate-500"
               }`}
             >
@@ -158,7 +158,7 @@ export default function ScheduleSettingsView({
                     event.target.checked,
                 })
               }
-              className="h-5 w-5 accent-[#cd6ce7]"
+              className="h-5 w-5 accent-[var(--sortd-teal-dark)]"
             />
           </label>
         </div>
@@ -204,7 +204,7 @@ export default function ScheduleSettingsView({
                           enabled: event.target.checked,
                         })
                       }
-                      className="h-5 w-5 accent-[#cd6ce7]"
+                      className="h-5 w-5 accent-[var(--sortd-teal-dark)]"
                     />
 
                     {WEEKDAY_LABELS[weekday]}

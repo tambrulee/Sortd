@@ -521,7 +521,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             <button
               type="button"
               onClick={addMeal}
-              className="rounded-xl bg-[#cd6ce7] px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-xl bg-[var(--sortd-teal-dark)] px-4 py-2 text-sm font-semibold text-white"
             >
               Add meal
             </button>

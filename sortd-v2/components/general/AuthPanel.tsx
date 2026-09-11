@@ -175,7 +175,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#cd6ce7]"
+            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[var(--sortd-teal-dark)]"
           />
         </label>
 
@@ -190,14 +190,14 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
             }
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#cd6ce7]"
+            className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[var(--sortd-teal-dark)]"
           />
         </label>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-xl bg-[#1f0825] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#cd6ce7] disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-xl bg-[#1f0825] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--sortd-teal-dark)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting
             ? "Please wait…"

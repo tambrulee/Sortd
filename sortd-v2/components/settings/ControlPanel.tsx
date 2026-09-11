@@ -26,7 +26,7 @@ export default function ControlPanel({
       <button
         type="button"
         onClick={onAddTask}
-        className="rounded-xl bg-[#1f0825] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#cd6ce7]"
+        className="rounded-xl bg-[#1f0825] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--sortd-teal-dark)]"
       >
         + Add task
       </button>
@@ -38,7 +38,7 @@ export default function ControlPanel({
             onChangeTaskFilter(event.target.value as TaskFilter)
           }
           aria-label="Filter tasks"
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[#cd6ce7]"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-[var(--sortd-teal-dark)]"
         >
           <option value="all">All tasks</option>
           <option value="high">High priority</option>

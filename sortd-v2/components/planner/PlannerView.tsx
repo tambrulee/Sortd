@@ -329,7 +329,7 @@ function CalendarTaskBlock({
             onComplete();
           }}
           aria-label={`Complete ${block.title}`}
-          className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[#cd6ce7] text-[9px] font-bold text-[#9d3db7] transition hover:bg-[#cd6ce7] hover:text-white"
+          className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[var(--sortd-teal-dark)] text-[9px] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
         </button>
@@ -596,7 +596,7 @@ export default function PlannerView({
       <div className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
               Planner
             </p>
 
@@ -612,7 +612,7 @@ export default function PlannerView({
             <button
               type="button"
               onClick={replan}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#9d3db7] transition hover:bg-purple-50"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[var(--sortd-teal-dark)] transition hover:bg-purple-50"
               title="Rebuild the schedule now"
             >
               ↻ Replan
@@ -666,7 +666,7 @@ export default function PlannerView({
                         <p
                           className={`text-sm font-bold ${
                             dateKey === today
-                              ? "text-[#9d3db7]"
+                              ? "text-[var(--sortd-teal-dark)]"
                               : "text-slate-900"
                           }`}
                         >
@@ -682,7 +682,7 @@ export default function PlannerView({
                           setNewAdhocDate(dateKey);
                           setNewAdhocTitle("");
                         }}
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#f3eeee] text-xs font-semibold text-[#9d3db7] transition hover:bg-[#eaddea]"
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#f3eeee] text-xs font-semibold text-[var(--sortd-teal-dark)] transition hover:bg-[#eaddea]"
                         title="Add an ad hoc task"
                       >
                         +
@@ -708,7 +708,7 @@ export default function PlannerView({
                           }}
                           placeholder="Add task…"
                           autoFocus
-                          className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[#cd6ce7]"
+                          className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--sortd-teal-dark)]"
                         />
 
                         <div className="mt-2 flex gap-1">
@@ -716,7 +716,7 @@ export default function PlannerView({
                             type="button"
                             disabled={!newAdhocTitle.trim()}
                             onClick={() => addAdhocForDate(dateKey)}
-                            className="rounded-md bg-[#9d3db7] px-2 py-1 text-[10px] font-semibold text-white disabled:opacity-40"
+                            className="rounded-md bg-[var(--sortd-teal-dark)] px-2 py-1 text-[10px] font-semibold text-white disabled:opacity-40"
                           >
                             Add
                           </button>

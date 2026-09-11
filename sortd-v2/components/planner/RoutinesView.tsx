@@ -235,7 +235,7 @@ function SortableRoutineTask({
           onClick={() => onComplete(task.id)}
           disabled={!task.active}
           aria-label={`Complete ${task.title}`}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[#cd6ce7] text-base text-[#a93ac5] transition hover:bg-[#cd6ce7] hover:text-white disabled:cursor-not-allowed"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-base text-[#a93ac5] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white disabled:cursor-not-allowed"
         >
           ✓
         </button>
@@ -811,7 +811,7 @@ export default function RoutinesView({
             value={newRoutineName}
             onChange={(event) => setNewRoutineName(event.target.value)}
             placeholder="Routine name, e.g. Home care"
-            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none focus:border-[#cd6ce7] focus:ring-2 focus:ring-[#cd6ce7]/20"
+            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 outline-none focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
           />
 
           <button
@@ -875,7 +875,7 @@ export default function RoutinesView({
                   onChange={(event) =>
                     renameRoutine(activeRoutine.id, event.target.value)
                   }
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#cd6ce7] focus:ring-2 focus:ring-[#cd6ce7]/20"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
                 />
               </label>
 
@@ -992,7 +992,7 @@ export default function RoutinesView({
                   value={newTaskTitle}
                   onChange={(event) => setNewTaskTitle(event.target.value)}
                   placeholder="e.g. Change the bedding"
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-[#cd6ce7]"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-[var(--sortd-teal-dark)]"
                 />
 
                 <input

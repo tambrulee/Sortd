@@ -58,7 +58,7 @@ export default function SettingsControlPanel({
   return (
     <div className="space-y-6">
       <header className="rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-md md:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
           Settings
         </p>
 
@@ -74,7 +74,7 @@ export default function SettingsControlPanel({
 
       <section className="rounded-3xl bg-white/85 p-5 shadow-lg backdrop-blur-md md:p-7">
         <div className="mb-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
             Your rhythm
           </p>
 
@@ -99,7 +99,7 @@ export default function SettingsControlPanel({
                 onClick={() => updateEnergyPattern(option.value)}
                 className={`rounded-2xl border p-4 text-left transition ${
                   selected
-                    ? "border-[#cd6ce7] bg-purple-50 ring-2 ring-[#cd6ce7]/20"
+                    ? "border-[var(--sortd-teal-dark)] bg-purple-50 ring-2 ring-[var(--sortd-teal-dark)]/20"
                     : "border-slate-200 bg-[#f8f5f5] hover:border-slate-300"
                 }`}
               >
@@ -120,7 +120,7 @@ export default function SettingsControlPanel({
 
       <section className="rounded-3xl bg-white/85 p-5 shadow-lg backdrop-blur-md md:p-7">
         <div className="mb-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#9d3db7]">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
             Availability & working hours
           </p>
 
