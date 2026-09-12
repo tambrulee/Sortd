@@ -17,7 +17,7 @@ export default function ArchivedTasks({
   if (tasks.length === 0) return null;
 
   return (
-    <div className="mt-6 rounded-2xl bg-[#eeeaea]/70 p-4">
+    <div className="mt-6 rounded-2xl bg-[var(--sortd-grey)]/70 p-4">
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}

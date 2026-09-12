@@ -75,7 +75,7 @@ export default function TaskList({
 
   if (tasks.length === 0) {
     return (
-      <p className="rounded-2xl bg-[#eeeaea] p-4 text-center text-sm text-slate-600">
+      <p className="rounded-2xl bg-[var(--sortd-grey)] p-4 text-center text-sm text-slate-600">
         No tasks yet. Add one to get started.
       </p>
     );

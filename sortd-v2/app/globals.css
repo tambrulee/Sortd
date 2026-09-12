@@ -2,15 +2,24 @@
 
 :root {
   --sortd-navy: #102a43;
+  --sortd-navy-dark: #071b2e;
+
   --sortd-teal: #14b8a6;
   --sortd-teal-dark: #0f766e;
 
+  /* overall app background */
   --sortd-bg: #e9eeec;
-  --sortd-surface: #f7f9f8;
-  --sortd-surface-raised: #ffffff;
-  --sortd-surface-muted: #eef2f1;
 
-  --sortd-border: #d4dcda;
+  /* large content panels */
+  --sortd-surface: #f7f9f8;
+
+  /* individual cards / tasks / inputs */
+  --sortd-card: #ffffff;
+
+  /* secondary / quiet areas */
+  --sortd-muted: #eef2f1;
+
+  --sortd-border: #d7dfdd;
 
   --sortd-text: #162033;
   --sortd-text-muted: #64748b;

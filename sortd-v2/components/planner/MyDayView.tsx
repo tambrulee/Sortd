@@ -193,7 +193,7 @@ function SortableMyDayRoutineTask({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2.5 rounded-xl bg-[#eeeaea] px-4 py-2 transition ${
+      className={`flex items-center gap-2.5 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-2 transition ${
         isDragging
           ? "z-50 opacity-60 shadow-lg"
           : ""
@@ -252,7 +252,7 @@ function SortableMyDayRoutineTask({
         onClick={() => onEdit(task)}
         aria-label={`Edit ${task.title}`}
         title="Routine task details"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs text-slate-500 transition hover:bg-[var(--sortd-bg)] hover:text-slate-900"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
       >
         •••
       </button>
@@ -692,7 +692,7 @@ export default function MyDayView({
     return (
       <div
         key={`${task.projectId}-${task.id}`}
-        className="flex w-full items-center gap-3 rounded-xl bg-[#eeeaea] px-4 py-3"
+        className="flex w-full items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3"
       >
         <button
           type="button"
@@ -733,7 +733,7 @@ export default function MyDayView({
     return (
       <div
         key={`${task.routineId}-${task.id}`}
-        className="flex items-center gap-3 rounded-xl bg-[#eeeaea] px-4 py-3"
+        className="flex items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3"
       >
         <button
           type="button"
@@ -769,7 +769,7 @@ export default function MyDayView({
           }
           aria-label={`Edit ${task.title}`}
           title="Routine task details"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[var(--sortd-bg)] hover:text-slate-900"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
         >
           •••
         </button>
@@ -778,7 +778,7 @@ export default function MyDayView({
   }
 
   return (
-    <div className="rounded-3xl bg-[var(--sortd-bg)]/85 p-5 shadow-xl backdrop-blur-md md:p-8">
+    <div className="rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-5 shadow-sm md:p-8">
       <div className="mb-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -809,7 +809,7 @@ export default function MyDayView({
               className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                 dayViewMode ===
                 "today"
-                  ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
+                  ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
@@ -826,7 +826,7 @@ export default function MyDayView({
               className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                 dayViewMode ===
                 "review"
-                  ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
+                  ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
@@ -844,7 +844,7 @@ export default function MyDayView({
         <button
           type="button"
           onClick={() => setActiveSummary("due-today")}
-          className="rounded-2xl bg-[#f3eeee] p-4 text-left transition hover:bg-[#e9dfe9] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]"
+          className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] p-4 text-left transition hover:bg-[var(--sortd-card)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal)]"
         >
           <p className="text-2xl font-bold">
             {dueToday.length + routineTasksDueToday.length}
@@ -858,7 +858,7 @@ export default function MyDayView({
         <button
           type="button"
           onClick={() => setActiveSummary("overdue")}
-          className="rounded-2xl bg-[#f3eeee] p-4 text-left transition hover:bg-[#e9dfe9] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]"
+          className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] p-4 text-left transition hover:bg-[var(--sortd-card)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal)]"
         >
           <p className="text-2xl font-bold text-red-600">
             {overdue.length + overdueRoutineTasks.length}
@@ -872,7 +872,7 @@ export default function MyDayView({
         <button
           type="button"
           onClick={() => setActiveSummary("workload")}
-          className="rounded-2xl bg-[#f3eeee] p-4 text-left transition hover:bg-[#e9dfe9] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal-dark)]"
+          className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] p-4 text-left transition hover:bg-[var(--sortd-card)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal)]"
         >
           <p className="text-2xl font-bold">
             {formatDuration(workloadMinutes)}
@@ -895,7 +895,7 @@ export default function MyDayView({
           </div>
 
           {actionableRoutineTasks.length > 0 && (
-            <span className="rounded-full bg-purple-100 px-3 py-1 text-sm font-medium text-purple-700">
+            <span className="rounded-full bg-teal-50 px-3 py-1 text-sm font-medium text-teal-700">
               {actionableRoutineTasks.length} ready
             </span>
           )}
@@ -940,7 +940,7 @@ export default function MyDayView({
               </SortableContext>
             </DndContext>
           ) : (
-            <p className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center text-sm text-slate-500">
+            <p className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-center text-sm text-slate-500">
               No routines need your attention today.
             </p>
           )}
@@ -955,7 +955,7 @@ export default function MyDayView({
             {dueToday.length > 0 ? (
               dueToday.map(renderTask)
             ) : (
-              <p className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center text-sm text-slate-500">
+              <p className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-center text-sm text-slate-500">
                 Nothing due today.
               </p>
             )}
@@ -969,7 +969,7 @@ export default function MyDayView({
             {overdue.length > 0 ? (
               overdue.map(renderTask)
             ) : (
-              <p className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center text-sm text-slate-500">
+              <p className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-center text-sm text-slate-500">
                 Nothing overdue. Lovely.
               </p>
             )}
@@ -1025,13 +1025,13 @@ export default function MyDayView({
 
             {currentMonthProjects.length >
             0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] px-4">
+              <div className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4">
                 {currentMonthProjects.map(
                   renderReviewProject,
                 )}
               </div>
             ) : (
-              <div className="rounded-2xl bg-[#f3eeee] px-5 py-8 text-center">
+              <div className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-5 py-8 text-center">
                 <p className="font-medium text-slate-700">
                   No projects
                   scheduled this
@@ -1121,7 +1121,7 @@ export default function MyDayView({
                 </div>
               </div>
             ) : (
-              <div className="rounded-2xl bg-[#f3eeee] px-5 py-6 text-center text-sm text-slate-500">
+              <div className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-5 py-6 text-center text-sm text-slate-500">
                 Nothing overdue.
                 Lovely.
               </div>
@@ -1183,7 +1183,7 @@ export default function MyDayView({
                       ),
                     )
                   ) : (
-                    <p className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center text-sm text-slate-500">
+                    <p className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-center text-sm text-slate-500">
                       Nothing due
                       over the next
                       week.
@@ -1218,7 +1218,7 @@ export default function MyDayView({
                               task,
                             )
                           }
-                          className="flex w-full items-center justify-between gap-4 rounded-xl bg-[#eeeaea] px-4 py-3 text-left transition hover:bg-[#e9e4e9]"
+                          className="flex w-full items-center justify-between gap-4 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3 text-left transition hover:bg-[var(--sortd-muted)]"
                         >
                           <div className="min-w-0">
                             <p className="truncate font-medium text-slate-900">
@@ -1242,7 +1242,7 @@ export default function MyDayView({
                       ),
                     )
                   ) : (
-                    <p className="rounded-xl bg-[#f3eeee] px-4 py-6 text-center text-sm text-slate-500">
+                    <p className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-center text-sm text-slate-500">
                       No routines
                       coming up this
                       week.
@@ -1269,7 +1269,7 @@ export default function MyDayView({
               role="dialog"
               aria-modal="true"
               aria-labelledby="my-day-summary-title"
-              className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-[var(--sortd-bg)] p-5 shadow-2xl md:p-7"
+              className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-5 shadow-2xl md:p-7"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -1300,15 +1300,15 @@ export default function MyDayView({
               </div>
 
               {activeSummary === "workload" && (
-                <div className="mt-5 rounded-2xl bg-purple-50 px-4 py-3">
-                  <p className="text-sm text-purple-800">
+                <div className="mt-5 rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3">
+                  <p className="text-sm text-teal-900">
                     Estimated total:{" "}
                     <span className="font-semibold">
                       {formatDuration(workloadMinutes)}
                     </span>
                   </p>
 
-                  <p className="mt-1 text-xs text-purple-600">
+                  <p className="mt-1 text-xs text-teal-700">
                     Items without an estimate are listed but do not add to the
                     total.
                   </p>
@@ -1360,7 +1360,7 @@ export default function MyDayView({
                 <button
                   type="button"
                   onClick={() => setActiveSummary(null)}
-                  className="rounded-xl bg-[#1f0825] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3b0842]"
+                  className="rounded-xl bg-[var(--sortd-navy)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--sortd-navy-dark)]"
                 >
                   Done
                 </button>

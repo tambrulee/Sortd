@@ -81,7 +81,7 @@ export default function WorkspaceNav({
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition ${
                 isActive
                   ? "bg-[#1f0825] text-white"
-                  : "text-slate-700 hover:bg-[#eeeaea]"
+                  : "text-slate-700 hover:bg-[var(--sortd-grey)]"
               }`}
             >
               <span className="w-5 text-center">{item.icon}</span>

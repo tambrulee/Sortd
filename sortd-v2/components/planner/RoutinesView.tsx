@@ -1047,7 +1047,7 @@ export default function RoutinesView({
 
             <div className="w-full max-h-[65vh] overflow-y-auto overscroll-contain pr-1">
               {visibleTasks.length === 0 ? (
-                <div className="rounded-2xl bg-[#eeeaea] p-8 text-center text-sm text-slate-500">
+                <div className="rounded-2xl bg-[var(--sortd-grey)] p-8 text-center text-sm text-slate-500">
                   {routineFilter === "all"
                     ? "This routine has no active tasks yet."
                     : "Nothing matches this filter."}
