@@ -378,7 +378,7 @@ export default function Home() {
   const [activeView, setActiveView] =
     useState<AppView>(() => {
       if (typeof window === "undefined") {
-        return "projects";
+        return "my-day";
       }
 
       const storedView =
@@ -386,7 +386,7 @@ export default function Home() {
           "sortd-active-view",
         ) as AppView | null;
 
-      return storedView ?? "projects";
+      return storedView ?? "my-day";
     });
 
   useEffect(() => {
