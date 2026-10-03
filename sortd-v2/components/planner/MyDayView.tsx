@@ -6,7 +6,6 @@ import {
   SortdList,
   Task,
 } from "@/lib/types";
-import { createPortal } from "react-dom";
 
 import {
   closestCenter,
@@ -236,7 +235,7 @@ function SortableMyDayRoutineTask({
       </div>
 
       <span
-        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
           isOverdue
             ? "bg-red-100 text-red-700"
             : "bg-amber-100 text-amber-800"
@@ -273,21 +272,18 @@ export default function MyDayView({
 }: MyDayViewProps) {
   const today = getLocalDateKey();
 
-  const [
-    dayViewMode,
-    setDayViewMode,
-  ] = useState<
-    "today" | "review"
-  >("today");
+  const [dayViewMode, setDayViewMode] = useState<"today" | "upcoming" | "review">("today");
 
-  const [activeSummary, setActiveSummary] = useState<
-    "due-today" | "overdue" | "workload" | null
-  >(null);
+  const [itemDisplayMode, setItemDisplayMode] = useState<"all" | "grouped">("grouped");
 
   const [
     selectedRoutineTask,
     setSelectedRoutineTask,
   ] = useState<RoutineTaskForDay | null>(null);
+
+  const currentRoutineTask = selectedRoutineTask
+    ? routines.find((routine) => routine.id === selectedRoutineTask.routineId)?.tasks.find((task) => task.id === selectedRoutineTask.id)
+    : undefined;
 
   const openTasks = tasks.filter((task) => !task.completed);
 
@@ -338,6 +334,36 @@ export default function MyDayView({
   const overdue = openTasks.filter(
     (task) => task.dueDate && task.dueDate < today,
   );
+
+  const actionableProjectTasks = [
+    ...overdue,
+    ...dueToday,
+  ];
+
+  actionableProjectTasks.sort((a, b) => (a.dueDate ?? today).localeCompare(b.dueDate ?? today));
+
+  const taskGroups = Array.from(
+    actionableProjectTasks.reduce((groups, task) => {
+      const group = groups.get(task.projectId);
+      if (group) group.tasks.push(task);
+      else groups.set(task.projectId, { projectId: task.projectId, projectName: task.projectName, tasks: [task] });
+      return groups;
+    }, new Map<string, { projectId: string; projectName: string; tasks: TaskWithProject[] }>()).values(),
+  );
+
+  const routineGroups = Array.from(
+    actionableRoutineTasks.reduce((groups, task) => {
+      const group = groups.get(task.routineId);
+      if (group) group.tasks.push(task);
+      else groups.set(task.routineId, { routineId: task.routineId, routineName: task.routineName, tasks: [task] });
+      return groups;
+    }, new Map<string, { routineId: string; routineName: string; tasks: RoutineTaskForDay[] }>()).values(),
+  );
+
+  const allActionableItems = [
+    ...actionableRoutineTasks.map((task) => ({ kind: "routine" as const, date: task.nextDueDate, task })),
+    ...actionableProjectTasks.map((task) => ({ kind: "project" as const, date: task.dueDate ?? today, task })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
 
   const todayDate =
     parseDateKey(today);
@@ -491,25 +517,6 @@ export default function MyDayView({
 
   const workloadMinutes = projectWorkloadMinutes + routineWorkloadMinutes;
 
-  const summaryProjectTasks = activeSummary === "overdue" ? overdue : dueToday;
-
-  const summaryRoutineTasks =
-    activeSummary === "overdue" ? overdueRoutineTasks : routineTasksDueToday;
-
-  const summaryTitle =
-    activeSummary === "overdue"
-      ? "Overdue items"
-      : activeSummary === "workload"
-        ? "Today’s workload"
-        : "Due today";
-
-  const summaryDescription =
-    activeSummary === "overdue"
-      ? "Items that still need your attention."
-      : activeSummary === "workload"
-        ? "Tasks and routines contributing to today’s workload."
-        : "Everything due today across your projects and routines.";
-
   const formattedDate = new Intl.DateTimeFormat("en-GB", {
     weekday: "long",
     day: "numeric",
@@ -629,7 +636,7 @@ export default function MyDayView({
             project.id,
           )
         }
-        className="w-full border-b border-slate-100 px-1 py-4 text-left transition last:border-b-0 hover:bg-slate-50"
+        className="w-full border-b border-[var(--sortd-border)] px-1 py-4 text-left transition last:border-b-0 hover:bg-[var(--sortd-muted)]"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -674,7 +681,7 @@ export default function MyDayView({
               </span>
             </div>
 
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-1.5 overflow-hidden rounded-full bg-[var(--sortd-muted)]">
               <div
                 className="h-full rounded-full bg-[var(--sortd-teal-dark)] transition-all"
                 style={{
@@ -688,18 +695,27 @@ export default function MyDayView({
     );
   }
 
-  function renderTask(task: TaskWithProject) {
+  function renderTask(
+    task: TaskWithProject,
+    options?: {
+      showStatus?: boolean;
+      showProject?: boolean;
+    },
+  ) {
+    const isOverdue =
+      !!task.dueDate &&
+      task.dueDate < today;
     return (
       <div
         key={`${task.projectId}-${task.id}`}
-        className="flex w-full items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3"
+        className="flex w-full items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-2"
       >
         <button
           type="button"
           onClick={() => onCompleteProjectTask(task.projectId, task.id)}
           aria-label={`Complete ${task.title}`}
           title="Mark task complete"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
         </button>
@@ -713,14 +729,30 @@ export default function MyDayView({
             {task.title || "Untitled task"}
           </p>
 
-          <p className="mt-1 text-xs text-slate-500">{task.projectName}</p>
+          {options?.showProject !== false && <p className="mt-1 text-xs text-slate-500">{task.projectName}</p>}
         </button>
 
         <div className="shrink-0 text-right text-xs text-slate-500">
-          <p>{formatDuration(task.durationMinutes)}</p>
+          {options?.showStatus && (
+            <span
+              className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                isOverdue
+                  ? "bg-red-100 text-red-700"
+                  : "bg-amber-100 text-amber-800"
+              }`}
+            >
+              {isOverdue ? "Overdue" : task.dueDate === today ? "Due today" : formatShortDate(task.dueDate)}
+            </span>
+          )}
+
+          <p className={options?.showStatus ? "mt-1" : ""}>
+            {formatDuration(task.durationMinutes)}
+          </p>
 
           {task.priority && (
-            <p className="mt-1 capitalize">{task.priority} priority</p>
+            <p className="mt-1 capitalize">
+              {task.priority} priority
+            </p>
           )}
         </div>
       </div>
@@ -733,13 +765,13 @@ export default function MyDayView({
     return (
       <div
         key={`${task.routineId}-${task.id}`}
-        className="flex items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3"
+        className="flex items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-2"
       >
         <button
           type="button"
           onClick={() => onCompleteRoutineTask(task.routineId, task.id)}
           aria-label={`Complete ${task.title}`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
         </button>
@@ -753,13 +785,13 @@ export default function MyDayView({
         </div>
 
         <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
             isOverdue
               ? "bg-red-100 text-red-700"
               : "bg-amber-100 text-amber-800"
           }`}
         >
-          {isOverdue ? "Overdue" : "Due today"}
+          {isOverdue ? "Overdue" : task.nextDueDate === today ? "Due today" : formatShortDate(task.nextDueDate)}
         </span>
 
         <button
@@ -769,7 +801,7 @@ export default function MyDayView({
           }
           aria-label={`Edit ${task.title}`}
           title="Routine task details"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
         >
           •••
         </button>
@@ -777,602 +809,147 @@ export default function MyDayView({
     );
   }
 
+  const upcomingDays = Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(todayDate, index + 1);
+    const key = toDateKey(date);
+    return {
+      key,
+      label: index === 0 ? "Tomorrow" : new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "short" }).format(date),
+      tasks: upcomingTasks.filter((task) => task.dueDate === key),
+      routines: upcomingRoutineTasks.filter((task) => task.nextDueDate === key),
+    };
+  }).filter((day) => day.tasks.length + day.routines.length > 0);
+
+  const emptyClassName = "rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-sm text-slate-500";
+
   return (
     <div className="rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-5 shadow-sm md:p-8">
-      <div className="mb-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-[var(--sortd-teal-dark)]">
-              {formattedDate}
-            </p>
-
-            <h1 className="mt-1 text-3xl font-bold text-slate-950">
-              My Day
-            </h1>
-
-            <p className="mt-2 text-sm text-slate-500">
-              {dayViewMode ===
-              "today"
-                ? "Here’s what needs your attention today."
-                : "Step back and see what you've got going on."}
-            </p>
-          </div>
-
-          <div className="flex rounded-xl bg-slate-100 p-1">
+      <header className="mb-6">
+        <p className="text-sm font-medium text-[var(--sortd-teal-dark)]">{formattedDate}</p>
+        <h1 className="mt-1 text-3xl font-bold text-slate-950">My Day</h1>
+        <p className="mt-2 text-sm text-slate-500">Everything you need, in one place.</p>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label="My Day views" className="flex w-fit max-w-full rounded-xl bg-[var(--sortd-muted)] p-1">
+          {(["today", "upcoming", "review"] as const).map((view) => (
             <button
+              key={view}
               type="button"
-              onClick={() =>
-                setDayViewMode(
-                  "today",
-                )
-              }
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                dayViewMode ===
-                "today"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              Today
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setDayViewMode(
-                  "review",
-                )
-              }
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                dayViewMode ===
-                "review"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              Review
-            </button>
+              aria-pressed={dayViewMode === view}
+              onClick={() => setDayViewMode(view)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${dayViewMode === view ? "bg-[var(--sortd-card)] text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
+            >{view}</button>
+          ))}
+        </nav>
+        {dayViewMode === "today" && (
+          <div role="group" aria-label="Routine and task grouping" className="flex rounded-xl bg-[var(--sortd-muted)] p-1">
+            {(["grouped", "all"] as const).map((mode) => (
+              <button key={mode} type="button" aria-pressed={itemDisplayMode === mode} onClick={() => setItemDisplayMode(mode)} className={`rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${itemDisplayMode === mode ? "bg-[var(--sortd-card)] text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}>
+                {mode === "all" ? "All" : "Grouped"}
+              </button>
+            ))}
           </div>
-        </div>
-      </div>
-
-      {dayViewMode ===
-        "today" && (
-        <>
-
-      <div className="mb-8 grid gap-3 sm:grid-cols-3">
-        <button
-          type="button"
-          onClick={() => setActiveSummary("due-today")}
-          className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] p-4 text-left transition hover:bg-[var(--sortd-card)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal)]"
-        >
-          <p className="text-2xl font-bold">
-            {dueToday.length + routineTasksDueToday.length}
-          </p>
-
-          <p className="text-sm text-slate-500">Due today</p>
-
-          <p className="mt-2 text-xs text-[var(--sortd-teal-dark)]">View items →</p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveSummary("overdue")}
-          className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] p-4 text-left transition hover:bg-[var(--sortd-card)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal)]"
-        >
-          <p className="text-2xl font-bold text-red-600">
-            {overdue.length + overdueRoutineTasks.length}
-          </p>
-
-          <p className="text-sm text-slate-500">Overdue</p>
-
-          <p className="mt-2 text-xs text-[var(--sortd-teal-dark)]">View items →</p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveSummary("workload")}
-          className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] p-4 text-left transition hover:bg-[var(--sortd-card)] focus:outline-none focus:ring-2 focus:ring-[var(--sortd-teal)]"
-        >
-          <p className="text-2xl font-bold">
-            {formatDuration(workloadMinutes)}
-          </p>
-
-          <p className="text-sm text-slate-500">Estimated workload</p>
-
-          <p className="mt-2 text-xs text-[var(--sortd-teal-dark)]">View breakdown →</p>
-        </button>
-      </div>
-
-      <section className="mb-8">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Routines</h2>
-
-            <p className="text-sm text-slate-500">
-              Repeating things that are ready today.
-            </p>
-          </div>
-
-          {actionableRoutineTasks.length > 0 && (
-            <span className="rounded-full bg-teal-50 px-3 py-1 text-sm font-medium text-teal-700">
-              {actionableRoutineTasks.length} ready
-            </span>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          {actionableRoutineTasks.length > 0 ? (
-            <DndContext
-              collisionDetection={
-                closestCenter
-              }
-              onDragEnd={
-                handleRoutineDragEnd
-              }
-            >
-              <SortableContext
-                items={actionableRoutineTasks.map(
-                  (task) =>
-                    `${task.routineId}-${task.id}`,
-                )}
-                strategy={
-                  verticalListSortingStrategy
-                }
-              >
-                <div className="space-y-1.5">
-                  {actionableRoutineTasks.map(
-                    (task) => (
-                    <SortableMyDayRoutineTask
-                      key={`${task.routineId}-${task.id}`}
-                      task={task}
-                      today={today}
-                      onComplete={
-                        onCompleteRoutineTask
-                      }
-                      onEdit={
-                        setSelectedRoutineTask
-                      }
-                    />
-                    ),
-                  )}
-                </div>
-              </SortableContext>
-            </DndContext>
-          ) : (
-            <p className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-center text-sm text-slate-500">
-              No routines need your attention today.
-            </p>
-          )}
-        </div>
-      </section>
-
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Due today</h2>
-
-          <div className="space-y-2">
-            {dueToday.length > 0 ? (
-              dueToday.map(renderTask)
-            ) : (
-              <p className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-center text-sm text-slate-500">
-                Nothing due today.
-              </p>
-            )}
-          </div>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Overdue</h2>
-
-          <div className="space-y-2">
-            {overdue.length > 0 ? (
-              overdue.map(renderTask)
-            ) : (
-              <p className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-center text-sm text-slate-500">
-                Nothing overdue. Lovely.
-              </p>
-            )}
-          </div>
-        </section>
-      </div>
-
-        </>
         )}
-      {dayViewMode ===
-        "review" && (
-        <div>
-          {/* This month */}
+        </div>
+      </header>
 
-          <section className="mb-10">
-            <div className="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--sortd-teal-dark)]">
-                  This month
-                </p>
-
-                <h2 className="mt-1 text-xl font-semibold text-slate-950">
-                  {new Intl.DateTimeFormat(
-                    "en-GB",
-                    {
-                      month:
-                        "long",
-                      year:
-                        "numeric",
-                    },
-                  ).format(
-                    todayDate,
-                  )}
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  The projects
-                  you&aposre currently
-                  moving forward.
-                </p>
-              </div>
-
-              <span className="text-sm text-slate-400">
-                {
-                  currentMonthProjects.length
-                }{" "}
-                {currentMonthProjects.length ===
-                1
-                  ? "project"
-                  : "projects"}
-              </span>
-            </div>
-
-            {currentMonthProjects.length >
-            0 ? (
-              <div className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4">
-                {currentMonthProjects.map(
-                  renderReviewProject,
-                )}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-5 py-8 text-center">
-                <p className="font-medium text-slate-700">
-                  No projects
-                  scheduled this
-                  month.
-                </p>
-              </div>
-            )}
-          </section>
-
-          {/* Needs attention */}
-
-          <section className="mb-10">
-            <div className="mb-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--sortd-teal-dark)]">
-                Needs attention
-              </p>
-
-              <h2 className="mt-1 text-xl font-semibold text-slate-950">
-                Outstanding
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Things that have
-                already passed their
-                due date.
-              </p>
-            </div>
-
-            {overdue.length +
-              overdueRoutineTasks.length >
-            0 ? (
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-slate-700">
-                      Project tasks
-                    </h3>
-
-                    <span className="text-xs text-red-500">
-                      {
-                        overdue.length
-                      }
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {overdue.length >
-                    0 ? (
-                      overdue.map(
-                        renderTask,
-                      )
-                    ) : (
-                      <p className="text-sm text-slate-400">
-                        Nothing
-                        overdue.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-slate-700">
-                      Routines
-                    </h3>
-
-                    <span className="text-xs text-red-500">
-                      {
-                        overdueRoutineTasks.length
-                      }
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {overdueRoutineTasks.length >
-                    0 ? (
-                      overdueRoutineTasks.map(
-                        renderRoutineTask,
-                      )
-                    ) : (
-                      <p className="text-sm text-slate-400">
-                        Nothing
-                        overdue.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-5 py-6 text-center text-sm text-slate-500">
-                Nothing overdue.
-                Lovely.
-              </div>
-            )}
-          </section>
-
-          {/* Coming up */}
-
-          <section>
-            <div className="mb-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--sortd-teal-dark)]">
-                Coming up
-              </p>
-
-              <h2 className="mt-1 text-xl font-semibold text-slate-950">
-                Next 7 days
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Tasks and routines
-                that are heading your
-                way.
-              </p>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-700">
-                    Project tasks
-                  </h3>
-
-                  <span className="text-xs text-slate-400">
-                    {
-                      upcomingTasks.length
-                    }
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {upcomingTasks.length >
-                  0 ? (
-                    upcomingTasks.map(
-                      (task) => (
-                        <div
-                          key={`${task.projectId}-${task.id}`}
-                        >
-                          {renderTask(
-                            task,
-                          )}
-
-                          <p className="mt-1 px-3 text-right text-[11px] text-[var(--sortd-teal-dark)]">
-                            Due{" "}
-                            {formatShortDate(
-                              task.dueDate,
-                            )}
-                          </p>
+      {dayViewMode === "today" && (
+        <div className="space-y-7">
+          <div className="flex flex-wrap gap-x-5 gap-y-2 border-b border-[var(--sortd-border)] pb-4 text-sm text-slate-500">
+            <p><strong className="font-semibold text-slate-900">{dueToday.length + routineTasksDueToday.length}</strong> due today</p>
+            <p><strong className={overdue.length + overdueRoutineTasks.length > 0 ? "font-semibold text-red-700" : "font-semibold text-slate-900"}>{overdue.length + overdueRoutineTasks.length}</strong> overdue</p>
+            <p title="Estimates for items due today; excludes overdue items and items without an estimate.">{workloadMinutes > 0 ? `${formatDuration(workloadMinutes)} estimated today` : "No time estimated today"}</p>
+          </div>
+          {itemDisplayMode === "all" ? (
+            <section aria-label="All routines and tasks" className="space-y-2">
+              {allActionableItems.length > 0 ? allActionableItems.map((item) => item.kind === "routine" ? renderRoutineTask(item.task) : renderTask(item.task, { showStatus: true })) : <p className={emptyClassName}>Nothing needs your attention today.</p>}
+            </section>
+          ) : (
+            <>
+              <section aria-labelledby="my-day-routines">
+                <h2 id="my-day-routines" className="mb-3 text-base font-semibold text-slate-900">Routines <span className="ml-2 text-xs font-normal text-slate-500">{actionableRoutineTasks.length}</span></h2>
+                {actionableRoutineTasks.length > 0 ? (
+                  <DndContext collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
+                    <SortableContext items={routineGroups.flatMap((group) => group.tasks.map((task) => `${task.routineId}-${task.id}`))} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-5">
+                        {routineGroups.map((group) => (
+                          <section key={group.routineId} aria-label={group.routineName || "Untitled routine"}>
+                            <div className="mb-2 flex items-center justify-between gap-3">
+                              <h3 className="text-sm font-medium text-slate-700">{group.routineName || "Untitled routine"}</h3>
+                              <span className="text-xs text-slate-500">{group.tasks.length}</span>
+                            </div>
+                            <div className="space-y-2">
+                              {group.tasks.map((task) => <SortableMyDayRoutineTask key={`${task.routineId}-${task.id}`} task={task} today={today} onComplete={onCompleteRoutineTask} onEdit={setSelectedRoutineTask} />)}
+                            </div>
+                          </section>
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                ) : <p className={emptyClassName}>No routines due today.</p>}
+              </section>
+              <section aria-labelledby="my-day-tasks">
+                <h2 id="my-day-tasks" className="mb-3 text-base font-semibold text-slate-900">Tasks <span className="ml-2 text-xs font-normal text-slate-500">{actionableProjectTasks.length}</span></h2>
+                {taskGroups.length > 0 ? (
+                  <div className="space-y-5">
+                    {taskGroups.map((group) => (
+                      <section key={group.projectId} aria-label={group.projectName || "Untitled project"}>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <button type="button" onClick={() => onOpenProject(group.projectId)} className="text-left text-sm font-medium text-slate-700 hover:text-[var(--sortd-teal-dark)]">{group.projectName || "Untitled project"}</button>
+                          <span className="text-xs text-slate-500">{group.tasks.length}</span>
                         </div>
-                      ),
-                    )
-                  ) : (
-                    <p className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-center text-sm text-slate-500">
-                      Nothing due
-                      over the next
-                      week.
-                    </p>
-                  )}
-                </div>
-              </div>
+                        <div className="space-y-2">{group.tasks.map((task) => renderTask(task, { showStatus: true, showProject: false }))}</div>
+                      </section>
+                    ))}
+                  </div>
+                ) : <p className={emptyClassName}>No tasks due today.</p>}
+              </section>
+            </>
+          )}
+        </div>
+      )}
 
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-700">
-                    Routines
-                  </h3>
-
-                  <span className="text-xs text-slate-400">
-                    {
-                      upcomingRoutineTasks.length
-                    }
-                  </span>
-                </div>
-
+      {dayViewMode === "upcoming" && (
+        <section aria-labelledby="my-day-upcoming">
+          <h2 id="my-day-upcoming" className="text-lg font-semibold text-slate-900">Next 7 days</h2>
+          <p className="mt-1 mb-5 text-sm text-slate-500">Scheduled tasks and next routine due dates.</p>
+          <div className="space-y-6">
+            {upcomingDays.length > 0 ? upcomingDays.map((day) => (
+              <section key={day.key} aria-label={day.label}>
+                <h3 className="mb-3 text-sm font-semibold text-slate-700">{day.label}</h3>
                 <div className="space-y-2">
-                  {upcomingRoutineTasks.length >
-                  0 ? (
-                    upcomingRoutineTasks.map(
-                      (task) => (
-                        <button
-                          key={`${task.routineId}-${task.id}`}
-                          type="button"
-                          onClick={() =>
-                            setSelectedRoutineTask(
-                              task,
-                            )
-                          }
-                          className="flex w-full items-center justify-between gap-4 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3 text-left transition hover:bg-[var(--sortd-muted)]"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate font-medium text-slate-900">
-                              {task.title ||
-                                "Untitled routine task"}
-                            </p>
-
-                            <p className="mt-1 text-xs text-slate-500">
-                              {
-                                task.routineName
-                              }
-                            </p>
-                          </div>
-
-                          <span className="shrink-0 text-xs font-medium text-[var(--sortd-teal-dark)]">
-                            {formatShortDate(
-                              task.nextDueDate,
-                            )}
-                          </span>
-                        </button>
-                      ),
-                    )
-                  ) : (
-                    <p className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-center text-sm text-slate-500">
-                      No routines
-                      coming up this
-                      week.
-                    </p>
-                  )}
+                  {day.routines.map((task) => renderRoutineTask(task))}
+                  {day.tasks.map((task) => renderTask(task))}
                 </div>
-              </div>
+              </section>
+            )) : <p className={emptyClassName}>Nothing scheduled over the next week.</p>}
+          </div>
+        </section>
+      )}
+
+      {dayViewMode === "review" && (
+        <div className="space-y-7">
+          <section aria-labelledby="my-day-month">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 id="my-day-month" className="text-lg font-semibold text-slate-900">{new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(todayDate)}</h2>
+              <span className="text-xs text-slate-500">{currentMonthProjects.length} {currentMonthProjects.length === 1 ? "project" : "projects"}</span>
+            </div>
+            {currentMonthProjects.length > 0 ? <div className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4">{currentMonthProjects.map((project) => renderReviewProject(project))}</div> : <p className={emptyClassName}>No projects scheduled this month.</p>}
+          </section>
+          <section aria-labelledby="my-day-attention">
+            <h2 id="my-day-attention" className="mb-3 text-base font-semibold text-slate-900">Needs attention</h2>
+            <div className="space-y-2">
+              {overdueRoutineTasks.map((task) => renderRoutineTask(task))}
+              {overdue.map((task) => renderTask(task, { showStatus: true }))}
+              {overdue.length + overdueRoutineTasks.length === 0 && <p className={emptyClassName}>Nothing overdue. Lovely.</p>}
             </div>
           </section>
         </div>
       )}
 
-      {activeSummary &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                setActiveSummary(null);
-              }
-            }}
-          >
-            <section
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="my-day-summary-title"
-              className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-5 shadow-2xl md:p-7"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
-                    My Day
-                  </p>
-
-                  <h2
-                    id="my-day-summary-title"
-                    className="mt-1 text-2xl font-semibold text-slate-950"
-                  >
-                    {summaryTitle}
-                  </h2>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    {summaryDescription}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveSummary(null)}
-                  aria-label="Close summary"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
-                >
-                  ×
-                </button>
-              </div>
-
-              {activeSummary === "workload" && (
-                <div className="mt-5 rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3">
-                  <p className="text-sm text-teal-900">
-                    Estimated total:{" "}
-                    <span className="font-semibold">
-                      {formatDuration(workloadMinutes)}
-                    </span>
-                  </p>
-
-                  <p className="mt-1 text-xs text-teal-700">
-                    Items without an estimate are listed but do not add to the
-                    total.
-                  </p>
-                </div>
-              )}
-
-              <div className="mt-6 space-y-6">
-                {summaryProjectTasks.length > 0 && (
-                  <section>
-                    <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                      Project tasks
-                    </h3>
-
-                    <div className="space-y-2">
-                      {summaryProjectTasks.map(renderTask)}
-                    </div>
-                  </section>
-                )}
-
-                {summaryRoutineTasks.length > 0 && (
-                  <section>
-                    <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                      Routine tasks
-                    </h3>
-
-                    <div className="space-y-2">
-                      {summaryRoutineTasks.map(renderRoutineTask)}
-                    </div>
-                  </section>
-                )}
-
-                {summaryProjectTasks.length === 0 &&
-                  summaryRoutineTasks.length === 0 && (
-                    <div className="rounded-2xl bg-slate-50 px-5 py-10 text-center">
-                      <p className="font-medium text-slate-700">
-                        Nothing here.
-                      </p>
-
-                      <p className="mt-1 text-sm text-slate-500">
-                        {activeSummary === "overdue"
-                          ? "You have no overdue items."
-                          : "There are no items due today."}
-                      </p>
-                    </div>
-                  )}
-              </div>
-
-              <div className="mt-7 flex justify-end border-t border-slate-100 pt-5">
-                <button
-                  type="button"
-                  onClick={() => setActiveSummary(null)}
-                  className="rounded-xl bg-[var(--sortd-navy)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--sortd-navy-dark)]"
-                >
-                  Done
-                </button>
-              </div>
-            </section>
-          </div>,
-          document.body,
-        )}
         {selectedRoutineTask && (
           <ItemDetailsModal
             kind="routine"
-            item={selectedRoutineTask}
+            item={{ ...selectedRoutineTask, ...currentRoutineTask }}
             containerLabel="Routine"
             currentContainerId={
               selectedRoutineTask.routineId
