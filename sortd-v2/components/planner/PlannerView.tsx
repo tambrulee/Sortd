@@ -567,7 +567,7 @@ export default function PlannerView({
       <header className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] px-4 py-3 sm:px-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold text-[var(--sortd-text)]">Your week</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">Your week</h1>
             <p className="mt-1 text-xs text-[var(--sortd-text-muted)]">{formatDayHeader(dateKeys[0], settings.timeZone).date} – {formatDayHeader(dateKeys[dateKeys.length - 1], settings.timeZone).date} · Drag flexible tasks to reschedule.</p>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--sortd-text-muted)]">

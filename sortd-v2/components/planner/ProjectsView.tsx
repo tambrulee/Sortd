@@ -1207,15 +1207,9 @@ export default function ProjectsView({
     <div className="min-w-0 rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-4 text-[var(--sortd-text)] shadow-sm sm:p-5">
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-[var(--sortd-text)]">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
             Projects
           </h1>
-
-          <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">
-            Everything you’re
-            working on, in one
-            place.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
