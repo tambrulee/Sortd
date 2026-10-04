@@ -225,6 +225,7 @@ export default function Home() {
   });
 
   const [user, setUser] = useState<User | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const cloudReadyForUserRef = useRef<string | null>(null);
 
@@ -1157,9 +1158,21 @@ export default function Home() {
     <main className="flex min-h-screen flex-col bg-slate-50 text-slate-950">
       <Header />
 
-      <section className="flex flex-1 justify-center px-4 py-8">
-        <div className="grid w-full max-w-6xl gap-4 md:grid-cols-[260px_1fr]">
-          <div className="space-y-4">
+      <section className="flex flex-1 flex-col items-center gap-3 px-3 py-4 sm:px-4">
+        <div className="flex w-full max-w-[1600px] items-center">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen((open) => !open)}
+            aria-expanded={sidebarOpen}
+            aria-controls="workspace-sidebar"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 text-sm font-medium text-[var(--sortd-text)] hover:bg-[var(--sortd-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
+          >
+            <span aria-hidden="true">☰</span>
+            {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+          </button>
+        </div>
+        <div className={`grid w-full max-w-[1600px] min-w-0 gap-4 ${sidebarOpen ? "md:grid-cols-[260px_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)]"}`}>
+          <div id="workspace-sidebar" hidden={!sidebarOpen} className="space-y-4">
             <AuthPanel onUserChange={setUser} />
 
             <WorkspaceNav

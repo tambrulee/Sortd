@@ -66,15 +66,17 @@ type PlannerViewProps = {
 };
 
 const DAY_START_HOUR = 6;
-const DAY_END_HOUR = 23;
+const DAY_END_HOUR = 24;
 const SLOT_MINUTES = 30;
-const SLOT_HEIGHT = 42;
+const SLOT_HEIGHT = 120;
 const TIME_COLUMN_WIDTH = 64;
 const DAY_COLUMN_WIDTH = 154;
 
 const TOTAL_MINUTES = (DAY_END_HOUR - DAY_START_HOUR) * 60;
 const TOTAL_SLOTS = TOTAL_MINUTES / SLOT_MINUTES;
 const GRID_HEIGHT = TOTAL_SLOTS * SLOT_HEIGHT;
+const MIN_BLOCK_HEIGHT = 18;
+const GRID_BOTTOM_PADDING = MIN_BLOCK_HEIGHT + 12;
 
 function getDateKeyInTimeZone(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-GB", {
@@ -160,45 +162,39 @@ function getBlockTop(startTime: string) {
   return ((start - DAY_START_HOUR * 60) / SLOT_MINUTES) * SLOT_HEIGHT;
 }
 
-function getBlockHeight(
-  startTime: string,
-  endTime: string,
-  nextStartTime?: string,
-) {
-  const start = Math.max(
-    DAY_START_HOUR * 60,
-    timeToMinutes(startTime),
-  );
+function getBlockHeight(startTime: string, endTime: string) {
+  const start = Math.max(DAY_START_HOUR * 60, timeToMinutes(startTime));
+  const end = Math.min(DAY_END_HOUR * 60, timeToMinutes(endTime));
+  return Math.max(MIN_BLOCK_HEIGHT, ((Math.max(1, end - start)) / SLOT_MINUTES) * SLOT_HEIGHT - 3);
+}
 
-  const end = Math.min(
-    DAY_END_HOUR * 60,
-    timeToMinutes(endTime),
-  );
-
-  const durationMinutes = Math.max(1, end - start);
-
-  const realHeight =
-    (durationMinutes / SLOT_MINUTES) * SLOT_HEIGHT;
-
-  const desiredHeight = Math.max(
-    24,
-    realHeight - 2,
-  );
-
-  if (!nextStartTime) {
-    return desiredHeight;
+// Share horizontal space when events overlap, including the minimum visual height.
+// Keep their true start times on the calendar rather than pushing later events down.
+function layoutDayBlocks(blocks: ScheduledBlock[]) {
+  const sorted = [...blocks].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+  const groups: { block: ScheduledBlock; lane: number }[][] = [];
+  let group: { block: ScheduledBlock; lane: number }[] = [];
+  let laneEnds: number[] = [];
+  let groupEnd = -Infinity;
+  for (const block of sorted) {
+    const top = getBlockTop(block.startTime);
+    if (top >= groupEnd) {
+      if (group.length) groups.push(group);
+      group = [];
+      laneEnds = [];
+    }
+    let lane = laneEnds.findIndex((end) => end <= top);
+    if (lane === -1) lane = laneEnds.length;
+    const end = top + getBlockHeight(block.startTime, block.endTime);
+    laneEnds[lane] = end;
+    groupEnd = Math.max(...laneEnds);
+    group.push({ block, lane });
   }
-
-  const nextStart = timeToMinutes(nextStartTime);
-  const gapMinutes = nextStart - start;
-
-  const availableHeight =
-    (gapMinutes / SLOT_MINUTES) * SLOT_HEIGHT - 4;
-
-  return Math.max(
-    12,
-    Math.min(desiredHeight, availableHeight),
-  );
+  if (group.length) groups.push(group);
+  return groups.flatMap((items) => {
+    const lanes = Math.max(...items.map((item) => item.lane)) + 1;
+    return items.map((item) => ({ ...item, lanes }));
+  });
 }
 
 function matchesOverride(block: ScheduledBlock, override: PlannerOverride) {
@@ -245,10 +241,10 @@ function CalendarSlot({
       ref={setNodeRef}
       className={`absolute left-0 right-0 border-t transition ${
         isOver
-          ? "z-20 border-[#b53fd0] bg-purple-100/70"
+          ? "z-20 border-[var(--sortd-teal-dark)] bg-[var(--sortd-teal)]/15"
           : startTime.endsWith(":00")
-            ? "border-slate-200"
-            : "border-slate-100"
+            ? "border-[var(--sortd-border)]"
+            : "border-[var(--sortd-border)]/40"
       }`}
       style={{
         top:
@@ -258,7 +254,7 @@ function CalendarSlot({
       }}
     >
       {isOver && (
-        <div className="pointer-events-none absolute left-1 right-1 top-0 h-0.5 bg-[#b53fd0]" />
+        <div className="pointer-events-none absolute left-1 right-1 top-0 h-0.5 bg-[var(--sortd-teal-dark)]" />
       )}
     </div>
   );
@@ -266,7 +262,8 @@ function CalendarSlot({
 
 function CalendarTaskBlock({
   block,
-  nextStartTime,
+  lane,
+  lanes,
   anchored,
   manuallyPlaced,
   onComplete,
@@ -274,7 +271,8 @@ function CalendarTaskBlock({
   onResetToAuto,
 }: {
   block: ScheduledBlock;
-  nextStartTime?: string;
+  lane: number;
+  lanes: number;
   anchored: boolean;
   manuallyPlaced: boolean;
   onComplete: () => void;
@@ -288,18 +286,14 @@ function CalendarTaskBlock({
       data: { block },
     });
 
-  const height = getBlockHeight(
-    block.startTime,
-    block.endTime,
-    nextStartTime,
-  );
-
-  const isShortBlock =
-    block.durationMinutes < 20;
+  const height = getBlockHeight(block.startTime, block.endTime);
+  const compact = height < 52;
 
   const style = {
     top: `${getBlockTop(block.startTime) + 2}px`,
     height: `${height}px`,
+    left: `calc(${(lane / lanes) * 100}% + 4px)`,
+    width: `calc(${100 / lanes}% - 8px)`,
     transform: transform
       ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
       : undefined,
@@ -309,81 +303,48 @@ function CalendarTaskBlock({
     <article
       ref={setNodeRef}
       style={style}
-      className={`absolute left-1 right-1 z-10 overflow-hidden rounded-lg border shadow-sm transition ${
-        isShortBlock ? "px-1.5 py-0" : "px-2 py-1.5"
-      } ${
+      className={`absolute z-10 overflow-hidden rounded-md border border-l-[3px] transition ${compact ? "px-1 py-0" : "px-1.5 py-1"} ${
         isDragging
-          ? "z-50 border-[#b53fd0] bg-[var(--sortd-bg)] opacity-90 shadow-xl"
+          ? "z-50 border-[var(--sortd-teal-dark)] bg-[var(--sortd-card)] opacity-90 shadow-xl"
           : anchored
-            ? "border-slate-200 bg-slate-100"
+            ? "border-[var(--sortd-border)] bg-[var(--sortd-muted)]"
             : manuallyPlaced
-              ? "border-[#d9a7e7] bg-purple-50"
-              : "border-slate-200 bg-[var(--sortd-bg)]"
+              ? "border-[var(--sortd-teal)] bg-[var(--sortd-muted)]"
+              : "border-[var(--sortd-border)] border-l-[var(--sortd-teal-dark)] bg-[var(--sortd-surface)]"
       }`}
     >
-      <div className="flex h-full min-w-0 items-start gap-1.5">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onComplete();
-          }}
-          aria-label={`Complete ${block.title}`}
-          className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[var(--sortd-teal-dark)] text-[9px] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
-        >
-          ✓
-        </button>
-
-        <button
-          type="button"
-          onClick={onEdit}
-          className="min-w-0 flex-1 text-left"
-          title={block.title}
-        >
-          <p className="truncate text-[12px] font-semibold leading-tight text-slate-900">
-            {block.title}
-          </p>
-
-          {manuallyPlaced && !anchored && height >= 48 && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(event) => {
-                event.stopPropagation();
-                onResetToAuto();
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onResetToAuto();
-                }
-              }}
-              className="mt-1 inline-block text-[9px] font-medium text-purple-600 hover:text-purple-800"
-              title="Let Sort'd choose again"
-            >
-              ↺ auto
-            </span>
+      {compact ? (
+        <div className="flex h-full min-w-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={onEdit}
+            title={`${block.title} · ${block.startTime}–${block.endTime}`}
+            aria-label={`${block.title}, ${block.startTime} to ${block.endTime}. Edit task.`}
+            className="flex h-full min-w-0 flex-1 items-center gap-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
+          >
+            <span className="min-w-0 flex-1 truncate text-[11px] font-medium leading-4 text-[var(--sortd-text)]">{block.title}</span>
+            <span className="shrink-0 text-[9px] leading-4 tabular-nums text-[var(--sortd-text-muted)]">{block.startTime}–{block.endTime}</span>
+          </button>
+          {!anchored && (
+            <button type="button" {...attributes} {...listeners} aria-label={`Move ${block.title}`} title="Drag to reschedule" className="flex h-full w-3 shrink-0 touch-none cursor-grab items-center justify-center text-[10px] text-[var(--sortd-text-muted)]">⋮</button>
           )}
+        </div>
+      ) : (
+      <div className="flex h-full min-w-0 items-start gap-1">
+        <button type="button" onClick={(event) => { event.stopPropagation(); onComplete(); }} aria-label={`Complete ${block.title}`} title={`Complete ${block.title}`} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md hover:bg-[var(--sortd-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]">
+          <span aria-hidden="true" className="h-3.5 w-3.5 rounded border border-[var(--sortd-teal-dark)]" />
         </button>
-
-        <button
-          type="button"
-          {...(!anchored ? attributes : {})}
-          {...(!anchored ? listeners : {})}
-          aria-label={
-            anchored ? `${block.title} is anchored` : `Move ${block.title}`
-          }
-          title={anchored ? "Anchored routine" : "Drag to reschedule"}
-          className={`shrink-0 rounded px-0.5 text-[10px] leading-none ${
-            anchored
-              ? "cursor-default text-slate-300"
-              : "cursor-grab text-slate-400 hover:text-slate-700 active:cursor-grabbing"
-          }`}
-        >
-          {anchored ? "🔒" : "⋮⋮"}
+        <button type="button" onClick={onEdit} className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]" title={`${block.title} · ${block.startTime}–${block.endTime}`}>
+          <p className="truncate text-xs font-medium leading-5 text-[var(--sortd-text)]">{block.title}</p>
+          <p className="whitespace-nowrap text-[11px] leading-4 tabular-nums text-[var(--sortd-text-muted)]">{block.startTime}–{block.endTime}</p>
         </button>
+        {manuallyPlaced && !anchored && <button type="button" onClick={onResetToAuto} aria-label={`Return ${block.title} to automatic scheduling`} title="Let Sort’d choose again" className="flex h-6 w-5 shrink-0 items-center justify-center rounded text-xs text-[var(--sortd-teal-dark)] hover:bg-[var(--sortd-muted)]">↺</button>}
+        {!anchored ? (
+          <button type="button" {...attributes} {...listeners} aria-label={`Move ${block.title}`} title="Drag to reschedule" className="flex h-6 w-5 shrink-0 touch-none cursor-grab items-center justify-center rounded text-xs text-[var(--sortd-text-muted)] active:cursor-grabbing">⋮⋮</button>
+        ) : <span title="Anchored routine" aria-label="Anchored routine" className="shrink-0 text-[10px] text-[var(--sortd-text-muted)]">🔒</span>}
       </div>
+      )}
+
     </article>
   );
 }
@@ -463,7 +424,8 @@ export default function PlannerView({
 
   const dateKeys = useMemo(() => getScheduleDateKeys(today, 7), [today]);
 
-  const plannedMinutes = schedule.blocks.reduce(
+  const weekBlocks = schedule.blocks.filter((block) => dateKeys.includes(block.date));
+  const plannedMinutes = weekBlocks.reduce(
     (total, block) => total + block.durationMinutes,
     0,
   );
@@ -591,62 +553,55 @@ export default function PlannerView({
       ? ((currentMinutes - DAY_START_HOUR * 60) / SLOT_MINUTES) * SLOT_HEIGHT
       : undefined;
 
+  const calendarDayWidths = dateKeys.map(() => DAY_COLUMN_WIDTH);
+  const calendarWidth = TIME_COLUMN_WIDTH + calendarDayWidths.reduce(
+    (total, width) => total + width, 0,
+  );
+  const calendarColumns = [
+    `${TIME_COLUMN_WIDTH}px`,
+    ...calendarDayWidths.map((width) => `${width}px`),
+  ].join(" ");
+
   return (
-    <div className="w-full min-w-0 max-w-full space-y-5 overflow-hidden">
-      <div className="rounded-3xl bg-[var(--sortd-bg)]/85 p-5 shadow-xl backdrop-blur-md md:p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="w-full min-w-0 max-w-full space-y-3">
+      <header className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] px-4 py-3 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--sortd-teal-dark)]">
-              Planner
-            </p>
-
-            <h1 className="mt-1 text-3xl font-bold text-slate-950">Your week</h1>
-
-            <p className="mt-2 max-w-2xl text-sm text-slate-500">
-              Drag flexible work onto a time slot. Sort&apos;d replans everything
-              else around that decision.
-            </p>
+            <h1 className="text-xl font-semibold text-[var(--sortd-text)]">Your week</h1>
+            <p className="mt-1 text-xs text-[var(--sortd-text-muted)]">{formatDayHeader(dateKeys[0], settings.timeZone).date} – {formatDayHeader(dateKeys[dateKeys.length - 1], settings.timeZone).date} · Drag flexible tasks to reschedule.</p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={replan}
-              className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-4 py-3 text-sm font-semibold text-[var(--sortd-teal-dark)] transition hover:bg-purple-50"
-              title="Rebuild the schedule now"
-            >
-              ↻ Replan
-            </button>
-
-            <div className="rounded-xl bg-[#f3eeee] px-4 py-3 text-center">
-              <p className="text-xl font-bold">{schedule.blocks.length}</p>
-              <p className="text-xs text-slate-500">Planned</p>
-            </div>
-
-            <div className="rounded-xl bg-[#f3eeee] px-4 py-3 text-center">
-              <p className="text-xl font-bold">{formatMinutes(plannedMinutes)}</p>
-              <p className="text-xs text-slate-500">Scheduled</p>
-            </div>
+          <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--sortd-text-muted)]">
+            <span><strong className="text-[var(--sortd-text)]">{weekBlocks.length}</strong> planned</span>
+            <span><strong className="text-[var(--sortd-text)]">{formatMinutes(plannedMinutes)}</strong> scheduled</span>
+            <button type="button" onClick={replan} className="min-h-11 rounded-lg bg-[var(--sortd-navy)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--sortd-navy-dark)]">↻ Replan</button>
           </div>
         </div>
-      </div>
+      </header>
 
+      <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="min-w-0">
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        <div className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pb-2">
+        <div
+          className="w-full min-w-0 max-w-full overflow-auto overscroll-contain rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] shadow-sm"
+          style={{ height: "min(680px, 70dvh)" }}
+          tabIndex={0}
+          role="region"
+          aria-label="Schedule. Scroll horizontally for more days and vertically for more times."
+        >
           <div
-            className="overflow-hidden rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] shadow-sm"
+            className="bg-[var(--sortd-card)]"
             style={{
-              width: TIME_COLUMN_WIDTH + DAY_COLUMN_WIDTH * dateKeys.length,
-              minWidth: TIME_COLUMN_WIDTH + DAY_COLUMN_WIDTH * dateKeys.length,
+              width: calendarWidth,
+              minWidth: calendarWidth,
             }}
           >
             <div
-              className="grid border-b border-slate-200 bg-[var(--sortd-bg)]"
+              className="sticky top-0 z-40 grid border-b border-[var(--sortd-border)] bg-[var(--sortd-card)]"
               style={{
-                gridTemplateColumns: `${TIME_COLUMN_WIDTH}px repeat(${dateKeys.length}, ${DAY_COLUMN_WIDTH}px)`,
+                gridTemplateColumns: calendarColumns,
               }}
             >
-              <div className="border-r border-slate-200 bg-[var(--sortd-bg)]" />
+              <div className="sticky left-0 z-50 border-r border-[var(--sortd-border)] bg-[var(--sortd-card)]" />
 
               {dateKeys.map((dateKey) => {
                 const { weekday, date } = formatDayHeader(
@@ -657,8 +612,8 @@ export default function PlannerView({
                 return (
                   <div
                     key={dateKey}
-                    className={`relative border-r border-slate-200 px-2 py-3 last:border-r-0 ${
-                      dateKey === today ? "bg-purple-50/70" : "bg-[var(--sortd-bg)]"
+                    className={`relative border-r border-[var(--sortd-border)] px-2 py-3 last:border-r-0 ${
+                      dateKey === today ? "bg-[var(--sortd-teal)]/10" : "bg-[var(--sortd-card)]"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -667,13 +622,13 @@ export default function PlannerView({
                           className={`text-sm font-bold ${
                             dateKey === today
                               ? "text-[var(--sortd-teal-dark)]"
-                              : "text-slate-900"
+                              : "text-[var(--sortd-text)]"
                           }`}
                         >
                           {weekday}
                         </p>
 
-                        <p className="text-[11px] text-slate-500">{date}</p>
+                        <p className="text-[11px] text-[var(--sortd-text-muted)]">{date}</p>
                       </div>
 
                       <button
@@ -682,7 +637,8 @@ export default function PlannerView({
                           setNewAdhocDate(dateKey);
                           setNewAdhocTitle("");
                         }}
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#f3eeee] text-xs font-semibold text-[var(--sortd-teal-dark)] transition hover:bg-[#eaddea]"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--sortd-muted)] text-xs font-semibold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-border)]"
+                        aria-label={`Add task for ${date}`}
                         title="Add an ad hoc task"
                       >
                         +
@@ -690,7 +646,7 @@ export default function PlannerView({
                     </div>
 
                     {newAdhocDate === dateKey && (
-                      <div className="absolute left-1 right-1 top-full z-40 mt-1 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] p-2 shadow-xl">
+                      <div className="absolute left-1 right-1 top-full z-40 mt-1 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-2 shadow-xl">
                         <input
                           value={newAdhocTitle}
                           onChange={(event) =>
@@ -708,7 +664,7 @@ export default function PlannerView({
                           }}
                           placeholder="Add task…"
                           autoFocus
-                          className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-[var(--sortd-teal-dark)]"
+                          className="w-full rounded-lg border border-[var(--sortd-border)] px-2 py-1.5 text-xs outline-none focus:border-[var(--sortd-teal-dark)]"
                         />
 
                         <div className="mt-2 flex gap-1">
@@ -727,7 +683,7 @@ export default function PlannerView({
                               setNewAdhocDate(null);
                               setNewAdhocTitle("");
                             }}
-                            className="px-2 py-1 text-[10px] text-slate-500"
+                            className="px-2 py-1 text-[10px] text-[var(--sortd-text-muted)]"
                           >
                             Cancel
                           </button>
@@ -742,12 +698,12 @@ export default function PlannerView({
             <div
               className="grid"
               style={{
-                gridTemplateColumns: `${TIME_COLUMN_WIDTH}px repeat(${dateKeys.length}, ${DAY_COLUMN_WIDTH}px)`,
+                gridTemplateColumns: calendarColumns,
               }}
             >
               <div
-                className="relative border-r border-slate-200 bg-[var(--sortd-bg)]"
-                style={{ height: GRID_HEIGHT }}
+                className="sticky left-0 z-30 border-r border-[var(--sortd-border)] bg-[var(--sortd-card)]"
+                style={{ height: GRID_HEIGHT + GRID_BOTTOM_PADDING }}
               >
                 {Array.from({
                   length: DAY_END_HOUR - DAY_START_HOUR + 1,
@@ -758,10 +714,10 @@ export default function PlannerView({
                   return (
                     <div
                       key={hour}
-                      className="absolute left-0 right-0 border-t border-slate-200"
+                      className="absolute left-0 right-0 border-t border-[var(--sortd-border)]"
                       style={{ top }}
                     >
-                      <span className="absolute right-2 -translate-y-1/2 bg-[var(--sortd-bg)] px-1 text-[10px] text-slate-400">
+                      <span className="absolute right-2 -translate-y-1/2 bg-[var(--sortd-card)] px-1 text-xs tabular-nums text-[var(--sortd-text-muted)]">
                         {minutesToTime(hour * 60)}
                       </span>
                     </div>
@@ -770,17 +726,15 @@ export default function PlannerView({
               </div>
 
               {dateKeys.map((dateKey) => {
-                const dayBlocks = schedule.blocks.filter(
-                  (block) => block.date === dateKey,
-                );
+                const dayBlocks = layoutDayBlocks(weekBlocks.filter((block) => block.date === dateKey));
 
                 return (
                   <div
                     key={dateKey}
-                    className={`relative border-r border-slate-200 last:border-r-0 ${
-                      dateKey === today ? "bg-purple-50/20" : "bg-[var(--sortd-bg)]"
+                    className={`relative border-r border-[var(--sortd-border)] last:border-r-0 ${
+                      dateKey === today ? "bg-[var(--sortd-teal)]/5" : "bg-[var(--sortd-card)]"
                     }`}
-                    style={{ height: GRID_HEIGHT }}
+                    style={{ height: GRID_HEIGHT + GRID_BOTTOM_PADDING }}
                   >
                     {Array.from({ length: TOTAL_SLOTS }).map((_, slotIndex) => {
                       const minutes =
@@ -800,14 +754,12 @@ export default function PlannerView({
                         className="pointer-events-none absolute left-0 right-0 z-30 flex items-center"
                         style={{ top: currentTimeTop }}
                       >
-                        <span className="h-2 w-2 -translate-x-1/2 rounded-full bg-[#b53fd0]" />
-                        <span className="h-0.5 flex-1 bg-[#b53fd0]" />
+                        <span className="h-2 w-2 -translate-x-1/2 rounded-full bg-[var(--sortd-teal-dark)]" />
+                        <span className="h-0.5 flex-1 bg-[var(--sortd-teal-dark)]" />
                       </div>
                     )}
 
-                    {dayBlocks.map((block, index) => {
-                      const nextStartTime =
-                        dayBlocks[index + 1]?.startTime;
+                    {dayBlocks.map(({ block, lane, lanes }) => {
                       const routineTask = getRoutineTaskForBlock(
                         routines,
                         block,
@@ -828,7 +780,8 @@ export default function PlannerView({
                         <CalendarTaskBlock
                           key={block.id}
                           block={block}
-                          nextStartTime={nextStartTime}
+                          lane={lane}
+                          lanes={lanes}
                           anchored={anchored}
                           manuallyPlaced={manuallyPlaced}
                           onComplete={() => completeBlock(block)}
@@ -844,27 +797,33 @@ export default function PlannerView({
           </div>
         </div>
       </DndContext>
-
+      </div>
+      <aside
+        className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)]"
+        style={{ height: "min(680px, 70dvh)" }}
+        aria-label="Scheduled task agenda"
+      >
+        <div className="border-b border-[var(--sortd-border)] px-4 py-3">
+          <h2 className="text-sm font-semibold text-[var(--sortd-text)]">Your agenda</h2>
+          <p className="mt-1 text-xs text-[var(--sortd-text-muted)]">Full task details, in time order.</p>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
       {schedule.unscheduled.length > 0 && (
-        <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
-          <h2 className="font-semibold text-amber-950">
-            Couldn&apos;t fit everything
-          </h2>
-
-          <p className="mt-1 text-sm text-amber-800">
-            These still need space. You can edit their duration or constraints,
-            or move other flexible work out of the way.
-          </p>
-
-          <div className="mt-4 grid gap-2 md:grid-cols-2">
+        <details className="group rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)]">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm [&::-webkit-details-marker]:hidden">
+            <span className="font-medium text-[var(--sortd-text)]">Needs space <span className="ml-2 rounded-full bg-[var(--sortd-muted)] px-2 py-0.5 text-xs">{schedule.unscheduled.length}</span></span>
+            <span className="text-[var(--sortd-text-muted)] transition group-open:rotate-180" aria-hidden="true">⌄</span>
+          </summary>
+          <p className="px-4 text-xs text-[var(--sortd-text-muted)]">These items couldn’t be scheduled. Edit their timing or free up space, then replan.</p>
+          <div className="mt-3 grid max-h-64 gap-2 overflow-y-auto overscroll-contain px-4 pb-4">
             {schedule.unscheduled.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between gap-4 rounded-xl bg-[var(--sortd-bg)]/70 px-4 py-3"
+                className="flex items-center justify-between gap-4 min-w-0 rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3"
               >
-                <div>
-                  <p className="font-medium text-slate-900">{item.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">{item.reason}</p>
+                <div className="min-w-0">
+                  <p className="break-words text-sm font-medium text-[var(--sortd-text)]">{item.title}</p>
+                  <p className="mt-1 text-xs text-[var(--sortd-text-muted)]">{item.reason}</p>
                 </div>
 
                 <button
@@ -876,15 +835,58 @@ export default function PlannerView({
                       parentId: item.parentId,
                     })
                   }
-                  className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-amber-900 transition hover:bg-amber-100"
+                  className="min-h-11 shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-muted)]"
                 >
                   Edit
                 </button>
               </div>
             ))}
           </div>
-        </section>
+        </details>
       )}
+
+
+          {dateKeys.map((dateKey) => {
+            const blocks = weekBlocks
+              .filter((block) => block.date === dateKey)
+              .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+            const { weekday, date } = formatDayHeader(dateKey, settings.timeZone);
+            return (
+              <section key={dateKey} aria-label={`${weekday} ${date}`}>
+                <h3 className="sticky top-0 z-10 flex items-center justify-between bg-[var(--sortd-muted)] px-4 py-2 text-xs font-semibold text-[var(--sortd-text)]">
+                  <span>{date}</span><span>{weekday}</span>
+                </h3>
+                {blocks.length === 0 ? (
+                  <p className="px-4 py-3 text-xs text-[var(--sortd-text-muted)]">No tasks scheduled.</p>
+                ) : blocks.map((block) => (
+                  <div key={block.id} className="flex items-start gap-2 border-b border-[var(--sortd-border)] px-3 py-2.5 last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => completeBlock(block)}
+                      aria-label={`Complete ${block.title}`}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-[var(--sortd-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
+                    >
+                      <span aria-hidden="true" className="h-4 w-4 rounded-full border border-[var(--sortd-teal-dark)]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openBlock(block)}
+                      className="min-h-11 min-w-0 flex-1 rounded py-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
+                    >
+                      <p className="break-words text-sm font-medium text-[var(--sortd-text)]">{block.title}</p>
+                      <p className="mt-1 text-xs tabular-nums text-[var(--sortd-text-muted)]">{block.startTime}–{block.endTime}</p>
+                    </button>
+                  </div>
+                ))}
+              </section>
+            );
+          })}
+        </div>
+        <div className="border-t border-[var(--sortd-border)] p-2">
+          <button type="button" onClick={replan} className="min-h-11 w-full rounded-lg bg-[var(--sortd-muted)] text-sm font-medium text-[var(--sortd-text)] hover:bg-[var(--sortd-surface)]">↻ Refresh schedule</button>
+        </div>
+      </aside>
+      </div>
 
       {selectedItem && selectedRoutineTask && (
         <ItemDetailsModal

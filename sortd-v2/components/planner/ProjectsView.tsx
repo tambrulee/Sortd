@@ -121,17 +121,17 @@ function getProjectStatusColour(
       return "bg-slate-300";
 
     case "planned":
-      return "bg-sky-400";
+      return "bg-[var(--sortd-teal)]";
 
     case "paused":
       return "bg-amber-400";
 
     case "completed":
-      return "bg-slate-500";
+      return "bg-[var(--sortd-muted)]0";
 
     case "active":
     default:
-      return "bg-emerald-400";
+      return "bg-[var(--sortd-teal)]";
   }
 }
 
@@ -1204,14 +1204,14 @@ export default function ProjectsView({
   }
 
   return (
-    <div className="min-w-0 rounded-3xl bg-[var(--sortd-bg)]/90 p-5 shadow-xl backdrop-blur-md md:p-7">
-      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div className="min-w-0 rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-4 text-[var(--sortd-text)] shadow-sm sm:p-5">
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+          <h1 className="text-xl font-semibold tracking-tight text-[var(--sortd-text)]">
             Projects
           </h1>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">
             Everything you’re
             working on, in one
             place.
@@ -1219,9 +1219,9 @@ export default function ProjectsView({
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-3 text-sm text-slate-500">
+          <div className="flex items-center gap-3 text-sm text-[var(--sortd-text-muted)]">
             <span>
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-[var(--sortd-text)]">
                 {
                   projects.length
                 }
@@ -1234,13 +1234,13 @@ export default function ProjectsView({
 
             <span
               aria-hidden="true"
-              className="text-slate-300"
+              className="text-[var(--sortd-border)]"
             >
               ·
             </span>
 
             <span>
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-[var(--sortd-text)]">
                 {
                   openTaskCount
                 }
@@ -1250,20 +1250,21 @@ export default function ProjectsView({
           </div>
 
           
-          <div className="flex rounded-xl bg-slate-100 p-1">
+          <div className="flex rounded-xl bg-[var(--sortd-muted)] p-1">
             {/* List */}
             <button
               type="button"
+              aria-pressed={viewMode === "list"}
               onClick={() =>
                 setViewMode(
                   "list",
                 )
               }
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+              className={`min-h-11 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
                 viewMode ===
                 "list"
-                  ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
+                  ? "bg-[var(--sortd-card)] text-[var(--sortd-text)] shadow-sm"
+                  : "text-[var(--sortd-text-muted)] hover:text-[var(--sortd-text)]"
               }`}
             >
               List
@@ -1271,16 +1272,17 @@ export default function ProjectsView({
             {/* Board */}
             <button
               type="button"
+              aria-pressed={viewMode === "board"}
               onClick={() =>
                 setViewMode(
                   "board",
                 )
               }
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+              className={`min-h-11 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
                 viewMode ===
                 "board"
-                  ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
+                  ? "bg-[var(--sortd-card)] text-[var(--sortd-text)] shadow-sm"
+                  : "text-[var(--sortd-text-muted)] hover:text-[var(--sortd-text)]"
               }`}
             >
               Board
@@ -1288,16 +1290,17 @@ export default function ProjectsView({
             {/* Timeline */}
             <button
               type="button"
+              aria-pressed={viewMode === "timeline"}
               onClick={() =>
                 setViewMode(
                   "timeline",
                 )
               }
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+              className={`min-h-11 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
                 viewMode ===
                 "timeline"
-                  ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
+                  ? "bg-[var(--sortd-card)] text-[var(--sortd-text)] shadow-sm"
+                  : "text-[var(--sortd-text-muted)] hover:text-[var(--sortd-text)]"
               }`}
             >
               Timeline
@@ -1353,24 +1356,24 @@ export default function ProjectsView({
                         null,
                       );
                     }}
-                    className="min-h-[360px] rounded-2xl bg-slate-50 p-3"
+                    className="min-h-[360px] rounded-2xl bg-[var(--sortd-muted)] p-3"
                   >
                     <div className="mb-3 flex items-start justify-between gap-2 px-1">
                       <div>
-                        <h2 className="text-sm font-semibold text-slate-900">
+                        <h2 className="text-sm font-semibold text-[var(--sortd-text)]">
                           {
                             column.label
                           }
                         </h2>
 
-                        <p className="mt-0.5 text-[11px] text-slate-400">
+                        <p className="mt-0.5 text-[11px] text-[var(--sortd-text-muted)]">
                           {
                             column.description
                           }
                         </p>
                       </div>
 
-                      <span className="rounded-full bg-[var(--sortd-bg)] px-2 py-0.5 text-xs font-medium text-slate-500 shadow-sm">
+                      <span className="rounded-full bg-[var(--sortd-card)] px-2 py-0.5 text-xs font-medium text-[var(--sortd-text-muted)] shadow-sm">
                         {
                           columnProjects.length
                         }
@@ -1431,15 +1434,15 @@ export default function ProjectsView({
                                   project.id,
                                 )
                               }
-                              className={`cursor-pointer rounded-xl border bg-[var(--sortd-bg)] p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md ${
+                              className={`cursor-pointer rounded-xl border bg-[var(--sortd-card)] p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--sortd-teal-dark)] hover:shadow-md ${
                                 draggedProjectId ===
                                 project.id
                                   ? "opacity-40"
-                                  : "border-slate-200"
+                                  : "border-[var(--sortd-border)]"
                               }`}
                             >
                               <div className="flex items-start justify-between gap-2">
-                                <h3 className="min-w-0 truncate text-sm font-semibold text-slate-900">
+                                <h3 className="min-w-0 truncate text-sm font-semibold text-[var(--sortd-text)]">
                                   {project.name ||
                                     "Untitled project"}
                                 </h3>
@@ -1447,14 +1450,14 @@ export default function ProjectsView({
                                 {project.id ===
                                   activeProjectId && (
                                   <span
-                                    className="mt-1 h-2 w-2 shrink-0 rounded-full bg-fuchsia-400"
+                                    className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--sortd-teal)]"
                                     title="Current project"
                                   />
                                 )}
                               </div>
 
                               {project.description && (
-                                <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-slate-500">
+                                <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-[var(--sortd-text-muted)]">
                                   {
                                     project.description
                                   }
@@ -1463,7 +1466,7 @@ export default function ProjectsView({
 
                               {(project.startDate ||
                                 project.targetDate) && (
-                                <div className="mt-3 flex items-center gap-1 text-[11px] text-slate-500">
+                                <div className="mt-3 flex items-center gap-1 text-[11px] text-[var(--sortd-text-muted)]">
                                   <span>
                                     {formatProjectDate(
                                       project.startDate,
@@ -1471,7 +1474,7 @@ export default function ProjectsView({
                                       "No start"}
                                   </span>
 
-                                  <span className="text-slate-300">
+                                  <span className="text-[var(--sortd-border)]">
                                     →
                                   </span>
 
@@ -1487,7 +1490,7 @@ export default function ProjectsView({
                               {totalTasks >
                                 0 && (
                                 <div className="mt-3">
-                                  <div className="mb-1.5 flex items-center justify-between text-[11px] text-slate-500">
+                                  <div className="mb-1.5 flex items-center justify-between text-[11px] text-[var(--sortd-text-muted)]">
                                     <span>
                                       {
                                         openTasks
@@ -1507,9 +1510,9 @@ export default function ProjectsView({
                                     </span>
                                   </div>
 
-                                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                                  <div className="h-1.5 overflow-hidden rounded-full bg-[var(--sortd-muted)]">
                                     <div
-                                      className="h-full rounded-full bg-slate-400 transition-all"
+                                      className="h-full rounded-full bg-[var(--sortd-teal-dark)] transition-all"
                                       style={{
                                         width: `${progress}%`,
                                       }}
@@ -1524,7 +1527,7 @@ export default function ProjectsView({
 
                       {columnProjects.length ===
                         0 && (
-                        <div className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
+                        <div className="rounded-xl border border-dashed border-[var(--sortd-border)] px-3 py-6 text-center text-xs text-[var(--sortd-text-muted)]">
                           Drop a
                           project
                           here
@@ -1547,12 +1550,12 @@ export default function ProjectsView({
             <>
               <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-900">
+                  <h2 className="text-sm font-semibold text-[var(--sortd-text)]">
                     Project
                     timeline
                   </h2>
 
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-[var(--sortd-text-muted)]">
                     Drag a bar
                     to move a
                     project. Drag
@@ -1562,7 +1565,7 @@ export default function ProjectsView({
                   </p>
                 </div>
 
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-[var(--sortd-text-muted)]">
                   {
                     datedProjects.length
                   }{" "}
@@ -1574,7 +1577,7 @@ export default function ProjectsView({
                 </span>
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50">
+              <div className="overflow-x-auto rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)]">
                 <div
                   style={{
                     width:
@@ -1585,13 +1588,13 @@ export default function ProjectsView({
                   {/* Calendar header */}
 
                   <div
-                    className="grid border-b border-slate-200 bg-[var(--sortd-bg)]"
+                    className="grid border-b border-[var(--sortd-border)] bg-[var(--sortd-card)]"
                     style={{
                       gridTemplateColumns: `220px ${timelineWidth}px`,
                     }}
                   >
-                    <div className="sticky left-0 z-30 flex items-end border-r border-slate-200 bg-[var(--sortd-bg)] px-4 py-3">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    <div className="sticky left-0 z-30 flex items-end border-r border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--sortd-text-muted)]">
                         Project
                       </span>
                     </div>
@@ -1607,7 +1610,7 @@ export default function ProjectsView({
                             key={
                               month.key
                             }
-                            className="absolute top-0 flex h-8 items-center border-r border-slate-200 px-2 text-xs font-semibold text-slate-700"
+                            className="absolute top-0 flex h-8 items-center border-r border-[var(--sortd-border)] px-2 text-xs font-semibold text-[var(--sortd-text)]"
                             style={{
                               left:
                                 month.startIndex *
@@ -1638,14 +1641,14 @@ export default function ProjectsView({
                             key={`${toDateString(
                               date,
                             )}-header`}
-                            className="absolute bottom-0 h-10 border-l border-slate-200"
+                            className="absolute bottom-0 h-10 border-l border-[var(--sortd-border)]"
                             style={{
                               left:
                                 index *
                                 TIMELINE_DAY_WIDTH,
                             }}
                           >
-                            <span className="absolute left-1 top-3 whitespace-nowrap text-[10px] text-slate-400">
+                            <span className="absolute left-1 top-3 whitespace-nowrap text-[10px] text-[var(--sortd-text-muted)]">
                               {formatTimelineMarker(
                                 date,
                               )}
@@ -1656,14 +1659,14 @@ export default function ProjectsView({
 
                       {showTodayLine && (
                         <div
-                          className="absolute bottom-0 top-0 z-20 w-px bg-fuchsia-400"
+                          className="absolute bottom-0 top-0 z-20 w-px bg-[var(--sortd-teal)]"
                           style={{
                             left:
                               todayOffset *
                               TIMELINE_DAY_WIDTH,
                           }}
                         >
-                          <span className="absolute right-1 top-9 rounded bg-fuchsia-50 px-1.5 py-0.5 text-[9px] font-semibold text-fuchsia-700">
+                          <span className="absolute right-1 top-9 rounded bg-[var(--sortd-muted)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--sortd-teal-dark)]">
                             Today
                           </span>
                         </div>
@@ -1743,7 +1746,7 @@ export default function ProjectsView({
                           key={
                             project.id
                           }
-                          className="grid border-b border-slate-200 last:border-b-0"
+                          className="grid border-b border-[var(--sortd-border)] last:border-b-0"
                           style={{
                             gridTemplateColumns: `220px ${timelineWidth}px`,
                           }}
@@ -1771,10 +1774,10 @@ export default function ProjectsView({
                             onDragEnd={() => {
                               setDraggedProjectId(null);
                             }}
-                            className="sticky left-0 z-40 flex min-w-0 items-center gap-2 border-r border-slate-200 bg-[var(--sortd-bg)] px-4 py-4"
+                            className="sticky left-0 z-40 flex min-w-0 items-center gap-2 border-r border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-4"
                           >
                             <span
-                              className="shrink-0 cursor-grab select-none text-slate-300 active:cursor-grabbing"
+                              className="shrink-0 cursor-grab select-none text-[var(--sortd-border)] active:cursor-grabbing"
                               title="Drag to reorder"
                             >
                               ⋮⋮
@@ -1787,7 +1790,7 @@ export default function ProjectsView({
                               }
                               className="min-w-0 flex-1 text-left"
                             >
-                              <p className="truncate text-sm font-medium text-slate-900">
+                              <p className="truncate text-sm font-medium text-[var(--sortd-text)]">
                                 {project.name ||
                                   "Untitled project"}
                               </p>
@@ -1799,7 +1802,7 @@ export default function ProjectsView({
                                   )}`}
                                 />
 
-                                <p className="text-[11px] text-slate-400">
+                                <p className="text-[11px] text-[var(--sortd-text-muted)]">
                                   {getProjectStatusLabel(
                                     project.status,
                                   )}
@@ -1808,7 +1811,7 @@ export default function ProjectsView({
                             </button>
                           </div>
 
-                          <div className="relative h-[76px] overflow-hidden bg-[var(--sortd-bg)]/50">
+                          <div className="relative h-[76px] overflow-hidden bg-[var(--sortd-card)]/50">
                             {/* Weekly grid */}
 
                             {weekMarkers.map(
@@ -1820,7 +1823,7 @@ export default function ProjectsView({
                                   key={`${toDateString(
                                     date,
                                   )}-${project.id}`}
-                                  className="absolute inset-y-0 border-l border-slate-100"
+                                  className="absolute inset-y-0 border-l border-[var(--sortd-border)]"
                                   style={{
                                     left:
                                       index *
@@ -1899,7 +1902,7 @@ export default function ProjectsView({
                               onPointerCancel={
                                 cancelTimelineInteraction
                               }
-                              className={`absolute top-1/2 z-10 flex h-[48px] -translate-y-1/2 touch-none select-none items-center overflow-hidden rounded-xl bg-slate-700 text-white shadow-sm transition ${
+                              className={`absolute top-1/2 z-10 flex h-[48px] -translate-y-1/2 touch-none select-none items-center overflow-hidden rounded-xl bg-[var(--sortd-navy)] text-white shadow-sm transition ${
                                 interaction?.mode ===
                                 "move"
                                   ? "cursor-grabbing shadow-md"
@@ -1935,9 +1938,9 @@ export default function ProjectsView({
                                 onPointerCancel={
                                   cancelTimelineInteraction
                                 }
-                                className="flex h-full w-3 shrink-0 cursor-ew-resize touch-none items-center justify-center bg-[var(--sortd-bg)]/10 hover:bg-[var(--sortd-bg)]/20"
+                                className="flex h-full w-3 shrink-0 cursor-ew-resize touch-none items-center justify-center bg-[var(--sortd-card)]/10 hover:bg-[var(--sortd-card)]/20"
                               >
-                                <span className="h-5 w-px rounded-full bg-[var(--sortd-bg)]/60" />
+                                <span className="h-5 w-px rounded-full bg-[var(--sortd-card)]/60" />
                               </span>
 
                               <div className="min-w-0 flex-1 px-2">
@@ -1980,9 +1983,9 @@ export default function ProjectsView({
                                 onPointerCancel={
                                   cancelTimelineInteraction
                                 }
-                                className="flex h-full w-3 shrink-0 cursor-ew-resize touch-none items-center justify-center bg-[var(--sortd-bg)]/10 hover:bg-[var(--sortd-bg)]/20"
+                                className="flex h-full w-3 shrink-0 cursor-ew-resize touch-none items-center justify-center bg-[var(--sortd-card)]/10 hover:bg-[var(--sortd-card)]/20"
                               >
-                                <span className="h-5 w-px rounded-full bg-[var(--sortd-bg)]/60" />
+                                <span className="h-5 w-px rounded-full bg-[var(--sortd-card)]/60" />
                               </span>
                             </div>
                           </div>
@@ -1994,13 +1997,13 @@ export default function ProjectsView({
               </div>
             </>
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-12 text-center">
-              <p className="font-medium text-slate-700">
+            <div className="rounded-2xl border border-dashed border-[var(--sortd-border)] px-6 py-12 text-center">
+              <p className="font-medium text-[var(--sortd-text)]">
                 No projects
                 have dates yet.
               </p>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">
                 Add a start
                 or target date
                 to see projects
@@ -2015,7 +2018,7 @@ export default function ProjectsView({
               !project.targetDate,
           ) && (
             <div className="mt-5">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--sortd-text-muted)]">
                 Not scheduled
               </p>
 
@@ -2042,7 +2045,7 @@ export default function ProjectsView({
                             project.id,
                           )
                         }
-                        className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                        className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-sm text-[var(--sortd-text-muted)] transition hover:border-[var(--sortd-teal-dark)] hover:text-[var(--sortd-text)]"
                       >
                         {
                           project.name
@@ -2115,7 +2118,7 @@ export default function ProjectsView({
                         linkedDream.id,
                       )
                     }
-                    className="font-medium text-fuchsia-700 transition hover:text-fuchsia-900"
+                    className="font-medium text-[var(--sortd-teal-dark)] transition hover:text-[var(--sortd-navy)]"
                   >
                     ✦{" "}
                     {
@@ -2123,7 +2126,7 @@ export default function ProjectsView({
                     }
                   </button>
 
-                  <span className="text-slate-300">
+                  <span className="text-[var(--sortd-border)]">
                     →
                   </span>
                 </>
@@ -2137,24 +2140,24 @@ export default function ProjectsView({
                       linkedGoal.id,
                     )
                   }
-                  className="font-medium text-slate-700 transition hover:text-slate-950"
+                  className="font-medium text-[var(--sortd-text)] transition hover:text-[var(--sortd-text)]"
                 >
                   {
                     linkedGoal.title
                   }
                 </button>
               ) : (
-                <span className="text-slate-400">
+                <span className="text-[var(--sortd-text-muted)]">
                   No goal
                   attached
                 </span>
               )}
 
-              <span className="text-slate-300">
+              <span className="text-[var(--sortd-border)]">
                 →
               </span>
 
-              <span className="font-medium text-slate-900">
+              <span className="font-medium text-[var(--sortd-text)]">
                 {
                   activeProject.name
                 }
@@ -2164,8 +2167,8 @@ export default function ProjectsView({
 
           {activeProject ? (
             <>
-              <details className="group mt-5 border-b border-slate-100 pb-4">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 py-2 text-sm text-slate-600 transition hover:text-slate-900 [&::-webkit-details-marker]:hidden">
+              <details className="group mt-5 border-b border-[var(--sortd-border)] pb-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 py-2 text-sm text-[var(--sortd-text-muted)] transition hover:text-[var(--sortd-text)] [&::-webkit-details-marker]:hidden">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">
                       Project
@@ -2176,17 +2179,17 @@ export default function ProjectsView({
                       className={`rounded-full px-2 py-0.5 text-xs ${
                         activeProject.status ===
                         "backlog"
-                          ? "bg-slate-100 text-slate-600"
+                          ? "bg-[var(--sortd-muted)] text-[var(--sortd-text-muted)]"
                           : activeProject.status ===
                               "planned"
-                            ? "bg-sky-50 text-sky-700"
+                            ? "bg-[var(--sortd-muted)] text-[var(--sortd-teal-dark)]"
                             : activeProject.status ===
                                 "paused"
                               ? "bg-amber-50 text-amber-700"
                               : activeProject.status ===
                                   "completed"
-                                ? "bg-slate-200 text-slate-600"
-                                : "bg-emerald-50 text-emerald-700"
+                                ? "bg-[var(--sortd-border)] text-[var(--sortd-text-muted)]"
+                                : "bg-[var(--sortd-muted)] text-[var(--sortd-teal-dark)]"
                       }`}
                     >
                       {getProjectStatusLabel(
@@ -2195,13 +2198,13 @@ export default function ProjectsView({
                     </span>
                   </span>
 
-                  <span className="text-slate-400 transition group-open:rotate-180">
+                  <span className="text-[var(--sortd-text-muted)] transition group-open:rotate-180">
                     ▾
                   </span>
                 </summary>
 
-                <div className="pt-4">
-                  <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-slate-600">
+                <div className="pt-4 [&_input]:min-w-0 [&_input]:border-[var(--sortd-border)] [&_input]:bg-[var(--sortd-card)] [&_select]:border-[var(--sortd-border)] [&_select]:bg-[var(--sortd-card)] [&_textarea]:border-[var(--sortd-border)] [&_textarea]:bg-[var(--sortd-card)]">
+                  <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-[var(--sortd-text-muted)]">
                     Project name
 
                     <input
@@ -2218,11 +2221,11 @@ export default function ProjectsView({
                         )
                       }
                       placeholder="Project name"
-                      className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
+                      className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-sm text-[var(--sortd-text)] outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
                     />
                   </label>
 
-                  <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-slate-600">
+                  <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-[var(--sortd-text-muted)]">
                     Supports goal
 
                     <select
@@ -2240,7 +2243,7 @@ export default function ProjectsView({
                             undefined,
                         )
                       }
-                      className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
+                      className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-sm text-[var(--sortd-text)] outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
                     >
                       <option value="">
                         No linked
@@ -2328,11 +2331,11 @@ export default function ProjectsView({
 
               <section className="mt-5">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <h2 className="text-base font-semibold text-slate-900">
+                  <h2 className="text-base font-semibold text-[var(--sortd-text)]">
                     Tasks
                   </h2>
 
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-[var(--sortd-text-muted)]">
                     {
                       visibleTasks.length
                     }{" "}
@@ -2370,7 +2373,7 @@ export default function ProjectsView({
                   }
                 />
 
-                <div className="max-h-[52vh] overflow-y-auto overscroll-contain pr-1">
+                <div className="min-w-0 space-y-2 pb-4">
                   <TaskList
                     tasks={
                       visibleTasks
@@ -2417,12 +2420,12 @@ export default function ProjectsView({
                 ?.length ??
                 0) >
                 0 && (
-                <details className="group mt-5 border-t border-slate-100 pt-4">
-                  <summary className="flex cursor-pointer list-none items-center justify-between text-sm text-slate-500 transition hover:text-slate-800 [&::-webkit-details-marker]:hidden">
+                <details className="group mt-5 border-t border-[var(--sortd-border)] pt-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between text-sm text-[var(--sortd-text-muted)] transition hover:text-[var(--sortd-text)] [&::-webkit-details-marker]:hidden">
                     <span>
                       Archived
                       tasks{" "}
-                      <span className="text-slate-400">
+                      <span className="text-[var(--sortd-text-muted)]">
                         (
                         {
                           activeProject
@@ -2454,12 +2457,12 @@ export default function ProjectsView({
             </>
           ) : (
             <div className="mt-8 px-5 py-10 text-center">
-              <p className="font-medium text-slate-700">
+              <p className="font-medium text-[var(--sortd-text)]">
                 No project
                 selected.
               </p>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">
                 Create a
                 project to get
                 started.
@@ -2477,10 +2480,10 @@ export default function ProjectsView({
       }
     }}
   >
-    <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-[var(--sortd-bg)] p-6 shadow-2xl">
+    <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-[var(--sortd-card)] p-6 shadow-2xl">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--sortd-text-muted)]">
             Project
           </p>
 
@@ -2489,7 +2492,7 @@ export default function ProjectsView({
             onChange={(event) =>
               onChangeProjectName(event.target.value)
             }
-            className="mt-1 w-full bg-transparent text-xl font-semibold text-slate-950 outline-none"
+            className="mt-1 w-full bg-transparent text-xl font-semibold text-[var(--sortd-text)] outline-none"
           />
 
           <div className="mt-2 flex items-center gap-2">
@@ -2499,7 +2502,7 @@ export default function ProjectsView({
               )}`}
             />
 
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-[var(--sortd-text-muted)]">
               {getProjectStatusLabel(activeProject.status)}
             </span>
           </div>
@@ -2508,7 +2511,7 @@ export default function ProjectsView({
         <button
           type="button"
           onClick={() => setProjectCardOpen(false)}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--sortd-muted)] text-[var(--sortd-text-muted)] transition hover:bg-[var(--sortd-border)] hover:text-[var(--sortd-text)]"
           aria-label="Close project"
         >
           ✕
@@ -2552,8 +2555,8 @@ export default function ProjectsView({
         }
       />
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-        <span className="text-sm text-slate-500">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--sortd-border)] pt-4">
+        <span className="text-sm text-[var(--sortd-text-muted)]">
           {getOpenTaskCount(activeProject)} open{" "}
           {getOpenTaskCount(activeProject) === 1
             ? "task"
@@ -2566,7 +2569,7 @@ export default function ProjectsView({
             setProjectCardOpen(false);
             setViewMode("list");
           }}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+          className="rounded-xl bg-[var(--sortd-navy)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--sortd-navy-dark)]"
         >
           View project tasks →
         </button>
