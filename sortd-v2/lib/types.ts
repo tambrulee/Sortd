@@ -353,3 +353,20 @@ export type FoodData = {
   mealPlan: MealPlanEntry[];
   shoppingList: FoodShoppingItem[];
 };
+
+// A task chosen for a particular day. Times are optional and never auto-shifted.
+export type DailyPlanEntry = {
+  id: string;
+  sourceType: "task" | "routine" | "adhoc";
+  sourceId: string;
+  parentId: string;
+  occurrenceDate?: string;
+  title: string;
+  parentName: string;
+  date: string;
+  order: number;
+  startTime?: string;
+  durationMinutes: number;
+  context: ScheduleContext;
+  completed?: boolean;
+};

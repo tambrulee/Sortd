@@ -45,6 +45,7 @@ import {
   FoodData,
   AdhocTask,
   PlannerOverride,
+  DailyPlanEntry,
 } from "@/lib/types";
 
 import {
@@ -163,6 +164,8 @@ type CloudWorkspaceData = {
   activeListId: string;
   hideCompleted: boolean;
   plannerOverrides?: PlannerOverride[];
+  dailyPlanEntries?: DailyPlanEntry[];
+  adhocTasks?: AdhocTask[];
 };
 
 export default function Home() {
@@ -176,6 +179,8 @@ export default function Home() {
     plannerOverrides,
     setPlannerOverrides,
   ] = useState<PlannerOverride[]>([]);
+
+  const [dailyPlanEntries, setDailyPlanEntries] = useState<DailyPlanEntry[]>([]);
 
   const [adhocTasks, setAdhocTasks] = useState<AdhocTask[]>([]);
 
@@ -531,9 +536,13 @@ export default function Home() {
             ),
         );
 
-        setPlannerOverrides(
-          cloudWorkspace.plannerOverrides ?? [],
-        );
+        setPlannerOverrides(cloudWorkspace.plannerOverrides ?? []);
+        setAdhocTasks(cloudWorkspace.adhocTasks ?? []);
+        // Preserve existing manually placed overrides on the first manual-planner load.
+        setDailyPlanEntries(cloudWorkspace.dailyPlanEntries ?? (cloudWorkspace.plannerOverrides ?? []).map((override, index) => {
+          const task = override.sourceType === "task" ? cloudWorkspace.lists.find((project) => project.id === override.parentId)?.tasks.find((task) => task.id === override.sourceId) : override.sourceType === "routine" ? (cloudWorkspace.routines ?? []).find((routine) => routine.id === override.parentId)?.tasks.find((task) => task.id === override.sourceId) : cloudWorkspace.adhocTasks?.find((task) => task.id === override.sourceId);
+          return { id: crypto.randomUUID(), sourceType: override.sourceType, sourceId: override.sourceId, parentId: override.parentId, occurrenceDate: override.occurrenceDate, title: task?.title ?? "Previously planned task", parentName: "Existing plan", date: override.date, order: index, startTime: override.preferredStartTime, durationMinutes: task && "durationMinutes" in task ? task.durationMinutes ?? 30 : 30, context: "any" as const };
+        }));
 
         return;
       }
@@ -579,6 +588,8 @@ export default function Home() {
         return;
       }
 
+      setDailyPlanEntries([]);
+      setAdhocTasks([]);
       cloudReadyForUserRef.current = userId;
     }
 
@@ -606,6 +617,8 @@ export default function Home() {
         foodData,
         scheduleSettings,
         plannerOverrides,
+        dailyPlanEntries,
+        adhocTasks,
         activeListId,
         hideCompleted,
       };
@@ -666,6 +679,8 @@ export default function Home() {
     scheduleSettings,
     user,
     plannerOverrides,
+    dailyPlanEntries,
+    adhocTasks,
   ]);
 
   function updateActiveList(updatedList: SortdList) {
@@ -1199,6 +1214,7 @@ export default function Home() {
                 setActiveListId(projectId);
                 setActiveView("projects");
               }}
+              onUpdateProjectTask={updateProjectTaskById}
               onUpdateRoutineTask={updateRoutineTaskById}
               onDeleteRoutineTask={deleteRoutineTaskById}
             />
@@ -1352,6 +1368,8 @@ export default function Home() {
             <PlannerView
               tasks={allTasks}
               routines={routines}
+              dailyPlanEntries={dailyPlanEntries}
+              onChangeDailyPlanEntries={setDailyPlanEntries}
               adhocTasks={adhocTasks}
               settings={scheduleSettings}
 

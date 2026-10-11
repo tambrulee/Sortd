@@ -57,6 +57,12 @@ type MyDayViewProps = {
     taskId: string,
   ) => void;
 
+  onUpdateProjectTask: (
+    projectId: string,
+    taskId: string,
+    updates: Partial<Task>
+  ) => void;
+
   onUpdateRoutineTask: (
     routineId: string,
     taskId: string,
@@ -152,8 +158,14 @@ function SortableMyDayRoutineTask({
   today,
   onComplete,
   onEdit,
+  selecting,
+  selected,
+  onToggleSelect,
 }: {
   task: RoutineTaskForDay;
+  selecting: boolean;
+  selected: boolean;
+  onToggleSelect: () => void;
   today: string;
 
   onComplete: (
@@ -198,6 +210,9 @@ function SortableMyDayRoutineTask({
           : ""
       }`}
     >
+      {selecting ? (
+        <input type="checkbox" checked={selected} onChange={onToggleSelect} aria-label={`Select ${task.title}`} className="h-4 w-4 shrink-0 accent-[var(--sortd-teal-dark)]" />
+      ) : (
       <button
         type="button"
         {...attributes}
@@ -208,8 +223,9 @@ function SortableMyDayRoutineTask({
       >
         ⋮⋮
       </button>
+      )}
 
-      <button
+      {!selecting && <button
         type="button"
         onClick={() =>
           onComplete(
@@ -221,7 +237,7 @@ function SortableMyDayRoutineTask({
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-sm font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
       >
         ✓
-      </button>
+      </button>}
 
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-slate-900">
@@ -246,7 +262,7 @@ function SortableMyDayRoutineTask({
           : "Due today"}
       </span>
 
-      <button
+      {!selecting && <button
         type="button"
         onClick={() => onEdit(task)}
         aria-label={`Edit ${task.title}`}
@@ -254,7 +270,7 @@ function SortableMyDayRoutineTask({
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
       >
         •••
-      </button>
+      </button>}
     </div>
   );
 }
@@ -267,6 +283,7 @@ export default function MyDayView({
   onOpenProject,
   onCompleteProjectTask,
   onCompleteRoutineTask,
+  onUpdateProjectTask,
   onUpdateRoutineTask,
   onDeleteRoutineTask,
 }: MyDayViewProps) {
@@ -275,6 +292,22 @@ export default function MyDayView({
   const [dayViewMode, setDayViewMode] = useState<"today" | "upcoming" | "review">("today");
 
   const [itemDisplayMode, setItemDisplayMode] = useState<"all" | "grouped">("grouped");
+
+  const [selecting, setSelecting] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [bulkDate, setBulkDate] = useState("");
+
+  const projectKey = (task: TaskWithProject) => `project:${task.projectId}:${task.id}`;
+  const routineKey = (task: RoutineTaskForDay) => `routine:${task.routineId}:${task.id}`;
+  function toggleSelected(key: string) {
+    setSelectedKeys((current) => current.includes(key) ? current.filter((item) => item !== key) : [...current, key]);
+  }
+  function exitSelection() {
+    setSelecting(false);
+    setSelectedKeys([]);
+    setBulkDate("");
+  }
+
 
   const [
     selectedRoutineTask,
@@ -695,6 +728,24 @@ export default function MyDayView({
     );
   }
 
+  const selectableProjectTasks = dayViewMode === "today" ? actionableProjectTasks : dayViewMode === "upcoming" ? upcomingTasks : overdue;
+  const selectableRoutineTasks = dayViewMode === "today" ? actionableRoutineTasks : dayViewMode === "upcoming" ? upcomingRoutineTasks : overdueRoutineTasks;
+  const visibleKeys = [...selectableProjectTasks.map(projectKey), ...selectableRoutineTasks.map(routineKey)];
+  const selectedVisibleKeys = selectedKeys.filter((key) => visibleKeys.includes(key));
+  const allVisibleSelected = visibleKeys.length > 0 && visibleKeys.every((key) => selectedKeys.includes(key));
+
+  function applyBulkDate() {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(bulkDate) || selectedVisibleKeys.length === 0) return;
+    const chosen = new Set(selectedVisibleKeys);
+    selectableProjectTasks.forEach((task) => {
+      if (chosen.has(projectKey(task))) onUpdateProjectTask(task.projectId, task.id, { dueDate: bulkDate });
+    });
+    selectableRoutineTasks.forEach((task) => {
+      if (chosen.has(routineKey(task))) onUpdateRoutineTask(task.routineId, task.id, { nextDueDate: bulkDate });
+    });
+    exitSelection();
+  }
+
   function renderTask(
     task: TaskWithProject,
     options?: {
@@ -710,7 +761,8 @@ export default function MyDayView({
         key={`${task.projectId}-${task.id}`}
         className="flex w-full items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-2"
       >
-        <button
+        {selecting && <input type="checkbox" checked={selectedKeys.includes(projectKey(task))} onChange={() => toggleSelected(projectKey(task))} aria-label={`Select ${task.title}`} className="h-4 w-4 shrink-0 accent-[var(--sortd-teal-dark)]" />}
+        {!selecting && <button
           type="button"
           onClick={() => onCompleteProjectTask(task.projectId, task.id)}
           aria-label={`Complete ${task.title}`}
@@ -718,11 +770,11 @@ export default function MyDayView({
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
-        </button>
+        </button>}
 
         <button
           type="button"
-          onClick={() => onOpenProject(task.projectId)}
+          onClick={() => selecting ? toggleSelected(projectKey(task)) : onOpenProject(task.projectId)}
           className="min-w-0 flex-1 text-left"
         >
           <p className="truncate font-medium text-slate-900">
@@ -767,16 +819,17 @@ export default function MyDayView({
         key={`${task.routineId}-${task.id}`}
         className="flex items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-2"
       >
-        <button
+        {selecting && <input type="checkbox" checked={selectedKeys.includes(routineKey(task))} onChange={() => toggleSelected(routineKey(task))} aria-label={`Select ${task.title}`} className="h-4 w-4 shrink-0 accent-[var(--sortd-teal-dark)]" />}
+        {!selecting && <button
           type="button"
           onClick={() => onCompleteRoutineTask(task.routineId, task.id)}
           aria-label={`Complete ${task.title}`}
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
-        </button>
+        </button>}
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1" onClick={selecting ? () => toggleSelected(routineKey(task)) : undefined}>
           <p className="truncate font-medium text-slate-900">
             {task.title || "Untitled routine task"}
           </p>
@@ -794,7 +847,7 @@ export default function MyDayView({
           {isOverdue ? "Overdue" : task.nextDueDate === today ? "Due today" : formatShortDate(task.nextDueDate)}
         </span>
 
-        <button
+        {!selecting && <button
           type="button"
           onClick={() =>
             setSelectedRoutineTask(task)
@@ -804,7 +857,7 @@ export default function MyDayView({
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
         >
           •••
-        </button>
+        </button>}
       </div>
     );
   }
@@ -817,6 +870,14 @@ export default function MyDayView({
       label: index === 0 ? "Tomorrow" : new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "short" }).format(date),
       tasks: upcomingTasks.filter((task) => task.dueDate === key),
       routines: upcomingRoutineTasks.filter((task) => task.nextDueDate === key),
+      projectGroups: Array.from(new Set(upcomingTasks.filter((task) => task.dueDate === key).map((task) => task.projectId))).map((projectId) => {
+        const tasks = upcomingTasks.filter((task) => task.dueDate === key && task.projectId === projectId);
+        return { projectId, projectName: tasks[0].projectName, tasks };
+      }),
+      routineGroups: Array.from(new Set(upcomingRoutineTasks.filter((task) => task.nextDueDate === key).map((task) => task.routineId))).map((routineId) => {
+        const tasks = upcomingRoutineTasks.filter((task) => task.nextDueDate === key && task.routineId === routineId);
+        return { routineId, routineName: tasks[0].routineName, tasks };
+      }),
     };
   }).filter((day) => day.tasks.length + day.routines.length > 0);
 
@@ -840,7 +901,8 @@ export default function MyDayView({
             >{view}</button>
           ))}
         </nav>
-        {dayViewMode === "today" && (
+        <button type="button" onClick={() => selecting ? exitSelection() : setSelecting(true)} className="rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-sm font-medium text-slate-700 hover:bg-[var(--sortd-muted)]">{selecting ? "Cancel selection" : "Select"}</button>
+        {dayViewMode !== "review" && (
           <div role="group" aria-label="Routine and task grouping" className="flex rounded-xl bg-[var(--sortd-muted)] p-1">
             {(["grouped", "all"] as const).map((mode) => (
               <button key={mode} type="button" aria-pressed={itemDisplayMode === mode} onClick={() => setItemDisplayMode(mode)} className={`rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${itemDisplayMode === mode ? "bg-[var(--sortd-card)] text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}>
@@ -851,6 +913,26 @@ export default function MyDayView({
         )}
         </div>
       </header>
+
+      {selecting && (
+        <section className="mb-5 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-3 sm:p-4" aria-label="Bulk update due dates">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-slate-800">{selectedVisibleKeys.length} selected</p>
+            <div className="flex gap-3 text-sm">
+              <button type="button" disabled={!visibleKeys.length} onClick={() => setSelectedKeys((current) => allVisibleSelected ? current.filter((key) => !visibleKeys.includes(key)) : [...new Set([...current, ...visibleKeys])])} className="font-medium text-[var(--sortd-teal-dark)] disabled:opacity-40">{allVisibleSelected ? "Deselect all" : "Select all shown"}</button>
+              <button type="button" onClick={() => setSelectedKeys([])} className="text-slate-500">Clear</button>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">New due date
+              <input type="date" value={bulkDate} onChange={(event) => setBulkDate(event.target.value)} className="min-h-10 rounded-lg border border-[var(--sortd-border)] bg-white px-3 text-sm text-slate-900" />
+            </label>
+            <button type="button" onClick={() => setBulkDate(toDateKey(addDays(parseDateKey(today), 1)))} className="min-h-10 rounded-lg border border-[var(--sortd-border)] px-3 text-sm">Tomorrow</button>
+            <button type="button" onClick={() => setBulkDate(toDateKey(addDays(parseDateKey(today), 7)))} className="min-h-10 rounded-lg border border-[var(--sortd-border)] px-3 text-sm">In 7 days</button>
+            <button type="button" disabled={!bulkDate || !selectedVisibleKeys.length} onClick={applyBulkDate} className="min-h-10 rounded-lg bg-[var(--sortd-teal-dark)] px-4 text-sm font-semibold text-white disabled:opacity-40">Update {selectedVisibleKeys.length} {selectedVisibleKeys.length === 1 ? "date" : "dates"}</button>
+          </div>
+        </section>
+      )}
 
       {dayViewMode === "today" && (
         <div className="space-y-7">
@@ -868,7 +950,7 @@ export default function MyDayView({
               <section aria-labelledby="my-day-routines">
                 <h2 id="my-day-routines" className="mb-3 text-base font-semibold text-slate-900">Routines <span className="ml-2 text-xs font-normal text-slate-500">{actionableRoutineTasks.length}</span></h2>
                 {actionableRoutineTasks.length > 0 ? (
-                  <DndContext collisionDetection={closestCenter} onDragEnd={handleRoutineDragEnd}>
+                  <DndContext collisionDetection={closestCenter} onDragEnd={selecting ? () => {} : handleRoutineDragEnd}>
                     <SortableContext items={routineGroups.flatMap((group) => group.tasks.map((task) => `${task.routineId}-${task.id}`))} strategy={verticalListSortingStrategy}>
                       <div className="space-y-5">
                         {routineGroups.map((group) => (
@@ -878,7 +960,7 @@ export default function MyDayView({
                               <span className="text-xs text-slate-500">{group.tasks.length}</span>
                             </div>
                             <div className="space-y-2">
-                              {group.tasks.map((task) => <SortableMyDayRoutineTask key={`${task.routineId}-${task.id}`} task={task} today={today} onComplete={onCompleteRoutineTask} onEdit={setSelectedRoutineTask} />)}
+                              {group.tasks.map((task) => <SortableMyDayRoutineTask key={`${task.routineId}-${task.id}`} task={task} today={today} onComplete={onCompleteRoutineTask} onEdit={setSelectedRoutineTask} selecting={selecting} selected={selectedKeys.includes(routineKey(task))} onToggleSelect={() => toggleSelected(routineKey(task))} />)}
                             </div>
                           </section>
                         ))}
@@ -916,10 +998,33 @@ export default function MyDayView({
             {upcomingDays.length > 0 ? upcomingDays.map((day) => (
               <section key={day.key} aria-label={day.label}>
                 <h3 className="mb-3 text-sm font-semibold text-slate-700">{day.label}</h3>
-                <div className="space-y-2">
-                  {day.routines.map((task) => renderRoutineTask(task))}
-                  {day.tasks.map((task) => renderTask(task))}
-                </div>
+                {itemDisplayMode === "all" ? (
+                  <div className="space-y-2">
+                    {day.routines.map((task) => renderRoutineTask(task))}
+                    {day.tasks.map((task) => renderTask(task))}
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {day.routineGroups.map((group) => (
+                      <section key={`routine-${group.routineId}`} aria-label={group.routineName || "Untitled routine"}>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <h4 className="text-sm font-medium text-slate-700">{group.routineName || "Untitled routine"}</h4>
+                          <span className="text-xs text-slate-500">{group.tasks.length}</span>
+                        </div>
+                        <div className="space-y-2">{group.tasks.map((task) => renderRoutineTask(task))}</div>
+                      </section>
+                    ))}
+                    {day.projectGroups.map((group) => (
+                      <section key={`project-${group.projectId}`} aria-label={group.projectName || "Untitled project"}>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <button type="button" onClick={() => onOpenProject(group.projectId)} className="text-left text-sm font-medium text-slate-700 hover:text-[var(--sortd-teal-dark)]">{group.projectName || "Untitled project"}</button>
+                          <span className="text-xs text-slate-500">{group.tasks.length}</span>
+                        </div>
+                        <div className="space-y-2">{group.tasks.map((task) => renderTask(task, { showProject: false }))}</div>
+                      </section>
+                    ))}
+                  </div>
+                )}
               </section>
             )) : <p className={emptyClassName}>Nothing scheduled over the next week.</p>}
           </div>

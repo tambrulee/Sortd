@@ -10,6 +10,7 @@ import {
   Weekday,
   AdhocTask,
   PlannerOverride,
+  DailyPlanEntry,
 } from "@/lib/types";
 
 export type SchedulableProjectTask =
@@ -1330,4 +1331,56 @@ export function buildRollingSchedule({
 
     unscheduled,
   };
+}
+
+// Manual planning is independent of the automatic rolling schedule.
+export type PlannerChoice = Omit<DailyPlanEntry, "id" | "date" | "order" | "startTime"> & {
+  completed: boolean;
+  dueDate?: string;
+};
+export function getPlannerChoices(tasks: SchedulableProjectTask[], routines: Routine[], adhocTasks: AdhocTask[]): PlannerChoice[] {
+  return [
+    ...tasks.map((task): PlannerChoice => ({ sourceType: "task", sourceId: task.id, parentId: task.projectId, title: task.title, parentName: task.projectName, durationMinutes: task.durationMinutes ?? 30, context: task.scheduleContext ?? task.projectScheduleContext ?? "any", completed: task.completed, dueDate: task.dueDate })),
+    ...routines.filter((routine) => !routine.archived).flatMap((routine) => routine.tasks.filter((task) => task.active).map((task): PlannerChoice => ({ sourceType: "routine", sourceId: task.id, parentId: routine.id, title: task.title, parentName: routine.name, durationMinutes: task.durationMinutes ?? 15, context: task.scheduleContext ?? "personal", occurrenceDate: task.nextDueDate, dueDate: task.nextDueDate, completed: false }))),
+    ...adhocTasks.map((task): PlannerChoice => ({ sourceType: "adhoc", sourceId: task.id, parentId: "adhoc", title: task.title, parentName: "Quick tasks", durationMinutes: task.estimatedMinutes ?? 30, context: task.context ?? "personal", completed: task.completed })),
+  ];
+}
+export function buildManualSchedule(entries: DailyPlanEntry[], timeZone: string): ScheduleResult {
+  const blocks: ScheduledBlock[] = [];
+  for (const entry of entries) {
+    if (entry.completed || !entry.startTime || !/^\d{2}:\d{2}$/.test(entry.startTime)) continue;
+    const [hours, minutes] = entry.startTime.split(":").map(Number);
+    const start = hours * 60 + minutes;
+    const end = start + entry.durationMinutes;
+    if (hours > 23 || minutes > 59 || entry.durationMinutes <= 0 || end > 1440) continue;
+    blocks.push({ id: entry.id, sourceType: entry.sourceType, sourceId: entry.sourceId, parentId: entry.parentId, parentName: entry.parentName, title: entry.title, date: entry.date, startTime: entry.startTime, endTime: `${String(Math.floor(end / 60)).padStart(2, "0")}:${String(end % 60).padStart(2, "0")}`, timeZone, durationMinutes: entry.durationMinutes, usedDefaultDuration: false, context: entry.context, occurrenceDate: entry.occurrenceDate, manuallyPlaced: true, anchored: false });
+  }
+  return { blocks, unscheduled: [] };
+}
+// Produce a preview for only the chosen day's untimed tasks. Never modifies entries.
+export function suggestDailyPlanTimes(entries: DailyPlanEntry[], date: string, settings: ScheduleSettings, currentTime?: string): DailyPlanEntry[] {
+  const minutes = (value: string) => { const [h, m] = value.split(":").map(Number); return h * 60 + m; };
+  const weekdays: Weekday[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const day = settings.days[weekdays[new Date(`${date}T12:00:00Z`).getUTCDay()]];
+  if (!day?.enabled) return entries;
+  const buffer = Math.max(0, settings.bufferMinutes);
+  const occupied = entries.filter((entry) => entry.date === date && !entry.completed && entry.startTime).map((entry) => ({ start: minutes(entry.startTime!), end: minutes(entry.startTime!) + entry.durationMinutes }));
+  const updates = new Map<string, string>();
+  for (const entry of entries.filter((entry) => entry.date === date && !entry.completed && !entry.startTime).sort((a, b) => a.order - b.order)) {
+    const wake = Math.max(minutes(day.wakeTime), currentTime ? minutes(currentTime) : 0);
+    const bed = minutes(day.bedTime);
+    for (let start = Math.ceil(wake / 5) * 5; start + entry.durationMinutes <= bed; start += 5) {
+      const end = start + entry.durationMinutes;
+      if (day.workStart && day.workEnd && !settings.annualLeave) {
+        const workStart = minutes(day.workStart), workEnd = minutes(day.workEnd);
+        if (entry.context === "work" && (start < workStart || end > workEnd)) continue;
+        if (entry.context === "personal" && start < workEnd && end > workStart) continue;
+      }
+      if (occupied.some((block) => start < block.end + buffer && end + buffer > block.start)) continue;
+      updates.set(entry.id, `${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`);
+      occupied.push({ start, end });
+      break;
+    }
+  }
+  return entries.map((entry) => updates.has(entry.id) ? { ...entry, startTime: updates.get(entry.id) } : entry);
 }
