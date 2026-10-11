@@ -168,6 +168,16 @@ type CloudWorkspaceData = {
   adhocTasks?: AdhocTask[];
 };
 
+function subscribeToDesktopLayout(callback: () => void) {
+  const query = window.matchMedia("(min-width: 768px)");
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+
+function getDesktopLayout() {
+  return window.matchMedia("(min-width: 768px)").matches;
+}
+
 export default function Home() {
   const [routines, setRoutines] = useState<Routine[]>([]);
 
@@ -230,7 +240,14 @@ export default function Home() {
   });
 
   const [user, setUser] = useState<User | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isDesktopLayout = useSyncExternalStore(subscribeToDesktopLayout, getDesktopLayout, () => false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const sidebarOpen = isDesktopLayout ? desktopSidebarOpen : mobileMenuOpen;
+  function toggleSidebar() {
+    if (isDesktopLayout) setDesktopSidebarOpen((open) => !open);
+    else setMobileMenuOpen((open) => !open);
+  }
 
   const cloudReadyForUserRef = useRef<string | null>(null);
 
@@ -1155,7 +1172,7 @@ export default function Home() {
 
   if (!user) {
     return (
-      <main className="flex min-h-screen flex-col bg-slate-50 text-slate-950">
+      <main className="flex min-h-screen min-w-0 w-full max-w-full flex-col bg-[var(--sortd-bg)] text-[var(--sortd-text)]">
         <Header />
 
         <section className="flex flex-1 items-center justify-center px-4 py-12">
@@ -1170,34 +1187,35 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-slate-50 text-slate-950">
+    <main className="flex min-h-screen min-w-0 w-full max-w-full flex-col bg-[var(--sortd-bg)] text-[var(--sortd-text)]">
       <Header />
 
-      <section className="flex flex-1 flex-col items-center gap-3 px-3 py-4 sm:px-4">
-        <div className="flex w-full max-w-[1600px] items-center">
+      <section className="flex min-w-0 w-full flex-1 flex-col items-center gap-3 px-3 py-4 sm:px-4">
+        <div className="flex min-w-0 w-full max-w-[1600px] items-center">
           <button
             type="button"
-            onClick={() => setSidebarOpen((open) => !open)}
+            onClick={toggleSidebar}
             aria-expanded={sidebarOpen}
             aria-controls="workspace-sidebar"
             className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 text-sm font-medium text-[var(--sortd-text)] hover:bg-[var(--sortd-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
           >
             <span aria-hidden="true">☰</span>
-            {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            {isDesktopLayout ? (sidebarOpen ? "Hide sidebar" : "Show sidebar") : (sidebarOpen ? "Close menu" : "Menu")}
           </button>
         </div>
-        <div className={`grid w-full max-w-[1600px] min-w-0 gap-4 ${sidebarOpen ? "md:grid-cols-[260px_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)]"}`}>
-          <div id="workspace-sidebar" hidden={!sidebarOpen} className="space-y-4">
+        <div className={`grid w-full max-w-[1600px] min-w-0 grid-cols-[minmax(0,1fr)] gap-4 ${sidebarOpen ? "md:grid-cols-[260px_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)]"}`}>
+          <div id="workspace-sidebar" hidden={!sidebarOpen} className="min-w-0 w-full max-w-full space-y-4 [overflow-wrap:anywhere] [&>*]:min-w-0 [&>*]:w-full [&>*]:max-w-full [&_input]:min-w-0 [&_input]:max-w-full">
             <AuthPanel onUserChange={setUser} />
 
             <WorkspaceNav
               activeView={activeView}
-              onChangeView={setActiveView}
+              onChangeView={(view) => { setActiveView(view); setMobileMenuOpen(false); }}
             />
 
             <AskSortd context={aiContext} />
           </div>
 
+          <div className="min-w-0 w-full max-w-full [&>*]:min-w-0 [&>*]:max-w-full">
           {activeView === "my-day" ? (
             <MyDayView
               tasks={allTasks}
@@ -1419,6 +1437,7 @@ export default function Home() {
           ) : (
             <RoutinesView routines={routines} onChangeRoutines={setRoutines} />
           )}
+          </div>
         </div>
       </section>
 
