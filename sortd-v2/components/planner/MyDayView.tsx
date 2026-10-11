@@ -204,20 +204,20 @@ function SortableMyDayRoutineTask({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2.5 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-2 transition ${
+      className={`flex min-w-0 flex-wrap items-center gap-2 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 transition sm:px-4 ${
         isDragging
           ? "z-50 opacity-60 shadow-lg"
           : ""
       }`}
     >
       {selecting ? (
-        <input type="checkbox" checked={selected} onChange={onToggleSelect} aria-label={`Select ${task.title}`} className="h-4 w-4 shrink-0 accent-[var(--sortd-teal-dark)]" />
+        <input type="checkbox" checked={selected} onChange={onToggleSelect} aria-label={`Select ${task.title}`} className="h-6 w-6 shrink-0 accent-[var(--sortd-teal-dark)]" />
       ) : (
       <button
         type="button"
         {...attributes}
         {...listeners}
-        className="shrink-0 cursor-grab rounded-lg px-1 py-0.5 text-xs text-slate-400 active:cursor-grabbing"
+        className="flex h-11 w-11 shrink-0 touch-none cursor-grab items-center justify-center rounded-lg text-xs text-slate-400 active:cursor-grabbing"
         aria-label={`Reorder ${task.title}`}
         title="Drag to reorder"
       >
@@ -234,24 +234,24 @@ function SortableMyDayRoutineTask({
           )
         }
         aria-label={`Complete ${task.title}`}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-sm font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-sm font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
       >
         ✓
       </button>}
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-slate-900">
+        <p className="break-words [overflow-wrap:anywhere] font-medium text-slate-900">
           {task.title ||
             "Untitled routine task"}
         </p>
 
-        <p className="mt-0.5 text-xs text-slate-500">
+        <p className="mt-0.5 break-words [overflow-wrap:anywhere] text-xs text-slate-500">
           {task.routineName}
         </p>
       </div>
 
       <span
-        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+        className={`order-last max-w-full sm:ml-0 rounded-full sm:order-none sm:shrink-0 px-2 py-0.5 text-xs font-medium ${
           isOverdue
             ? "bg-red-100 text-red-700"
             : "bg-amber-100 text-amber-800"
@@ -267,7 +267,7 @@ function SortableMyDayRoutineTask({
         onClick={() => onEdit(task)}
         aria-label={`Edit ${task.title}`}
         title="Routine task details"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xs text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
       >
         •••
       </button>}
@@ -671,7 +671,7 @@ export default function MyDayView({
         }
         className="w-full border-b border-[var(--sortd-border)] px-1 py-4 text-left transition last:border-b-0 hover:bg-[var(--sortd-muted)]"
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold text-slate-900">
               {project.name ||
@@ -759,15 +759,15 @@ export default function MyDayView({
     return (
       <div
         key={`${task.projectId}-${task.id}`}
-        className="flex w-full items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-2"
+        className="flex min-w-0 w-full flex-wrap items-center gap-2 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 sm:px-4"
       >
-        {selecting && <input type="checkbox" checked={selectedKeys.includes(projectKey(task))} onChange={() => toggleSelected(projectKey(task))} aria-label={`Select ${task.title}`} className="h-4 w-4 shrink-0 accent-[var(--sortd-teal-dark)]" />}
+        {selecting && <input type="checkbox" checked={selectedKeys.includes(projectKey(task))} onChange={() => toggleSelected(projectKey(task))} aria-label={`Select ${task.title}`} className="h-6 w-6 shrink-0 accent-[var(--sortd-teal-dark)]" />}
         {!selecting && <button
           type="button"
           onClick={() => onCompleteProjectTask(task.projectId, task.id)}
           aria-label={`Complete ${task.title}`}
           title="Mark task complete"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
         </button>}
@@ -775,16 +775,16 @@ export default function MyDayView({
         <button
           type="button"
           onClick={() => selecting ? toggleSelected(projectKey(task)) : onOpenProject(task.projectId)}
-          className="min-w-0 flex-1 text-left"
+          className="min-h-11 min-w-0 flex-1 text-left"
         >
-          <p className="truncate font-medium text-slate-900">
+          <p className="break-words [overflow-wrap:anywhere] font-medium text-slate-900">
             {task.title || "Untitled task"}
           </p>
 
-          {options?.showProject !== false && <p className="mt-1 text-xs text-slate-500">{task.projectName}</p>}
+          {options?.showProject !== false && <p className="mt-1 break-words [overflow-wrap:anywhere] text-xs text-slate-500">{task.projectName}</p>}
         </button>
 
-        <div className="shrink-0 text-right text-xs text-slate-500">
+        <div className="order-last flex w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-left text-xs text-slate-500 sm:order-none sm:block sm:w-auto sm:shrink-0 sm:text-right">
           {options?.showStatus && (
             <span
               className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -817,28 +817,28 @@ export default function MyDayView({
     return (
       <div
         key={`${task.routineId}-${task.id}`}
-        className="flex items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-2"
+        className="flex min-w-0 flex-wrap items-center gap-2 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 sm:px-4"
       >
-        {selecting && <input type="checkbox" checked={selectedKeys.includes(routineKey(task))} onChange={() => toggleSelected(routineKey(task))} aria-label={`Select ${task.title}`} className="h-4 w-4 shrink-0 accent-[var(--sortd-teal-dark)]" />}
+        {selecting && <input type="checkbox" checked={selectedKeys.includes(routineKey(task))} onChange={() => toggleSelected(routineKey(task))} aria-label={`Select ${task.title}`} className="h-6 w-6 shrink-0 accent-[var(--sortd-teal-dark)]" />}
         {!selecting && <button
           type="button"
           onClick={() => onCompleteRoutineTask(task.routineId, task.id)}
           aria-label={`Complete ${task.title}`}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
         </button>}
 
         <div className="min-w-0 flex-1" onClick={selecting ? () => toggleSelected(routineKey(task)) : undefined}>
-          <p className="truncate font-medium text-slate-900">
+          <p className="break-words [overflow-wrap:anywhere] font-medium text-slate-900">
             {task.title || "Untitled routine task"}
           </p>
 
-          <p className="mt-1 text-xs text-slate-500">{task.routineName}</p>
+          <p className="mt-1 break-words [overflow-wrap:anywhere] text-xs text-slate-500">{task.routineName}</p>
         </div>
 
         <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+          className={`order-last max-w-full sm:ml-0 rounded-full sm:order-none sm:shrink-0 px-2 py-0.5 text-xs font-medium ${
             isOverdue
               ? "bg-red-100 text-red-700"
               : "bg-amber-100 text-amber-800"
@@ -854,7 +854,7 @@ export default function MyDayView({
           }
           aria-label={`Edit ${task.title}`}
           title="Routine task details"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
         >
           •••
         </button>}
@@ -884,20 +884,20 @@ export default function MyDayView({
   const emptyClassName = "rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-sm text-slate-500";
 
   return (
-    <div className="rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-5 shadow-sm md:p-8">
+    <div className="min-w-0 w-full max-w-full rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-3 shadow-sm sm:p-5 md:p-8">
       <header className="mb-6">
         <p className="text-sm font-medium text-[var(--sortd-teal-dark)]">{formattedDate}</p>
         <h1 className="mt-1 text-3xl font-bold text-slate-950">My Day</h1>
         <p className="mt-2 text-sm text-slate-500">Everything you need, in one place.</p>
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="My Day views" className="flex w-fit max-w-full rounded-xl bg-[var(--sortd-muted)] p-1">
+        <nav aria-label="My Day views" className="grid w-full min-w-0 grid-cols-3 rounded-xl sm:flex sm:w-fit bg-[var(--sortd-muted)] p-1">
           {(["today", "upcoming", "review"] as const).map((view) => (
             <button
               key={view}
               type="button"
               aria-pressed={dayViewMode === view}
               onClick={() => setDayViewMode(view)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium capitalize transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${dayViewMode === view ? "bg-[var(--sortd-card)] text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
+              className={`min-h-11 min-w-0 rounded-lg px-2 py-2 text-sm font-medium capitalize sm:px-4 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${dayViewMode === view ? "bg-[var(--sortd-card)] text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
             >{view}</button>
           ))}
         </nav>
@@ -918,18 +918,18 @@ export default function MyDayView({
         <section className="mb-5 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-3 sm:p-4" aria-label="Bulk update due dates">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-medium text-slate-800">{selectedVisibleKeys.length} selected</p>
-            <div className="flex gap-3 text-sm">
+            <div className="flex flex-wrap gap-3 text-sm">
               <button type="button" disabled={!visibleKeys.length} onClick={() => setSelectedKeys((current) => allVisibleSelected ? current.filter((key) => !visibleKeys.includes(key)) : [...new Set([...current, ...visibleKeys])])} className="font-medium text-[var(--sortd-teal-dark)] disabled:opacity-40">{allVisibleSelected ? "Deselect all" : "Select all shown"}</button>
               <button type="button" onClick={() => setSelectedKeys([])} className="text-slate-500">Clear</button>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">New due date
-              <input type="date" value={bulkDate} onChange={(event) => setBulkDate(event.target.value)} className="min-h-10 rounded-lg border border-[var(--sortd-border)] bg-white px-3 text-sm text-slate-900" />
+            <label className="flex w-full min-w-0 flex-col gap-1 sm:w-auto text-xs font-medium text-slate-600">New due date
+              <input type="date" value={bulkDate} onChange={(event) => setBulkDate(event.target.value)} className="min-h-11 min-w-0 w-full max-w-full rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 text-base sm:text-sm text-slate-900" />
             </label>
-            <button type="button" onClick={() => setBulkDate(toDateKey(addDays(parseDateKey(today), 1)))} className="min-h-10 rounded-lg border border-[var(--sortd-border)] px-3 text-sm">Tomorrow</button>
-            <button type="button" onClick={() => setBulkDate(toDateKey(addDays(parseDateKey(today), 7)))} className="min-h-10 rounded-lg border border-[var(--sortd-border)] px-3 text-sm">In 7 days</button>
-            <button type="button" disabled={!bulkDate || !selectedVisibleKeys.length} onClick={applyBulkDate} className="min-h-10 rounded-lg bg-[var(--sortd-teal-dark)] px-4 text-sm font-semibold text-white disabled:opacity-40">Update {selectedVisibleKeys.length} {selectedVisibleKeys.length === 1 ? "date" : "dates"}</button>
+            <button type="button" onClick={() => setBulkDate(toDateKey(addDays(parseDateKey(today), 1)))} className="min-h-11 rounded-lg border border-[var(--sortd-border)] px-3 text-sm">Tomorrow</button>
+            <button type="button" onClick={() => setBulkDate(toDateKey(addDays(parseDateKey(today), 7)))} className="min-h-11 rounded-lg border border-[var(--sortd-border)] px-3 text-sm">In 7 days</button>
+            <button type="button" disabled={!bulkDate || !selectedVisibleKeys.length} onClick={applyBulkDate} className="min-h-11 rounded-lg bg-[var(--sortd-teal-dark)] px-4 text-sm font-semibold text-white disabled:opacity-40">Update {selectedVisibleKeys.length} {selectedVisibleKeys.length === 1 ? "date" : "dates"}</button>
           </div>
         </section>
       )}
@@ -955,8 +955,8 @@ export default function MyDayView({
                       <div className="space-y-5">
                         {routineGroups.map((group) => (
                           <section key={group.routineId} aria-label={group.routineName || "Untitled routine"}>
-                            <div className="mb-2 flex items-center justify-between gap-3">
-                              <h3 className="text-sm font-medium text-slate-700">{group.routineName || "Untitled routine"}</h3>
+                            <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
+                              <h3 className="min-w-0 break-words [overflow-wrap:anywhere] text-sm font-medium text-slate-700">{group.routineName || "Untitled routine"}</h3>
                               <span className="text-xs text-slate-500">{group.tasks.length}</span>
                             </div>
                             <div className="space-y-2">
@@ -975,8 +975,8 @@ export default function MyDayView({
                   <div className="space-y-5">
                     {taskGroups.map((group) => (
                       <section key={group.projectId} aria-label={group.projectName || "Untitled project"}>
-                        <div className="mb-2 flex items-center justify-between gap-3">
-                          <button type="button" onClick={() => onOpenProject(group.projectId)} className="text-left text-sm font-medium text-slate-700 hover:text-[var(--sortd-teal-dark)]">{group.projectName || "Untitled project"}</button>
+                        <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
+                          <button type="button" onClick={() => onOpenProject(group.projectId)} className="min-h-11 min-w-0 break-words [overflow-wrap:anywhere] text-left text-sm font-medium text-slate-700 hover:text-[var(--sortd-teal-dark)]">{group.projectName || "Untitled project"}</button>
                           <span className="text-xs text-slate-500">{group.tasks.length}</span>
                         </div>
                         <div className="space-y-2">{group.tasks.map((task) => renderTask(task, { showStatus: true, showProject: false }))}</div>
@@ -1007,8 +1007,8 @@ export default function MyDayView({
                   <div className="space-y-5">
                     {day.routineGroups.map((group) => (
                       <section key={`routine-${group.routineId}`} aria-label={group.routineName || "Untitled routine"}>
-                        <div className="mb-2 flex items-center justify-between gap-3">
-                          <h4 className="text-sm font-medium text-slate-700">{group.routineName || "Untitled routine"}</h4>
+                        <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
+                          <h4 className="min-w-0 break-words [overflow-wrap:anywhere] text-sm font-medium text-slate-700">{group.routineName || "Untitled routine"}</h4>
                           <span className="text-xs text-slate-500">{group.tasks.length}</span>
                         </div>
                         <div className="space-y-2">{group.tasks.map((task) => renderRoutineTask(task))}</div>
@@ -1016,8 +1016,8 @@ export default function MyDayView({
                     ))}
                     {day.projectGroups.map((group) => (
                       <section key={`project-${group.projectId}`} aria-label={group.projectName || "Untitled project"}>
-                        <div className="mb-2 flex items-center justify-between gap-3">
-                          <button type="button" onClick={() => onOpenProject(group.projectId)} className="text-left text-sm font-medium text-slate-700 hover:text-[var(--sortd-teal-dark)]">{group.projectName || "Untitled project"}</button>
+                        <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
+                          <button type="button" onClick={() => onOpenProject(group.projectId)} className="min-h-11 min-w-0 break-words [overflow-wrap:anywhere] text-left text-sm font-medium text-slate-700 hover:text-[var(--sortd-teal-dark)]">{group.projectName || "Untitled project"}</button>
                           <span className="text-xs text-slate-500">{group.tasks.length}</span>
                         </div>
                         <div className="space-y-2">{group.tasks.map((task) => renderTask(task, { showProject: false }))}</div>
@@ -1034,7 +1034,7 @@ export default function MyDayView({
       {dayViewMode === "review" && (
         <div className="space-y-7">
           <section aria-labelledby="my-day-month">
-            <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h2 id="my-day-month" className="text-lg font-semibold text-slate-900">{new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(todayDate)}</h2>
               <span className="text-xs text-slate-500">{currentMonthProjects.length} {currentMonthProjects.length === 1 ? "project" : "projects"}</span>
             </div>
