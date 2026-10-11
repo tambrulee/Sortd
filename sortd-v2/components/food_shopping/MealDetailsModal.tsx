@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+
+import { createPortal } from "react-dom";
 
 import { Meal, MealIngredient, MealType } from "@/lib/types";
 
@@ -16,6 +18,28 @@ export default function MealDetailsModal({
   onClose,
   onSave,
 }: MealDetailsModalProps) {
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const closeCallback = useRef(onClose);
+  useEffect(() => { closeCallback.current = onClose; }, [onClose]);
+  useEffect(() => {
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") { event.preventDefault(); closeCallback.current(); }
+      if (event.key !== "Tab") return;
+      const elements = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') ?? []);
+      const first = elements[0]; const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", handleKey); previousFocus?.focus(); };
+  }, []);
+
   const [draft, setDraft] = useState<Meal>(meal);
 
   const [ingredientName, setIngredientName] = useState("");
@@ -58,29 +82,33 @@ export default function MealDetailsModal({
     });
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-[var(--sortd-bg)] p-6 shadow-xl">
-        <div className="flex items-start justify-between gap-4">
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="flex max-h-[95dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-[var(--sortd-surface)] shadow-xl sm:max-h-[90dvh] sm:rounded-3xl">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--sortd-border)] p-4 sm:px-6">
           <div>
             <p className="text-sm font-medium text-[var(--sortd-teal-dark)]">Meal</p>
 
-            <h2 className="mt-1 text-2xl font-bold text-slate-900">
+            <h2 id={titleId} className="mt-1 text-2xl font-bold text-[var(--sortd-text)]">
               Edit meal
             </h2>
           </div>
 
           <button
             type="button"
+            ref={closeRef}
+            aria-label="Close meal details"
             onClick={onClose}
-            className="text-2xl text-slate-400 hover:text-slate-700"
+            className="text-2xl text-[var(--sortd-text-muted)] hover:text-[var(--sortd-text)] min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
           >
             ×
           </button>
         </div>
 
-        <div className="mt-6 space-y-5">
-          <label className="block text-sm text-slate-600">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+          <label className="block text-sm text-[var(--sortd-text-muted)]">
             Meal name
             <input
               value={draft.name}
@@ -89,11 +117,11 @@ export default function MealDetailsModal({
                   name: event.target.value,
                 })
               }
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-900"
+              className="text-base sm:text-sm mt-1 w-full rounded-xl border border-[var(--sortd-border)] px-3 py-2 text-[var(--sortd-text)] min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
             />
           </label>
 
-          <label className="block text-sm text-slate-600">
+          <label className="block text-sm text-[var(--sortd-text-muted)]">
             Meal type
             <select
               value={draft.mealType ?? "dinner"}
@@ -102,7 +130,7 @@ export default function MealDetailsModal({
                   mealType: event.target.value as MealType,
                 })
               }
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-slate-900"
+              className="text-base sm:text-sm mt-1 w-full rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-[var(--sortd-text)] min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
             >
               <option value="breakfast">Breakfast</option>
 
@@ -113,7 +141,7 @@ export default function MealDetailsModal({
           </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="text-sm text-slate-600">
+            <label className="text-sm text-[var(--sortd-text-muted)]">
               Makes
               <input
                 type="number"
@@ -124,11 +152,11 @@ export default function MealDetailsModal({
                     defaultPortions: Math.max(1, Number(event.target.value)),
                   })
                 }
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                className="text-base sm:text-sm mt-1 w-full rounded-xl border border-[var(--sortd-border)] px-3 py-2 min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
               />
             </label>
 
-            <label className="text-sm text-slate-600">
+            <label className="text-sm text-[var(--sortd-text-muted)]">
               Portions ready
               <input
                 type="number"
@@ -139,13 +167,13 @@ export default function MealDetailsModal({
                     portionsAvailable: Math.max(0, Number(event.target.value)),
                   })
                 }
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                className="text-base sm:text-sm mt-1 w-full rounded-xl border border-[var(--sortd-border)] px-3 py-2 min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
               />
             </label>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="text-sm text-slate-600">
+            <label className="text-sm text-[var(--sortd-text-muted)]">
               Prep time
               <input
                 type="number"
@@ -160,11 +188,11 @@ export default function MealDetailsModal({
                   })
                 }
                 placeholder="Minutes"
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                className="text-base sm:text-sm mt-1 w-full rounded-xl border border-[var(--sortd-border)] px-3 py-2 min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
               />
             </label>
 
-            <label className="text-sm text-slate-600">
+            <label className="text-sm text-[var(--sortd-text-muted)]">
               Cook time
               <input
                 type="number"
@@ -179,39 +207,41 @@ export default function MealDetailsModal({
                   })
                 }
                 placeholder="Minutes"
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                className="text-base sm:text-sm mt-1 w-full rounded-xl border border-[var(--sortd-border)] px-3 py-2 min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
               />
             </label>
           </div>
 
           <section>
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900">Ingredients</h3>
+              <h3 className="font-semibold text-[var(--sortd-text)]">Ingredients</h3>
 
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-[var(--sortd-text-muted)]">
                 {draft.ingredients.length} added
               </span>
             </div>
 
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,0.6fr)] gap-2 sm:flex">
               <input
                 value={ingredientName}
                 onChange={(event) => setIngredientName(event.target.value)}
+                aria-label="Ingredient name"
                 placeholder="Ingredient"
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2"
+                className="text-base sm:text-sm min-w-0 flex-1 rounded-xl border border-[var(--sortd-border)] px-3 py-2 min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
               />
 
               <input
                 value={ingredientQuantity}
                 onChange={(event) => setIngredientQuantity(event.target.value)}
+                aria-label="Ingredient quantity"
                 placeholder="e.g. 400g"
-                className="w-32 rounded-xl border border-slate-200 px-3 py-2"
+                className="text-base sm:text-sm min-w-0 w-full sm:w-32 rounded-xl border border-[var(--sortd-border)] px-3 py-2 min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
               />
 
               <button
                 type="button"
                 onClick={addIngredient}
-                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                className="col-span-2 rounded-xl bg-[var(--sortd-navy)] px-4 py-2 text-sm font-semibold text-white min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
               >
                 Add
               </button>
@@ -221,15 +251,15 @@ export default function MealDetailsModal({
               {draft.ingredients.map((ingredient) => (
                 <div
                   key={ingredient.id}
-                  className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2"
+                  className="flex items-center justify-between rounded-xl bg-[var(--sortd-muted)] px-3 py-2"
                 >
                   <div>
-                    <span className="font-medium text-slate-800">
+                    <span className="font-medium text-[var(--sortd-text)]">
                       {ingredient.name}
                     </span>
 
                     {ingredient.quantity && (
-                      <span className="ml-2 text-sm text-slate-400">
+                      <span className="ml-2 text-sm text-[var(--sortd-text-muted)]">
                         {ingredient.quantity}
                       </span>
                     )}
@@ -237,8 +267,9 @@ export default function MealDetailsModal({
 
                   <button
                     type="button"
+                    aria-label={`Remove ${ingredient.name}`}
                     onClick={() => removeIngredient(ingredient.id)}
-                    className="text-slate-400 hover:text-red-500"
+                    className="text-[var(--sortd-text-muted)] hover:text-red-500 min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
                   >
                     ×
                   </button>
@@ -247,7 +278,7 @@ export default function MealDetailsModal({
             </div>
           </section>
 
-          <label className="block text-sm text-slate-600">
+          <label className="block text-sm text-[var(--sortd-text-muted)]">
             Notes
             <textarea
               value={draft.notes ?? ""}
@@ -258,32 +289,35 @@ export default function MealDetailsModal({
               }
               rows={4}
               placeholder="Recipe notes, cooking instructions, substitutions..."
-              className="mt-1 w-full resize-none rounded-xl border border-slate-200 px-3 py-2"
+              className="text-base sm:text-sm mt-1 w-full resize-none rounded-xl border border-[var(--sortd-border)] px-3 py-2 min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
             />
           </label>
         </div>
 
-        <div className="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-4">
+        <div className="flex shrink-0 justify-end gap-2 border-t border-[var(--sortd-border)] p-4 sm:px-6">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl px-4 py-2 text-sm font-medium text-slate-600"
+            className="rounded-xl px-4 py-2 text-sm font-medium text-[var(--sortd-text-muted)] min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
           >
             Cancel
           </button>
 
           <button
             type="button"
+            disabled={!draft.name.trim()}
             onClick={() => {
-              onSave(draft);
+              if (!draft.name.trim()) return;
+              onSave({ ...draft, name: draft.name.trim() });
               onClose();
             }}
-            className="rounded-xl bg-[var(--sortd-teal-dark)] px-5 py-2 text-sm font-semibold text-white"
+            className="rounded-xl bg-[var(--sortd-teal-dark)] px-5 py-2 text-sm font-semibold text-white min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
           >
             Save meal
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

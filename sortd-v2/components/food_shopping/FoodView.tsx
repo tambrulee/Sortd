@@ -316,29 +316,30 @@ function moveShoppingItem(draggedId: string, targetId: string) {
 }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-4 sm:p-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-[var(--sortd-teal-dark)]">Food</p>
 
-          <h1 className="mt-1 text-3xl font-bold text-slate-900">
-            Plan food without overthinking it.
+          <h1 className="mt-1 text-2xl font-bold text-[var(--sortd-text)]">
+            Food & meals
           </h1>
 
-          <p className="mt-2 max-w-2xl text-sm text-slate-500">
+          <p className="mt-2 max-w-2xl text-sm text-[var(--sortd-text-muted)]">
             Plan the week, keep meals you like, and turn ingredients into a
             shopping list when you actually need them.
           </p>
         </div>
 
-        <div className="flex rounded-xl bg-slate-100 p-1">
+        <div role="group" aria-label="Food views" className="flex max-w-full flex-wrap rounded-xl bg-[var(--sortd-muted)] p-1">
           <button
             type="button"
+            aria-pressed={activeTab === "week"}
             onClick={() => setActiveTab("week")}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+            className={`min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
               activeTab === "week"
-                ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
-                : "text-slate-500"
+                ? "bg-[var(--sortd-card)] text-[var(--sortd-text)] shadow-sm"
+                : "text-[var(--sortd-text-muted)]"
             }`}
           >
             This week
@@ -346,11 +347,12 @@ function moveShoppingItem(draggedId: string, targetId: string) {
 
           <button
             type="button"
+            aria-pressed={activeTab === "meals"}
             onClick={() => setActiveTab("meals")}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+            className={`min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
               activeTab === "meals"
-                ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
-                : "text-slate-500"
+                ? "bg-[var(--sortd-card)] text-[var(--sortd-text)] shadow-sm"
+                : "text-[var(--sortd-text-muted)]"
             }`}
           >
             Meals
@@ -358,11 +360,12 @@ function moveShoppingItem(draggedId: string, targetId: string) {
 
           <button
             type="button"
+            aria-pressed={activeTab === "shopping"}
             onClick={() => setActiveTab("shopping")}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+            className={`min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
               activeTab === "shopping"
-                ? "bg-[var(--sortd-bg)] text-slate-900 shadow-sm"
-                : "text-slate-500"
+                ? "bg-[var(--sortd-card)] text-[var(--sortd-text)] shadow-sm"
+                : "text-[var(--sortd-text-muted)]"
             }`}
           >
             Food shop
@@ -371,12 +374,12 @@ function moveShoppingItem(draggedId: string, targetId: string) {
       </header>
 
       {activeTab === "week" ? (
-        <section className="space-y-4">
+        <section className="space-y-4 min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]">
           <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={() => moveWeek(-1)}
-              className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-600"
+              className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-sm text-[var(--sortd-text-muted)] min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
             >
               ← Previous
             </button>
@@ -384,7 +387,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             <button
               type="button"
               onClick={() => setWeekAnchor(new Date())}
-              className="text-sm font-medium text-[var(--sortd-teal-dark)]"
+              className="text-sm font-medium text-[var(--sortd-teal-dark)] min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
             >
               This week
             </button>
@@ -392,7 +395,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             <button
               type="button"
               onClick={() => moveWeek(1)}
-              className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-600"
+              className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-sm text-[var(--sortd-text-muted)] min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
             >
               Next →
             </button>
@@ -409,13 +412,13 @@ function moveShoppingItem(draggedId: string, targetId: string) {
               return (
                 <article
                   key={dateKey}
-                  className="rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] p-5"
+                  className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-5"
                 >
-                  <h2 className="text-lg font-semibold text-slate-900">
+                  <h2 className="text-lg font-semibold text-[var(--sortd-text)]">
                     {formatter.format(date)}
                   </h2>
 
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-3 grid gap-3 md:grid-cols-3">
                     {mealTypes.map(({ value, label }) => {
                       const sectionEntry = entries.find(
                         (entry) => (entry.mealType ?? "dinner") === value,
@@ -434,16 +437,16 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                       return (
                         <section
                           key={value}
-                          className="rounded-xl bg-slate-50 p-4"
+                          className="min-w-0 rounded-xl bg-[var(--sortd-muted)] p-3"
                         >
-                          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--sortd-text-muted)]">
                             {label}
                           </p>
 
                           {sectionEntry && plannedMeal ? (
-                            <div className="rounded-xl bg-[#f8f1fa] p-3">
+                            <div className="rounded-xl bg-[var(--sortd-card)] p-3">
                               <div className="flex items-center justify-between gap-2">
-                                <p className="text-sm font-semibold text-slate-800">
+                                <p className="text-sm font-semibold text-[var(--sortd-text)]">
                                   {plannedMeal.name}
                                 </p>
 
@@ -452,7 +455,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                                   onClick={() =>
                                     removePlanEntry(sectionEntry.id)
                                   }
-                                  className="text-slate-400 hover:text-red-500"
+                                  className="text-[var(--sortd-text-muted)] hover:text-red-500 min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
                                   aria-label={`Remove ${plannedMeal.name}`}
                                 >
                                   ×
@@ -461,16 +464,18 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                             </div>
                           ) : (
                             <select
+                              aria-label={`Plan ${label.toLowerCase()} for ${formatter.format(date)}`}
+                              disabled={availableMeals.length === 0}
                               defaultValue=""
                               onChange={(event) => {
                                 planMeal(dateKey, event.target.value);
 
                                 event.target.value = "";
                               }}
-                              className="w-full rounded-xl border border-dashed border-slate-300 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-500"
+                              className="w-full rounded-xl border border-dashed border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-base sm:text-sm text-[var(--sortd-text-muted)] min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
                             >
                               <option value="">
-                                + Add {label.toLowerCase()}
+                                {availableMeals.length ? `+ Add ${label.toLowerCase()}` : `Save a ${label.toLowerCase()} meal first`}
                               </option>
 
                               {availableMeals.map((meal) => (
@@ -491,25 +496,27 @@ function moveShoppingItem(draggedId: string, targetId: string) {
         </section>
       ) : activeTab === "meals" ? (
         <section className="space-y-6">
-          <div className="flex gap-2 rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] p-3">
+          <div className="flex flex-wrap gap-2 rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-3">
             <input
               value={newMealName}
               onChange={(event) => setNewMealName(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") {
+                if (event.key === "Enter" && !event.nativeEvent.isComposing) {
                   addMeal();
                 }
               }}
+              aria-label="New meal name"
               placeholder="Add a meal..."
-              className="min-w-0 flex-1 bg-transparent px-2 py-1 outline-none"
+              className="text-base sm:text-sm min-w-0 flex-1 bg-transparent px-2 py-1 outline-none min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
             />
 
             <select
+              aria-label="New meal type"
               value={newMealType}
               onChange={(event) =>
                 setNewMealType(event.target.value as MealType)
               }
-              className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm"
+              className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-base sm:text-sm min-h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
             >
               <option value="breakfast">Breakfast</option>
 
@@ -521,19 +528,19 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             <button
               type="button"
               onClick={addMeal}
-              className="rounded-xl bg-[var(--sortd-teal-dark)] px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-xl bg-[var(--sortd-teal-dark)] px-4 py-2 text-sm font-semibold text-white min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
             >
               Add meal
             </button>
           </div>
 
           {foodData.meals.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 bg-[var(--sortd-bg)] p-10 text-center">
-              <p className="font-semibold text-slate-700">
+            <div className="rounded-3xl border border-dashed border-[var(--sortd-border)] bg-[var(--sortd-card)] p-10 text-center">
+              <p className="font-semibold text-[var(--sortd-text)]">
                 No meals saved yet.
               </p>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">
                 Add things you genuinely cook, not an aspirational recipe
                 catalogue.
               </p>
@@ -548,17 +555,17 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                 return (
                   <section key={value}>
                     <div className="mb-3 flex items-center gap-3">
-                      <h2 className="text-lg font-semibold text-slate-900">
+                      <h2 className="text-lg font-semibold text-[var(--sortd-text)]">
                         {label}
                       </h2>
 
-                      <span className="text-sm text-slate-400">
+                      <span className="text-sm text-[var(--sortd-text-muted)]">
                         {meals.length}
                       </span>
                     </div>
 
                     {meals.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-slate-200 bg-[var(--sortd-bg)] p-5 text-sm text-slate-400">
+                      <div className="rounded-2xl border border-dashed border-[var(--sortd-border)] bg-[var(--sortd-card)] p-5 text-sm text-[var(--sortd-text-muted)]">
                         No {label.toLowerCase()} meals saved yet.
                       </div>
                     ) : (
@@ -566,20 +573,12 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                         {meals.map((meal) => (
                           <article
                             key={meal.id}
-                            onClick={() => setSelectedMeal(meal)}
-                            className="cursor-pointer rounded-2xl border border-slate-200 bg-[var(--sortd-bg)] p-5 transition hover:border-slate-300"
+                            className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-5 transition hover:border-[var(--sortd-border)]"
                           >
                             <div className="flex items-start justify-between gap-4">
-                              <input
-                                value={meal.name}
-                                onClick={(event) => event.stopPropagation()}
-                                onChange={(event) =>
-                                  updateMeal(meal.id, {
-                                    name: event.target.value,
-                                  })
-                                }
-                                className="min-w-0 flex-1 bg-transparent text-lg font-semibold text-slate-900 outline-none"
-                              />
+                              <button type="button" onClick={() => setSelectedMeal(meal)} className="min-h-11 min-w-11 min-w-0 flex-1 text-left text-lg font-semibold text-[var(--sortd-text)] hover:text-[var(--sortd-teal-dark)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]">
+                                {meal.name || "Untitled meal"}
+                              </button>
 
                               <button
                                 type="button"
@@ -588,7 +587,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
 
                                   setMealToDeleteId(meal.id);
                                 }}
-                                className="text-slate-400 hover:text-red-500"
+                                className="text-[var(--sortd-text-muted)] hover:text-red-500 min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
                                 aria-label={`Delete ${meal.name}`}
                               >
                                 ×
@@ -596,7 +595,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                             </div>
 
                             <div className="mt-5 grid grid-cols-2 gap-3">
-                              <label className="text-xs text-slate-500">
+                              <label className="text-xs text-[var(--sortd-text-muted)]">
                                 Makes
                                 <input
                                   type="number"
@@ -611,11 +610,11 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                                       ),
                                     })
                                   }
-                                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                                  className="mt-1 w-full rounded-xl border border-[var(--sortd-border)] px-3 py-2 text-base sm:text-sm text-[var(--sortd-text)] min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
                                 />
                               </label>
 
-                              <label className="text-xs text-slate-500">
+                              <label className="text-xs text-[var(--sortd-text-muted)]">
                                 Portions ready
                                 <input
                                   type="number"
@@ -630,13 +629,13 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                                       ),
                                     })
                                   }
-                                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                                  className="mt-1 w-full rounded-xl border border-[var(--sortd-border)] px-3 py-2 text-base sm:text-sm text-[var(--sortd-text)] min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
                                 />
                               </label>
                             </div>
 
-                            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
-                              <span className="text-slate-500">
+                            <div className="mt-4 flex items-center justify-between border-t border-[var(--sortd-border)] pt-4 text-sm">
+                              <span className="text-[var(--sortd-text-muted)]">
                                 {meal.ingredients.length} ingredients
                               </span>
 
@@ -650,8 +649,8 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                                 }}
                                 className={`font-medium ${
                                   meal.ingredients.length > 0
-                                    ? "text-[var(--sortd-teal-dark)] hover:text-[#8d2fa8]"
-                                    : "cursor-not-allowed text-slate-300"
+                                    ? "text-[var(--sortd-teal-dark)] hover:text-[var(--sortd-navy)]"
+                                    : "cursor-not-allowed text-[var(--sortd-text-muted)]"
                                 }`}
                               >
                                 Buy ingredients
@@ -668,25 +667,26 @@ function moveShoppingItem(draggedId: string, targetId: string) {
           )}
         </section>
       ) : (
-        <section className="space-y-4">
+        <section className="space-y-4 min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">
+              <h2 className="text-xl font-semibold text-[var(--sortd-text)]">
                 Food shop
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">
                 Ingredients you&apos;ve chosen to buy.
               </p>
             </div>
 
             {shoppingList.length > 0 && (
               <div className="flex items-center gap-3">
-                <span className="text-sm text-slate-400">
+                <span className="text-sm text-[var(--sortd-text-muted)]">
                   {shoppingList.filter((item) => !item.purchased).length} left
                 </span>
 
                 <select
+                  aria-label="Shopping list order"
                   value={shoppingSort}
                   onChange={(event) =>
                     setShoppingSort(
@@ -698,7 +698,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                         | "purchased",
                     )
                   }
-                  className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm text-slate-700"
+                  className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-base sm:text-sm text-[var(--sortd-text)] min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
                 >
                   <option value="manual">Manual order</option>
                   <option value="unpurchased">Unbought first</option>
@@ -711,7 +711,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
           </div>
 
           {shoppingList.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-[var(--sortd-bg)] p-8 text-center text-sm text-slate-400">
+            <div className="rounded-2xl border border-dashed border-[var(--sortd-border)] bg-[var(--sortd-card)] p-8 text-center text-sm text-[var(--sortd-text-muted)]">
               Nothing to buy yet.
             </div>
           ) : (
@@ -760,13 +760,13 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                       : ""
                   } ${
                     item.purchased
-                      ? "border-emerald-100 bg-emerald-50/40"
-                      : "border-slate-200 bg-[var(--sortd-bg)]"
+                      ? "border-[var(--sortd-border)] bg-[var(--sortd-muted)]"
+                      : "border-[var(--sortd-border)] bg-[var(--sortd-card)]"
                   }`}
                 >
                   {shoppingSort === "manual" && (
                     <span
-                      className="select-none text-lg text-slate-300"
+                      className="select-none text-lg text-[var(--sortd-text-muted)]"
                       aria-hidden="true"
                     >
                       ⋮⋮
@@ -774,6 +774,8 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                   )}
                   <input
                     type="checkbox"
+                    aria-label={`Mark ${item.title} as ${item.purchased ? "unbought" : "purchased"}`}
+                    className="text-base sm:text-sm h-6 w-6 shrink-0 accent-[var(--sortd-teal-dark)]"
                     checked={item.purchased}
                     onChange={() => {
                       onChangeFoodData({
@@ -795,18 +797,22 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                     <p
                       className={`font-medium ${
                         item.purchased
-                          ? "text-slate-400 line-through"
-                          : "text-slate-800"
+                          ? "text-[var(--sortd-text-muted)] line-through"
+                          : "text-[var(--sortd-text)]"
                       }`}
                     >
                       {item.title}
                     </p>
 
                     {item.quantity && (
-                      <p className="text-sm text-slate-400">{item.quantity}</p>
+                      <p className="text-sm text-[var(--sortd-text-muted)]">{item.quantity}</p>
                     )}
                   </div>
 
+                  {shoppingSort === "manual" && <div className="flex shrink-0">
+                    <button type="button" aria-label={`Move ${item.title} earlier`} disabled={shoppingList[0]?.id === item.id} onClick={() => moveShoppingItem(item.id, shoppingList[shoppingList.findIndex((entry) => entry.id === item.id) - 1].id)} className="min-h-11 min-w-11 min-w-11 text-[var(--sortd-text-muted)] disabled:opacity-30">↑</button>
+                    <button type="button" aria-label={`Move ${item.title} later`} disabled={shoppingList[shoppingList.length - 1]?.id === item.id} onClick={() => moveShoppingItem(item.id, shoppingList[shoppingList.findIndex((entry) => entry.id === item.id) + 1].id)} className="min-h-11 min-w-11 min-w-11 text-[var(--sortd-text-muted)] disabled:opacity-30">↓</button>
+                  </div>}
                   <button
                     type="button"
                     onClick={() => {
@@ -818,7 +824,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                         ),
                       });
                     }}
-                    className="text-slate-400 hover:text-red-500"
+                    className="text-[var(--sortd-text-muted)] hover:text-red-500 min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
                     aria-label={`Remove ${item.title}`}
                   >
                     ×
