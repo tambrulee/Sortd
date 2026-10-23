@@ -239,6 +239,13 @@ export default function ShoppingItemModal({
             </label>
           </div>
 
+          <label className={labelClassName}>
+            Planned purchase date
+            <input type="date" value={item.plannedPurchaseDate ?? ""}
+              onChange={(event) => onChange({ plannedPurchaseDate: event.target.value || null })}
+              className={fieldClassName} />
+          </label>
+
           <div className="rounded-2xl bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-4">
               <div>

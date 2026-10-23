@@ -1218,6 +1218,8 @@ export default function Home() {
           <div className="min-w-0 w-full max-w-full [&>*]:min-w-0 [&>*]:max-w-full">
           {activeView === "my-day" ? (
             <MyDayView
+              shoppingLists={shoppingLists}
+              onChangeShoppingLists={setShoppingLists}
               tasks={allTasks}
               routines={routines}
               projects={lists}

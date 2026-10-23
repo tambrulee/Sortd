@@ -290,6 +290,7 @@ export type ShoppingItem = {
   order: number;
   createdAt: string;
   intent?: ShoppingIntent;
+  plannedPurchaseDate?: string | null;
 };
 
 export type ShoppingList = {

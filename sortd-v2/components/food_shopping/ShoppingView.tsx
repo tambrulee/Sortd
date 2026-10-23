@@ -95,6 +95,17 @@ export default function ShoppingView({
     itemId: string;
   } | null>(null);
 
+  const [selectingShopping, setSelectingShopping] = useState(false);
+  const [selectedShoppingKeys, setSelectedShoppingKeys] = useState<string[]>([]);
+  const [bulkPurchaseDate, setBulkPurchaseDate] = useState("");
+  const [newItemPlannedDate, setNewItemPlannedDate] = useState("");
+  const shoppingKey = (listId: string, itemId: string) => `${listId}:${itemId}`;
+  const localDate = (offset = 0) => {
+    const date = new Date();
+    date.setDate(date.getDate() + offset);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  };
+
   const [newItemTitle, setNewItemTitle] = useState("");
 
   const [newItemQuantity, setNewItemQuantity] = useState("");
@@ -356,6 +367,7 @@ export default function ShoppingView({
           ? Math.max(0, parsedCost)
           : undefined,
 
+      plannedPurchaseDate: newItemPlannedDate || null,
       purchased: false,
 
       order: activeList.items.length + 1,
@@ -371,6 +383,7 @@ export default function ShoppingView({
     setNewItemTitle("");
     setNewItemQuantity("");
     setNewItemEstimatedCost("");
+    setNewItemPlannedDate("");
   }
 
   function updateItem(
@@ -491,6 +504,18 @@ export default function ShoppingView({
     setIntentFilter("all");
   }
 
+  function applyBulkPurchaseDate(date: string | null) {
+    const chosen = new Set(selectedShoppingKeys);
+    onChangeShoppingLists(shoppingLists.map((list) => ({
+      ...list,
+      items: list.items.map((item) => chosen.has(shoppingKey(list.id, item.id))
+        ? { ...item, plannedPurchaseDate: date } : item),
+    })));
+    setSelectedShoppingKeys([]);
+    setSelectingShopping(false);
+    setBulkPurchaseDate("");
+  }
+
   function renderItem(item: ShoppingItemWithList) {
     const itemIntent = item.intent ?? "need";
 
@@ -508,8 +533,17 @@ export default function ShoppingView({
         }`}
       >
         <div className="flex items-center gap-3">
+          {selectingShopping && <input type="checkbox"
+            checked={selectedShoppingKeys.includes(shoppingKey(item.listId, item.id))}
+            onChange={() => {
+              const key = shoppingKey(item.listId, item.id);
+              setSelectedShoppingKeys((current) => current.includes(key)
+                ? current.filter((value) => value !== key) : [...current, key]);
+            }}
+            aria-label={`Select ${item.title}`} className="h-5 w-5 shrink-0" />}
           <input
             type="checkbox"
+            disabled={selectingShopping}
             checked={item.purchased}
             onChange={() => toggleItem(item.listId, item.id)}
             aria-label={`Mark ${item.title} as bought`}
@@ -557,6 +591,7 @@ export default function ShoppingView({
                 </>
               )}
 
+              {item.plannedPurchaseDate && <><span className="text-slate-300">·</span><span>Planned {item.plannedPurchaseDate}</span></>}
               {item.estimatedCost !== undefined && (
                 <>
                   <span className="text-slate-300">·</span>
@@ -990,6 +1025,12 @@ export default function ShoppingView({
                     ))}
                   </select>
 
+                  <label className="flex min-w-0 flex-col gap-1 text-xs text-slate-600 sm:col-span-2">
+                    Planned purchase date (optional)
+                    <input type="date" value={newItemPlannedDate}
+                      onChange={(event) => setNewItemPlannedDate(event.target.value)}
+                      className="min-h-11 rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 text-sm" />
+                  </label>
                   <div className="flex min-w-0">
                     <div className="flex min-w-0 flex-1 items-center rounded-l-xl border border-r-0 border-slate-200 bg-[var(--sortd-bg)] px-3">
                       <span className="text-slate-400">£</span>
@@ -1018,6 +1059,35 @@ export default function ShoppingView({
               </form>
             </>
           )}
+
+          <section className="mt-6 rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div><h2 className="text-sm font-semibold text-slate-900">Plan purchases</h2>
+                <p className="text-xs text-slate-500">Select multiple items to schedule them together.</p></div>
+              <button type="button" onClick={() => { setSelectingShopping((value) => !value); setSelectedShoppingKeys([]); }}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                {selectingShopping ? "Cancel selection" : "Select items"}
+              </button>
+            </div>
+            {selectingShopping && <div className="mt-4 space-y-3">
+              <p className="text-sm">{selectedShoppingKeys.length} selected</p>
+              <div className="flex flex-wrap gap-3 text-sm">
+                <button type="button" onClick={() => setSelectedShoppingKeys(filteredItems.map((item) => shoppingKey(item.listId, item.id)))} className="text-[var(--sortd-teal-dark)]">Select all shown</button>
+                <button type="button" onClick={() => setSelectedShoppingKeys([])}>Clear selection</button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input type="date" value={bulkPurchaseDate} onChange={(event) => setBulkPurchaseDate(event.target.value)}
+                  className="min-h-11 min-w-0 rounded-lg border border-slate-200 px-3 text-sm" />
+                <button type="button" onClick={() => setBulkPurchaseDate(localDate())} className="rounded-lg border px-3 py-2 text-sm">Today</button>
+                <button type="button" onClick={() => setBulkPurchaseDate(localDate(1))} className="rounded-lg border px-3 py-2 text-sm">Tomorrow</button>
+                <button type="button" onClick={() => setBulkPurchaseDate(localDate(7))} className="rounded-lg border px-3 py-2 text-sm">In 7 days</button>
+                <button type="button" disabled={!bulkPurchaseDate || !selectedShoppingKeys.length}
+                  onClick={() => applyBulkPurchaseDate(bulkPurchaseDate)} className="rounded-lg bg-[var(--sortd-teal-dark)] px-4 py-2 text-sm text-white disabled:opacity-40">Apply date</button>
+                <button type="button" disabled={!selectedShoppingKeys.length} onClick={() => applyBulkPurchaseDate(null)}
+                  className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Remove dates</button>
+              </div>
+            </div>}
+          </section>
 
           <section className="mt-7">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">

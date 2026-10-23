@@ -4,6 +4,8 @@ import { useState } from "react";
 import {
   Routine,
   SortdList,
+  ShoppingList,
+  ShoppingItem,
   Task,
 } from "@/lib/types";
 
@@ -38,6 +40,8 @@ type MyDayViewProps = {
   tasks: TaskWithProject[];
   routines: Routine[];
   projects: SortdList[];
+  shoppingLists: ShoppingList[];
+  onChangeShoppingLists: (lists: ShoppingList[]) => void;
 
   onChangeRoutines: (
     routines: Routine[],
@@ -279,6 +283,8 @@ export default function MyDayView({
   tasks,
   routines,
   projects,
+  shoppingLists,
+  onChangeShoppingLists,
   onChangeRoutines,
   onOpenProject,
   onCompleteProjectTask,
@@ -287,6 +293,32 @@ export default function MyDayView({
   onUpdateRoutineTask,
   onDeleteRoutineTask,
 }: MyDayViewProps) {
+  const plannedShopping = shoppingLists.flatMap((list) => list.items.map((item) => ({ ...item, listId: list.id, listName: list.name })))
+    .filter((item) => !item.purchased && Boolean(item.plannedPurchaseDate));
+  const updateShopping = (listId: string, itemId: string, updates: Partial<ShoppingItem>) =>
+    onChangeShoppingLists(shoppingLists.map((list) => list.id !== listId ? list : ({
+      ...list, items: list.items.map((item) => item.id === itemId ? { ...item, ...updates } : item),
+    })));
+  const renderShopping = (items: typeof plannedShopping) => items.length > 0 ? (
+    <section className="space-y-2" aria-label="Planned shopping">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-slate-800">Shopping · {items.length} items</h3>
+        <span className="text-xs text-slate-500">Estimated £{items.reduce((sum, item) => sum + (item.estimatedCost ?? 0), 0).toFixed(2)}</span>
+      </div>
+      {items.map((item) => <div key={`${item.listId}:${item.id}`} className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2">
+        <input type="checkbox" checked={false} aria-label={`Mark ${item.title} bought`}
+          onChange={() => updateShopping(item.listId, item.id, { purchased: true })}
+          className="h-5 w-5 shrink-0 accent-[var(--sortd-teal-dark)]" />
+        <div className="min-w-0 flex-1"><p className="break-words text-sm font-medium">{item.title}</p>
+          <p className="text-xs text-slate-500">{item.shop || item.listName}{item.plannedPurchaseDate && item.plannedPurchaseDate < getLocalDateKey() ? " · Past planned date" : ""}</p></div>
+        {item.estimatedCost !== undefined && <span className="text-sm font-medium">£{item.estimatedCost.toFixed(2)}</span>}
+        <input type="date" aria-label={`Reschedule ${item.title}`} value={item.plannedPurchaseDate ?? ""}
+          onChange={(event) => updateShopping(item.listId, item.id, { plannedPurchaseDate: event.target.value || null })}
+          className="min-w-0 w-[115px] rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-1 py-2 text-xs sm:w-[145px]" />
+      </div>)}
+    </section>
+  ) : null;
+
   const today = getLocalDateKey();
 
   const [dayViewMode, setDayViewMode] = useState<"today" | "upcoming" | "review">("today");
@@ -870,6 +902,7 @@ export default function MyDayView({
       label: index === 0 ? "Tomorrow" : new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "short" }).format(date),
       tasks: upcomingTasks.filter((task) => task.dueDate === key),
       routines: upcomingRoutineTasks.filter((task) => task.nextDueDate === key),
+      shopping: plannedShopping.filter((item) => item.plannedPurchaseDate === key),
       projectGroups: Array.from(new Set(upcomingTasks.filter((task) => task.dueDate === key).map((task) => task.projectId))).map((projectId) => {
         const tasks = upcomingTasks.filter((task) => task.dueDate === key && task.projectId === projectId);
         return { projectId, projectName: tasks[0].projectName, tasks };
@@ -879,7 +912,7 @@ export default function MyDayView({
         return { routineId, routineName: tasks[0].routineName, tasks };
       }),
     };
-  }).filter((day) => day.tasks.length + day.routines.length > 0);
+  }).filter((day) => day.tasks.length + day.routines.length + day.shopping.length > 0);
 
   const emptyClassName = "rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-sm text-slate-500";
 
@@ -941,6 +974,7 @@ export default function MyDayView({
             <p><strong className={overdue.length + overdueRoutineTasks.length > 0 ? "font-semibold text-red-700" : "font-semibold text-slate-900"}>{overdue.length + overdueRoutineTasks.length}</strong> overdue</p>
             <p title="Estimates for items due today; excludes overdue items and items without an estimate.">{workloadMinutes > 0 ? `${formatDuration(workloadMinutes)} estimated today` : "No time estimated today"}</p>
           </div>
+          {renderShopping(plannedShopping.filter((item) => item.plannedPurchaseDate! <= today))}
           {itemDisplayMode === "all" ? (
             <section aria-label="All routines and tasks" className="space-y-2">
               {allActionableItems.length > 0 ? allActionableItems.map((item) => item.kind === "routine" ? renderRoutineTask(item.task) : renderTask(item.task, { showStatus: true })) : <p className={emptyClassName}>Nothing needs your attention today.</p>}
@@ -998,6 +1032,7 @@ export default function MyDayView({
             {upcomingDays.length > 0 ? upcomingDays.map((day) => (
               <section key={day.key} aria-label={day.label}>
                 <h3 className="mb-3 text-sm font-semibold text-slate-700">{day.label}</h3>
+                {renderShopping(day.shopping)}
                 {itemDisplayMode === "all" ? (
                   <div className="space-y-2">
                     {day.routines.map((task) => renderRoutineTask(task))}
