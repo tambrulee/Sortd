@@ -15,6 +15,7 @@ import ProjectsView from "@/components/planner/ProjectsView";
 import Footer from "@/components/general/Footer";
 import WorkspaceNav from "@/components/planner/WorkspaceNav";
 import MyDayView from "@/components/planner/MyDayView";
+import OverviewView from "@/components/planner/OverviewView";
 import AuthPanel from "@/components/general/AuthPanel";
 import RoutinesView from "@/components/planner/RoutinesView";
 import { createDefaultScheduleSettings } from "@/lib/schedule";
@@ -401,7 +402,7 @@ export default function Home() {
   const [activeView, setActiveView] =
     useState<AppView>(() => {
       if (typeof window === "undefined") {
-        return "my-day";
+        return "overview";
       }
 
       const storedView =
@@ -409,7 +410,7 @@ export default function Home() {
           "sortd-active-view",
         ) as AppView | null;
 
-      return storedView ?? "my-day";
+      return storedView ?? "overview";
     });
 
   useEffect(() => {
@@ -1216,10 +1217,10 @@ export default function Home() {
           </div>
 
           <div className="min-w-0 w-full max-w-full [&>*]:min-w-0 [&>*]:max-w-full">
-          {activeView === "my-day" ? (
+          {activeView === "overview" ? (
+            <OverviewView projects={lists} routines={routines} goals={goals} dreams={dreams} shoppingLists={shoppingLists} foodData={foodData} onNavigate={setActiveView} onOpenProject={(id) => { setActiveListId(id); setActiveView("projects"); }} />
+          ) : activeView === "my-day" ? (
             <MyDayView
-              shoppingLists={shoppingLists}
-              onChangeShoppingLists={setShoppingLists}
               tasks={allTasks}
               routines={routines}
               projects={lists}

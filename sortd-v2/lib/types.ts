@@ -127,6 +127,7 @@ export interface SortdWorkspace {
 }
 
 export type AppView =
+  | "overview"
   | "my-day"
   | "planner"
   | "upcoming"

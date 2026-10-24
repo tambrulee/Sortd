@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppView } from "@/lib/types";
@@ -12,6 +13,11 @@ const navigationItems: {
   label: string;
   icon: string;
 }[] = [
+  {
+    id: "overview",
+    label: "Overview",
+    icon: "◫",
+  },
   {
     id: "my-day",
     label: "My Day",
@@ -64,8 +70,8 @@ export default function WorkspaceNav({
   onChangeView,
 }: WorkspaceNavProps) {
   return (
-    <nav className="rounded-3xl bg-[var(--sortd-bg)]/85 p-4 shadow-xl backdrop-blur-md">
-      <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+    <nav className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-3 shadow-sm">
+      <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--sortd-text-muted)]">
         Workspace
       </p>
 
@@ -78,15 +84,23 @@ export default function WorkspaceNav({
               key={item.id}
               type="button"
               onClick={() => onChangeView(item.id)}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition ${
+              aria-current={isActive ? "page" : undefined}
+              className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
                 isActive
-                  ? "bg-[#1f0825] text-white"
-                  : "text-slate-700 hover:bg-[var(--sortd-grey)]"
+                  ? "bg-[var(--sortd-navy)] text-white"
+                  : "text-[var(--sortd-text)] hover:bg-[var(--sortd-muted)]"
               }`}
             >
-              <span className="w-5 text-center">{item.icon}</span>
+              <span
+                className="w-6 shrink-0 text-center text-base"
+                aria-hidden="true"
+              >
+                {item.icon}
+              </span>
 
-              <span>{item.label}</span>
+              <span className="min-w-0 truncate">
+                {item.label}
+              </span>
             </button>
           );
         })}
