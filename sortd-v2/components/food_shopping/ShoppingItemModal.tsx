@@ -67,7 +67,7 @@ export default function ShoppingItemModal({
   }, [onClose]);
 
   const fieldClassName =
-    "w-full rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20";
+    "w-full rounded-xl border border-slate-200 bg-[var(--sortd-card)] px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20";
 
   const labelClassName =
     "flex flex-col gap-1.5 text-xs font-medium text-slate-600";
@@ -85,7 +85,7 @@ export default function ShoppingItemModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="shopping-item-title"
-        className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-[var(--sortd-bg)] p-5 shadow-2xl md:p-7"
+        className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-[var(--sortd-card)] p-5 shadow-2xl md:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -215,7 +215,7 @@ export default function ShoppingItemModal({
 
             <label className={labelClassName}>
               Estimated cost
-              <div className="flex items-center rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 focus-within:border-[var(--sortd-teal-dark)] focus-within:ring-2 focus-within:ring-[var(--sortd-teal-dark)]/20">
+              <div className="flex items-center rounded-xl border border-slate-200 bg-[var(--sortd-card)] px-3 focus-within:border-[var(--sortd-teal-dark)] focus-within:ring-2 focus-within:ring-[var(--sortd-teal-dark)]/20">
                 <span className="text-sm text-slate-400">£</span>
 
                 <input
@@ -246,7 +246,7 @@ export default function ShoppingItemModal({
               className={fieldClassName} />
           </label>
 
-          <div className="rounded-2xl bg-slate-50 p-4">
+          <div className="rounded-2xl bg-[var(--sortd-muted)] p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-slate-900">
@@ -267,7 +267,7 @@ export default function ShoppingItemModal({
                     purchased: !item.purchased,
                   })
                 }
-                className="rounded-xl border border-slate-200 bg-[var(--sortd-bg)] px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                className="rounded-xl border border-slate-200 bg-[var(--sortd-card)] px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
               >
                 {item.purchased ? "Mark remaining" : "Mark bought"}
               </button>
@@ -287,7 +287,7 @@ export default function ShoppingItemModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-[#1f0825] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3b0842]"
+            className="rounded-xl bg-[var(--sortd-navy)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
           >
             Done
           </button>
