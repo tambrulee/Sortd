@@ -28,6 +28,7 @@ import FoodView from "@/components/food_shopping/FoodView";
 
 // AskSortd
 import AskSortd from "@/components/ai/AskSortd";
+import { PanelLeftOpen, Menu } from "lucide-react";
 
 // Types and storage utilities
 import {
@@ -1189,31 +1190,23 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen min-w-0 w-full max-w-full flex-col bg-[var(--sortd-bg)] text-[var(--sortd-text)]">
-      <Header />
+      <Header user={user} onUserChange={setUser} onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} onOpenSettings={() => setActiveView("settings")} />
 
       <section className="flex min-w-0 w-full flex-1 flex-col items-center gap-3 px-3 py-4 sm:px-4">
-        <div className="flex min-w-0 w-full max-w-[1600px] items-center">
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            aria-expanded={sidebarOpen}
-            aria-controls="workspace-sidebar"
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 text-sm font-medium text-[var(--sortd-text)] hover:bg-[var(--sortd-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
-          >
-            <span aria-hidden="true">☰</span>
-            {isDesktopLayout ? (sidebarOpen ? "Hide sidebar" : "Show sidebar") : (sidebarOpen ? "Close menu" : "Menu")}
-          </button>
-        </div>
         <div className={`grid w-full max-w-[1600px] min-w-0 grid-cols-[minmax(0,1fr)] gap-4 ${sidebarOpen ? "md:grid-cols-[260px_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)]"}`}>
           <div id="workspace-sidebar" hidden={!sidebarOpen} className="min-w-0 w-full max-w-full space-y-4 [overflow-wrap:anywhere] [&>*]:min-w-0 [&>*]:w-full [&>*]:max-w-full [&_input]:min-w-0 [&_input]:max-w-full">
-            <AuthPanel onUserChange={setUser} />
+            <AuthPanel onUserChange={setUser} compactWhenSignedIn />
 
             <WorkspaceNav
               activeView={activeView}
+              onToggleSidebar={toggleSidebar}
               onChangeView={(view) => { setActiveView(view); setMobileMenuOpen(false); }}
             />
 
-            <AskSortd context={aiContext} />
+            <details className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-3">
+              <summary className="cursor-pointer text-sm font-medium text-[var(--sortd-navy)]">Ask Sort&apos;d (optional)</summary>
+              <div className="mt-3"><AskSortd context={aiContext} /></div>
+            </details>
           </div>
 
           <div className="min-w-0 w-full max-w-full [&>*]:min-w-0 [&>*]:max-w-full">

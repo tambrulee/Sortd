@@ -29,3 +29,40 @@ body {
   background: var(--sortd-bg);
   color: var(--sortd-text);
 }
+
+/* Sort'd V3 overview visual layer */
+:root {
+  --sortd-sage: #e4efe8;
+  --sortd-blush: #f3e9e1;
+  --sortd-lavender: #ebe6f2;
+}
+.sortd-overview-hero {
+  background: radial-gradient(circle at 88% 15%, rgba(20,184,166,.23), transparent 38%),
+    linear-gradient(120deg, #102a43 0%, #173d4a 100%);
+}
+.sortd-overview-hero::after {
+  content: "";
+  position: absolute;
+  width: 230px;
+  height: 230px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 50%;
+  right: -55px;
+  top: -105px;
+  box-shadow: 0 0 0 36px rgba(255,255,255,.025), 0 0 0 72px rgba(255,255,255,.025);
+  pointer-events: none;
+}
+.sortd-insight-card {
+  background: linear-gradient(120deg, #e3f0e9 0%, #f1f6ed 100%);
+}
+.sortd-overview-card {
+  box-shadow: 0 3px 14px rgba(16,42,67,.025);
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+.sortd-overview-card:hover { box-shadow: 0 8px 25px rgba(16,42,67,.055); }
+.sortd-overview > .grid > .sortd-overview-card:nth-child(2) { background: #f7f3ee; }
+.sortd-overview > .grid > .sortd-overview-card:nth-child(3) { background: #f5f1fa; }
+.sortd-overview > .grid > .sortd-overview-card:nth-child(5) { background: #f1f7f4; }
+@media (prefers-reduced-motion: reduce) {
+  .sortd-overview-card { transition: none; }
+}

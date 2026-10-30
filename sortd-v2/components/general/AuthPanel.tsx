@@ -8,9 +8,10 @@ type AuthMode = "login" | "signup";
 
 type AuthPanelProps = {
   onUserChange: (user: User | null) => void;
+  compactWhenSignedIn?: boolean;
 };
 
-export default function AuthPanel({ onUserChange }: AuthPanelProps) {
+export default function AuthPanel({ onUserChange, compactWhenSignedIn = false }: AuthPanelProps) {
   const [mode, setMode] = useState<AuthMode>("login");
 
   const [email, setEmail] = useState("");
@@ -137,6 +138,7 @@ export default function AuthPanel({ onUserChange }: AuthPanelProps) {
   }
 
   if (user) {
+    if (compactWhenSignedIn) return null;
     return (
       <div className="rounded-3xl bg-[var(--sortd-bg)]/85 p-4 shadow-xl backdrop-blur-md">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
