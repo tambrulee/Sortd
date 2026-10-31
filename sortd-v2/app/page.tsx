@@ -19,7 +19,7 @@ import OverviewView from "@/components/planner/OverviewView";
 import AuthPanel from "@/components/general/AuthPanel";
 import RoutinesView from "@/components/planner/RoutinesView";
 import { createDefaultScheduleSettings } from "@/lib/schedule";
-import PlannerView from "@/components/planner/PlannerView";
+import ToDosView from "@/components/planner/ToDosView";
 import ShoppingView from "@/components/food_shopping/ShoppingView";
 import GoalsView from "@/components/planner/GoalsView";
 import DreamsView from "@/components/planner/DreamsView";
@@ -1379,56 +1379,12 @@ export default function Home() {
               onChangeSettings={setScheduleSettings}
             />
           ) : activeView === "planner" ? (
-            <PlannerView
-              tasks={allTasks}
-              routines={routines}
-              dailyPlanEntries={dailyPlanEntries}
-              onChangeDailyPlanEntries={setDailyPlanEntries}
+            <ToDosView
               adhocTasks={adhocTasks}
-              settings={scheduleSettings}
-
-              plannerOverrides={plannerOverrides}
-              onChangePlannerOverrides={
-                setPlannerOverrides
-              }
-
-              onChangeSettings={
-                setScheduleSettings
-              }
-
-              onCompleteProjectTask={
-                completeProjectTask
-              }
-              onCompleteRoutineTask={
-                completeRoutineTask
-              }
-
-              onUpdateProjectTask={
-                updateProjectTaskById
-              }
-              onUpdateRoutineTask={
-                updateRoutineTaskById
-              }
-
-              onDeleteProjectTask={
-                deleteProjectTaskById
-              }
-              onDeleteRoutineTask={
-                deleteRoutineTaskById
-              }
-
-              onAddAdhocTask={
-                addAdhocTask
-              }
-              onCompleteAdhocTask={
-                completeAdhocTask
-              }
-              onUpdateAdhocTask={
-                updateAdhocTask
-              }
-              onDeleteAdhocTask={
-                deleteAdhocTask
-              }
+              onAddAdhocTask={addAdhocTask}
+              onCompleteAdhocTask={completeAdhocTask}
+              onUpdateAdhocTask={updateAdhocTask}
+              onDeleteAdhocTask={deleteAdhocTask}
             />
           ) : (
             <RoutinesView routines={routines} onChangeRoutines={setRoutines} />

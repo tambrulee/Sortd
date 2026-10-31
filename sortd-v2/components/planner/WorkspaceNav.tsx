@@ -1,22 +1,31 @@
+
 "use client";
 
-import type { AppView } from "@/lib/types";
+import { AppView } from "@/lib/types";
 import {
-  LayoutDashboard, Sun, CalendarDays, Repeat2, FolderKanban,
-  Target, Sparkles, ShoppingBag, UtensilsCrossed, Settings2,
-  PanelLeftClose,
+  LayoutDashboard,
+  Sun,
+  ListTodo,
+  CalendarDays,
+  Repeat2,
+  FolderKanban,
+  Target,
+  Sparkles,
+  ShoppingBag,
+  UtensilsCrossed,
+  Settings2,
 } from "lucide-react";
 
 type WorkspaceNavProps = {
   activeView: AppView;
   onChangeView: (view: AppView) => void;
-  onToggleSidebar?: () => void;
+  onToggleSidebar: () => void;
 };
 
 const navigationItems = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "my-day", label: "My Day", icon: Sun },
-  { id: "planner", label: "Planner", icon: CalendarDays },
+  { id: "planner", label: "To-dos", icon: ListTodo },
   { id: "routines", label: "Routines", icon: Repeat2 },
   { id: "projects", label: "Projects", icon: FolderKanban },
   { id: "goals", label: "Goals", icon: Target },
@@ -26,21 +35,42 @@ const navigationItems = [
   { id: "settings", label: "Settings", icon: Settings2 },
 ] as const;
 
-export default function WorkspaceNav({ activeView, onChangeView, onToggleSidebar }: WorkspaceNavProps) {
+export default function WorkspaceNav({
+  activeView,
+  onChangeView,
+}: WorkspaceNavProps) {
   return (
-    <nav aria-label="Workspace navigation" className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-3 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-2 px-2">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--sortd-text-muted)]">Workspace</p>
-        {onToggleSidebar && <button type="button" onClick={onToggleSidebar} title="Collapse sidebar" aria-label="Collapse sidebar" className="hidden rounded-lg p-2 text-[var(--sortd-text-muted)] hover:bg-[var(--sortd-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] md:inline-flex"><PanelLeftClose size={18}/></button>}
-      </div>
+    <nav className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-3 shadow-sm">
+      <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--sortd-text-muted)]">
+        Workspace
+      </p>
+
       <div className="space-y-1">
-        {navigationItems.map(({id,label,icon:Icon}) => {
-          const isActive = activeView === id;
+        {navigationItems.map((item) => {
+          const isActive = activeView === item.id;
+
           return (
-            <button key={id} type="button" onClick={() => onChangeView(id)} aria-current={isActive ? "page" : undefined}
-              className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${isActive ? "bg-[var(--sortd-navy)] text-white" : "text-[var(--sortd-text)] hover:bg-[var(--sortd-muted)]"}`}>
-              <Icon size={18} strokeWidth={isActive ? 2.25 : 1.8} aria-hidden="true" className={isActive ? "text-[#76d9ce]" : "text-[var(--sortd-teal-dark)]"}/>
-              <span className="truncate">{label}</span>
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onChangeView(item.id)}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
+                isActive
+                  ? "bg-[var(--sortd-navy)] text-white"
+                  : "text-[var(--sortd-text)] hover:bg-[var(--sortd-muted)]"
+              }`}
+            >
+            <span
+              className="flex w-6 shrink-0 items-center justify-center"
+              aria-hidden="true"
+            >
+              <item.icon size={18} strokeWidth={1.8} />
+            </span>
+
+              <span className="min-w-0 truncate">
+                {item.label}
+              </span>
             </button>
           );
         })}
