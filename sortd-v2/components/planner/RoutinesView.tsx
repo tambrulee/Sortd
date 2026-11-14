@@ -1140,7 +1140,19 @@ export default function RoutinesView({
           )}
         </>
       )}
-      {coverPickerOpen && activeRoutine && <RoutineCoverPicker projectId={activeRoutine.id} current={activeRoutine.cover} onSelect={cover => { setRoutineCover(cover); setCoverPickerOpen(false); }} onClose={() => setCoverPickerOpen(false)} />}
+      
+      {coverPickerOpen && activeRoutine && (
+        <RoutineCoverPicker
+          projectId={activeRoutine.id}
+          current={activeRoutine.cover}
+          onSelect={(cover?: ProjectCover) => {
+            setRoutineCover(cover);
+            setCoverPickerOpen(false);
+          }}
+          onClose={() => setCoverPickerOpen(false)}
+        />
+      )}
+
       <ConfirmDialog
         open={deleteRoutineOpen}
         title="Delete routine?"

@@ -185,6 +185,7 @@ export type Routine = {
   createdAt: string;
   archived: boolean;
   scheduleMode?: RoutineScheduleMode;
+  cover?: ProjectCover;
   fixedStartTime?: string;
 };
 
