@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 
-import { RecurrenceUnit, Routine, RoutineTask } from "@/lib/types";
+import { ProjectCover, RecurrenceUnit, Routine, RoutineTask } from "@/lib/types";
 
-import CollectionSwitcher from "@/components/planner/CollectionSwitcher";
 import ItemDetailsModal from "@/components/task_management/ItemDetailsModal";
 import ConfirmDialog from "@/components/prompts/ConfirmDialog";
+import ProjectUploadedCover from "@/components/planner/ProjectUploadedCover";
+import RoutineCoverPicker from "@/components/planner/RoutineCoverPicker";
 
 import { closestCenter, DndContext, DragEndEvent } from "@dnd-kit/core";
 
@@ -295,6 +296,12 @@ export default function RoutinesView({
   routines,
   onChangeRoutines,
 }: RoutinesViewProps) {
+  const [coverPickerOpen, setCoverPickerOpen] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [showRoutineMenu, setShowRoutineMenu] = useState(false);
+  const [search, setSearch] = useState("");
+  const [collapsed, setCollapsed] = useState<boolean[]>([true]);
   const [activeRoutineId, setActiveRoutineId] = useState(routines[0]?.id ?? "");
 
   const [newRoutineName, setNewRoutineName] = useState("");
@@ -323,6 +330,8 @@ export default function RoutinesView({
 
   const [showAllRoutines, setShowAllRoutines] =
     useState(false);
+
+  const [showRoutineGallery, setShowRoutineGallery] = useState(true);
 
   const [routineSort, setRoutineSort] =
     useState<RoutineSort>("due-date");
@@ -462,6 +471,10 @@ export default function RoutinesView({
     0,
   );
 
+  function setRoutineCover(cover?: ProjectCover) {
+    if (activeRoutine) updateRoutine({ ...activeRoutine, cover });
+  }
+
   function updateRoutine(updatedRoutine: Routine) {
     onChangeRoutines(
       routines.map((routine) =>
@@ -491,6 +504,7 @@ export default function RoutinesView({
     onChangeRoutines([...routines, newRoutine]);
 
     setActiveRoutineId(newRoutine.id);
+    setShowRoutineGallery(false);
 
     setNewRoutineName("");
     setShowCreateRoutine(false);
@@ -514,6 +528,7 @@ export default function RoutinesView({
     setActiveRoutineId(
       remainingRoutines[0]?.id ?? "",
     );
+    setShowRoutineGallery(true);
   }
 
   function renameRoutine(routineId: string, name: string) {
@@ -575,13 +590,12 @@ export default function RoutinesView({
   }
 
   function updateRoutineTask(taskId: string, updates: Partial<RoutineTask>) {
-    if (!activeRoutine) {
-      return;
-    }
+    const owner = routines.find((routine) => routine.tasks.some((task) => task.id === taskId));
+    if (!owner) return;
 
     updateRoutine({
-      ...activeRoutine,
-      tasks: activeRoutine.tasks.map((task) =>
+      ...owner,
+      tasks: owner.tasks.map((task) =>
         task.id === taskId
           ? {
               ...task,
@@ -593,17 +607,16 @@ export default function RoutinesView({
   }
 
   function completeRoutineTask(taskId: string) {
-    if (!activeRoutine) {
-      return;
-    }
+    const owner = routines.find((routine) => routine.tasks.some((task) => task.id === taskId));
+    if (!owner) return;
 
     const completedAt = new Date().toISOString();
 
     const today = getTodayKey();
 
     updateRoutine({
-      ...activeRoutine,
-      tasks: activeRoutine.tasks.map((task) => {
+      ...owner,
+      tasks: owner.tasks.map((task) => {
         if (task.id !== taskId) {
           return task;
         }
@@ -621,14 +634,13 @@ export default function RoutinesView({
   function deleteRoutineTask(
     taskId: string,
   ) {
-    if (!activeRoutine) {
-      return;
-    }
+    const owner = routines.find((routine) => routine.tasks.some((task) => task.id === taskId));
+    if (!owner) return;
 
     updateRoutine({
-      ...activeRoutine,
+      ...owner,
 
-      tasks: activeRoutine.tasks.filter(
+      tasks: owner.tasks.filter(
         (routineTask) =>
           routineTask.id !== taskId,
       ),
@@ -687,7 +699,7 @@ export default function RoutinesView({
   }
 
   function handleTaskDragEnd(event: DragEndEvent) {
-    if (!activeRoutine) {
+    if (!activeRoutine || showAllRoutines) {
       return;
     }
 
@@ -724,7 +736,7 @@ export default function RoutinesView({
   }
 
   return (
-    <div className="min-w-0 rounded-3xl bg-[var(--sortd-bg)]/90 p-5 shadow-xl backdrop-blur-md md:p-7">
+    <div className="min-w-0 rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-4 text-[var(--sortd-text)] shadow-sm sm:p-5">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
@@ -757,46 +769,63 @@ export default function RoutinesView({
         </div>
       </header>
 
-      <CollectionSwitcher
-        items={routines}
-        activeItemId={resolvedActiveRoutineId}
-        label="Current routine"
-        placeholder="Select a routine"
-        itemPluralLabel="Routines"
-        createLabel="+ New"
-        deleteLabel="Delete routine"
-        onChangeItem={setActiveRoutineId}
-        onCreateItem={() => setShowCreateRoutine(true)}
-        onDeleteItem={() => {
-          setDeleteRoutineOpen(true);
-        }}
-        onRenameItem={renameRoutine}
-        onReorderItems={reorderRoutines}
-        getCount={getRoutineTaskCount}
-        getStatusColour={getRoutineStatusColour}
-        getStatusLabel={(routine) => (routine.archived ? "archived" : "active")}
-        canDelete={routines.length > 0}
-      />
-
-      <button
-        type="button"
-        onClick={() => {
-          setShowAllRoutines(
-            (current) => !current,
-          );
-
-          setRoutineSort("due-date");
-        }}
-        className={`mt-2 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-          showAllRoutines
-            ? "bg-[#f3e8f5] text-[#7c2d92]"
-            : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-        }`}
-      >
-        {showAllRoutines
-          ? "Show selected routine"
-          : "View all routines"}
-      </button>
+      {showRoutineGallery ? (
+        <section>
+          <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
+            {([[activeRoutineCount, "Routines"], [activeTaskCount, "Active tasks"], [routines.filter(r => !r.archived).flatMap(r => r.tasks).filter(t => t.active && t.nextDueDate <= getTodayKey()).length, "Due or overdue"]] as const).map(([value, label]) => (
+              <div key={label} className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-3 sm:p-4"><p className="text-xl font-semibold">{value}</p><p className="text-xs text-[var(--sortd-text-muted)]">{label}</p></div>
+            ))}
+          </div>
+          <div className="mb-6 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-4">
+            <p className="text-sm font-semibold">✦ Routine Pulse</p>
+            {(() => { const today = getTodayKey(); const tasks = routines.filter(r => !r.archived).flatMap(r => r.tasks).filter(t => t.active); const due = tasks.filter(t => t.nextDueDate <= today); const overdue = due.filter(t => t.nextDueDate < today); return <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">{due.length ? `${due.length} repeating task${due.length === 1 ? " needs" : "s need"} attention${overdue.length ? `, including ${overdue.length} overdue` : " today"}.` : "You're up to date with your scheduled routine tasks."}</p>; })()}
+          </div>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <input aria-label="Search routines" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search routines..." className="w-full rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3 text-sm sm:max-w-sm" />
+            <button type="button" onClick={() => setShowCreateRoutine(true)} className="rounded-xl bg-[var(--sortd-navy)] px-4 py-2.5 text-sm font-medium text-white">+ New routine</button>
+          </div>
+          {([false, true] as const).map(archived => {
+            const matches = routines.filter(r => Boolean(r.archived) === archived && `${r.name} ${r.description ?? ""}`.toLowerCase().includes(search.toLowerCase()));
+            if (!matches.length && search) return null;
+            const isCollapsed = collapsed.includes(archived);
+            return <section key={String(archived)} className="mb-7">
+              <button type="button" onClick={() => setCollapsed(current => current.includes(archived) ? current.filter(v => v !== archived) : [...current, archived])} aria-expanded={!isCollapsed} className="mb-3 flex w-full items-center justify-between text-left"><span className="font-semibold">{archived ? "Archived" : "Active routines"} <span className="text-sm font-normal text-[var(--sortd-text-muted)]">({matches.length})</span></span><span>{isCollapsed ? "▸" : "▾"}</span></button>
+              {!isCollapsed && <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{matches.map(routine => {
+                const tasks = routine.tasks.filter(t => t.active);
+                const due = tasks.filter(t => t.nextDueDate <= getTodayKey()).length;
+                return <button key={routine.id} type="button" onClick={() => { setActiveRoutineId(routine.id); setShowAllRoutines(false); setShowRoutineGallery(false); setRoutineFilter("all"); setEditingTitle(false); }} className="group overflow-hidden rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal)]">
+                  <div className="relative h-36 overflow-hidden bg-gradient-to-br from-[#1f0825] via-[#477b73] to-[#cdbfd1]">
+                    {routine.cover?.source === "unsplash" && <img src={routine.cover.url} alt="" className="h-full w-full object-cover transition group-hover:scale-105" />}
+                    {routine.cover?.source === "upload" && <ProjectUploadedCover path={routine.cover.path} />}
+                    {!routine.cover && <div className="flex h-full items-center justify-center text-4xl text-white/70">✦</div>}
+                    <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-slate-800">{archived ? "Archived" : due ? `${due} due` : "Up to date"}</span>
+                  </div>
+                  <div className="space-y-2 p-4"><p className="font-semibold">{routine.name || "Untitled routine"}</p><p className="line-clamp-2 min-h-9 text-xs leading-5 text-[var(--sortd-text-muted)]">{routine.description || "Your recurring tasks, all in one place."}</p><div className="flex justify-between text-xs text-[var(--sortd-text-muted)]"><span>{tasks.length} repeating {tasks.length === 1 ? "task" : "tasks"}</span><span>{due} due or overdue</span></div></div>
+                </button>;
+              })}</div>}
+              {!isCollapsed && !matches.length && <p className="rounded-xl border border-dashed border-[var(--sortd-border)] p-4 text-sm text-[var(--sortd-text-muted)]">No routines here yet.</p>}
+            </section>;
+          })}
+        </section>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3"><button type="button" onClick={() => { setShowRoutineGallery(true); setShowAllRoutines(false); }} className="text-sm font-medium text-[var(--sortd-teal-dark)]">← All routines</button><button type="button" onClick={() => setShowAllRoutines(v => !v)} className="rounded-lg border border-[var(--sortd-border)] px-3 py-2 text-sm">{showAllRoutines ? "Selected routine" : "View all tasks"}</button></div>
+          {activeRoutine && <>
+            <div className="relative h-44 overflow-hidden rounded-2xl bg-gradient-to-br from-[#1f0825] via-[#477b73] to-[#cdbfd1]">
+              {activeRoutine.cover?.source === "unsplash" && <img src={activeRoutine.cover.url} alt="" className="h-full w-full object-cover" />}
+              {activeRoutine.cover?.source === "upload" && <ProjectUploadedCover path={activeRoutine.cover.path} />}
+              <button type="button" onClick={() => setCoverPickerOpen(true)} className="absolute bottom-3 right-3 rounded-lg bg-white/95 px-3 py-2 text-xs font-semibold text-slate-900 shadow">Change cover</button>
+            </div>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">{editingTitle ? <input autoFocus aria-label="Routine name" value={titleDraft} onChange={e => setTitleDraft(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { if (titleDraft.trim()) renameRoutine(activeRoutine.id, titleDraft.trim()); setEditingTitle(false); } if (e.key === "Escape") setEditingTitle(false); }} onBlur={() => { if (titleDraft.trim()) renameRoutine(activeRoutine.id, titleDraft.trim()); setEditingTitle(false); }} className="w-full max-w-lg rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-2xl font-semibold" /> : <div className="flex items-center gap-2"><h2 className="text-2xl font-semibold">{activeRoutine.name}</h2><button type="button" aria-label="Edit routine name" onClick={() => { setTitleDraft(activeRoutine.name); setEditingTitle(true); }} className="rounded-lg px-2 py-1 text-[var(--sortd-text-muted)]">✎</button></div>}
+                <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">{activeRoutine.description || "Your recurring tasks, all in one place."}</p></div>
+              <span className="rounded-full bg-[var(--sortd-muted)] px-3 py-1 text-xs">{activeRoutine.archived ? "Archived" : "Active"}</span>
+              <div className="relative"><button type="button" aria-label="Routine actions" aria-expanded={showRoutineMenu} onClick={() => setShowRoutineMenu(v => !v)} className="rounded-lg border border-[var(--sortd-border)] px-3 py-1 text-lg">⋯</button>{showRoutineMenu && <div className="absolute right-0 top-full z-20 mt-2 min-w-40 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-1 shadow-lg"><button type="button" onClick={() => { setShowRoutineMenu(false); setDeleteRoutineOpen(true); }} className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-700">Delete routine</button></div>}</div>
+            </div>
+            {(() => { const today = getTodayKey(); const tasks = activeRoutine.tasks.filter(t => t.active); const due = tasks.filter(t => t.nextDueDate === today).length; const overdue = tasks.filter(t => t.nextDueDate < today).length; const upcoming = tasks.filter(t => t.nextDueDate > today).length; return <section className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-4 sm:p-5"><h3 className="mb-1 text-lg font-semibold">✦ Routine Pulse</h3><p className="mb-4 text-xs text-[var(--sortd-text-muted)]">A snapshot of your repeating tasks</p><div className="grid grid-cols-3 gap-2">{([[due, "Due today"], [overdue, "Overdue"], [upcoming, "Upcoming"]] as const).map(([count, label]) => <div key={label} className="rounded-xl bg-[var(--sortd-muted)] p-3"><p className="text-xl font-semibold">{count}</p><p className="text-xs text-[var(--sortd-text-muted)]">{label}</p></div>)}</div><p className="mt-4 text-sm text-[var(--sortd-text-muted)]">{overdue ? `${overdue} task${overdue === 1 ? " is" : "s are"} overdue. Review what needs attention.` : due ? `${due} task${due === 1 ? " is" : "s are"} scheduled for today.` : "Nothing is due today. You're up to date."}</p></section>; })()}
+          </>}
+        </div>
+      )}
 
       {showCreateRoutine && (
         <form
@@ -835,7 +864,7 @@ export default function RoutinesView({
         </form>
       )}
 
-      {!activeRoutine && !showAllRoutines ? (
+      {showRoutineGallery ? null : !activeRoutine && !showAllRoutines ? (
         <div className="mt-8 px-5 py-10 text-center">
           <p className="font-medium text-slate-700">No routine selected.</p>
 
@@ -846,8 +875,8 @@ export default function RoutinesView({
       ) : (
         <>
         {!showAllRoutines && activeRoutine && (
-          <details className="group mt-5 border-b border-slate-100 pb-4">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 py-2 text-sm text-slate-600 transition hover:text-slate-900 [&::-webkit-details-marker]:hidden">
+          <details className="group mt-5 rounded-2xl border border-slate-200 bg-white/80 p-4">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 py-2 text-sm text-slate-600 transition hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-700 [&::-webkit-details-marker]:hidden">
               <span className="flex items-center gap-2">
                 <span className="font-medium">Routine settings</span>
 
@@ -1111,6 +1140,7 @@ export default function RoutinesView({
           )}
         </>
       )}
+      {coverPickerOpen && activeRoutine && <RoutineCoverPicker projectId={activeRoutine.id} current={activeRoutine.cover} onSelect={cover => { setRoutineCover(cover); setCoverPickerOpen(false); }} onClose={() => setCoverPickerOpen(false)} />}
       <ConfirmDialog
         open={deleteRoutineOpen}
         title="Delete routine?"
