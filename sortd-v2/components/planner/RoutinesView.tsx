@@ -166,10 +166,6 @@ function getRoutineTaskCount(routine: Routine) {
   return routine.tasks.filter((task) => task.active).length;
 }
 
-function getRoutineStatusColour(routine: Routine) {
-  return routine.archived ? "bg-slate-400" : "bg-emerald-400";
-}
-
 function formatDuration(minutes?: number) {
   if (!minutes) {
     return null;
@@ -542,10 +538,6 @@ export default function RoutinesView({
           : routine,
       ),
     );
-  }
-
-  function reorderRoutines(reorderedRoutines: Routine[]) {
-    onChangeRoutines(reorderedRoutines);
   }
 
   function addRoutineTask() {

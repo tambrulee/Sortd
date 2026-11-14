@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import ProjectUploadedCover from "@/components/planner/ProjectUploadedCover";
 import {
   Routine,
   SortdList,
@@ -295,6 +296,8 @@ export default function MyDayView({
 
   const [selecting, setSelecting] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [activeGroup, setActiveGroup] = useState<{kind: "routine" | "project"; id: string; date?: string} | null>(null);
+  useEffect(() => { if (!activeGroup) return; const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setActiveGroup(null); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [activeGroup]);
   const [upcomingDay, setUpcomingDay] = useState<string | null>(null);
   const toggleGroup = (key: string) => setExpandedGroups((current) => current.includes(key) ? current.filter((item) => item !== key) : [...current, key]);
   const isGroupCollapsed = (key: string) => !expandedGroups.includes(key);
@@ -672,7 +675,35 @@ export default function MyDayView({
     );
   }
 
-  const upcomingDays = Array.from({ length: 7 }, (_, index) => {
+    function renderGroupCard(kind: "routine" | "project", id: string, name: string, count: number, overdueCount: number, date?: string) {
+    const source = kind === "routine" ? routines.find(r => r.id === id) : projects.find(p => p.id === id);
+    const cover = source?.cover;
+    return (
+      <button key={`${kind}:${id}:${date ?? "today"}`} type="button" onClick={() => setActiveGroup({kind,id,date})}
+        className="group min-w-0 overflow-hidden rounded-2xl border border-[var(--sortd-border)] bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sortd-teal-dark)]">
+        <div className="relative h-32 overflow-hidden bg-gradient-to-br from-[#193c45] via-[#34756f] to-[#c6d8d2]">
+          {cover?.source === "unsplash" && <img src={cover.url} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />}
+          {cover?.source === "upload" && <ProjectUploadedCover path={cover.path} />}
+          {!cover && <span className="absolute inset-0 flex items-center justify-center text-4xl text-white/70">{kind === "routine" ? "↻" : "✦"}</span>}
+          <span className="absolute bottom-2 left-3 rounded-md bg-black/45 px-2 py-1 text-[11px] font-medium text-white">{kind === "routine" ? "Routine" : "Project"}</span>
+        </div>
+        <div className="flex items-center justify-between gap-3 p-4">
+          <div className="min-w-0"><h3 className="truncate font-semibold text-[var(--sortd-navy)]">{name || "Untitled"}</h3>
+            <p className="mt-1 text-xs text-slate-500">{count} {count === 1 ? "task" : "tasks"} remaining{overdueCount ? ` · ${overdueCount} overdue` : ""}</p></div>
+          <span className="shrink-0 text-xl text-[var(--sortd-teal-dark)]" aria-hidden="true">→</span>
+        </div>
+      </button>
+    );
+  }
+
+  const activeGroupTasks = activeGroup ? activeGroup.kind === "routine"
+    ? openRoutineTasks.filter(t => t.routineId === activeGroup.id && (activeGroup.date ? t.nextDueDate === activeGroup.date : t.nextDueDate <= today))
+    : openTasks.filter(t => t.projectId === activeGroup.id && (activeGroup.date ? t.dueDate === activeGroup.date : !!t.dueDate && t.dueDate <= today)) : [];
+  const activeGroupName = activeGroup ? activeGroup.kind === "routine"
+    ? routines.find(r => r.id === activeGroup.id)?.name
+    : projects.find(p => p.id === activeGroup.id)?.name : "";
+
+const upcomingDays = Array.from({ length: 7 }, (_, index) => {
     const date = addDays(todayDate, index + 1);
     const key = toDateKey(date);
     return {
@@ -768,34 +799,9 @@ export default function MyDayView({
                   <span className="rounded-full bg-[var(--sortd-muted)] px-3 py-1 text-xs font-medium text-slate-600">{actionableRoutineTasks.length} remaining</span>
                 </div>
                 {actionableRoutineTasks.length > 0 ? (
-                  <DndContext collisionDetection={closestCenter} onDragEnd={selecting ? () => {} : handleRoutineDragEnd}>
-                    <SortableContext items={routineGroups.flatMap((group) => group.tasks.map((task) => `${task.routineId}-${task.id}`))} strategy={verticalListSortingStrategy}>
-                      <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
-                        {routineGroups.map((group) => {
-                          const key = `today:routine:${group.routineId}`;
-                          const collapsed = isGroupCollapsed(key);
-                          const overdueCount = group.tasks.filter((task) => task.nextDueDate < today).length;
-                          return (
-                            <section key={group.routineId} className="min-w-0 overflow-hidden rounded-2xl border border-[var(--sortd-border)] bg-white shadow-sm" aria-label={group.routineName || "Untitled routine"}>
-                              <button type="button" aria-expanded={!collapsed} aria-controls={`routine-panel-${group.routineId}`} onClick={() => toggleGroup(key)} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-[var(--sortd-muted)] sm:px-5">
-                                <span className="flex min-w-0 items-center gap-3">
-                                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e7f4f0] text-[var(--sortd-teal-dark)]">↻</span>
-                                  <span className="min-w-0">
-                                    <span className="block truncate font-semibold text-[var(--sortd-navy)]">{group.routineName || "Untitled routine"}</span>
-                                    <span className="mt-0.5 block text-xs text-slate-500">{group.tasks.length} {group.tasks.length === 1 ? "routine" : "routines"} remaining{overdueCount > 0 ? ` · ${overdueCount} overdue` : ""}</span>
-                                  </span>
-                                </span>
-                                <span className="shrink-0 text-lg text-[var(--sortd-teal-dark)]" aria-hidden="true">{collapsed ? "+" : "−"}</span>
-                              </button>
-                              {!collapsed && <div id={`routine-panel-${group.routineId}`} className="space-y-2 border-t border-[var(--sortd-border)] bg-[#fbfcfc] p-3">
-                                {group.tasks.map((task) => <SortableMyDayRoutineTask key={`${task.routineId}-${task.id}`} task={task} today={today} onComplete={onCompleteRoutineTask} onEdit={setSelectedRoutineTask} selecting={selecting} selected={selectedKeys.includes(routineKey(task))} onToggleSelect={() => toggleSelected(routineKey(task))} />)}
-                              </div>}
-                            </section>
-                          );
-                        })}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {routineGroups.map((group) => renderGroupCard("routine", group.routineId, group.routineName, group.tasks.length, group.tasks.filter(t => t.nextDueDate < today).length))}
+                  </div>
                 ) : <p className={emptyClassName}>No routines due today.</p>}
               </section>
               <section aria-labelledby="my-day-tasks" className="space-y-3">
@@ -804,18 +810,8 @@ export default function MyDayView({
                   <span className="rounded-full bg-[var(--sortd-muted)] px-3 py-1 text-xs font-medium text-slate-600">{actionableProjectTasks.length} remaining</span>
                 </div>
                 {taskGroups.length > 0 ? (
-                  <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
-                    {taskGroups.map((group) => {
-                      const key = `today:project:${group.projectId}`;
-                      const collapsed = isGroupCollapsed(key);
-                      return <section key={group.projectId} className="min-w-0 overflow-hidden rounded-2xl border border-[var(--sortd-border)] bg-white shadow-sm" aria-label={group.projectName || "Untitled project"}>
-                        <button type="button" aria-expanded={!collapsed} onClick={() => toggleGroup(key)} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left hover:bg-[var(--sortd-muted)] sm:px-5">
-                          <span className="min-w-0"><span className="block truncate font-semibold text-[var(--sortd-navy)]">{group.projectName || "Untitled project"}</span><span className="mt-0.5 block text-xs text-slate-500">{group.tasks.length} {group.tasks.length === 1 ? "task" : "tasks"} remaining</span></span>
-                          <span className="shrink-0 text-lg text-[var(--sortd-teal-dark)]" aria-hidden="true">{collapsed ? "+" : "−"}</span>
-                        </button>
-                        {!collapsed && <div className="space-y-2 border-t border-[var(--sortd-border)] bg-[#fbfcfc] p-3">{group.tasks.map((task) => renderTask(task, { showStatus: true, showProject: false }))}</div>}
-                      </section>;
-                    })}
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {taskGroups.map((group) => renderGroupCard("project", group.projectId, group.projectName, group.tasks.length, group.tasks.filter(t => !!t.dueDate && t.dueDate < today).length))}
                   </div>
                 ) : <p className={emptyClassName}>No project tasks due today.</p>}
               </section>
@@ -838,23 +834,9 @@ export default function MyDayView({
                     {day.tasks.map((task) => renderTask(task))}
                   </div>
                 ) : (
-                  <div className="space-y-5">
-                    {day.routineGroups.map((group) => (
-                      <section key={`routine-${group.routineId}`} className="overflow-hidden rounded-2xl border border-[var(--sortd-border)] bg-white" aria-label={group.routineName || "Untitled routine"}>
-                        <button type="button" aria-expanded={!isGroupCollapsed(`upcoming:${day.key}:routine:${group.routineId}`)} onClick={() => toggleGroup(`upcoming:${day.key}:routine:${group.routineId}`)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-[var(--sortd-muted)]">
-                          <span><span className="block font-semibold text-[var(--sortd-navy)]">{group.routineName || "Untitled routine"}</span><span className="text-xs text-slate-500">{group.tasks.length} remaining</span></span><span aria-hidden="true">{isGroupCollapsed(`upcoming:${day.key}:routine:${group.routineId}`) ? "+" : "−"}</span>
-                        </button>
-                        {!isGroupCollapsed(`upcoming:${day.key}:routine:${group.routineId}`) && <div className="space-y-2 border-t border-[var(--sortd-border)] p-3">{group.tasks.map((task) => renderRoutineTask(task))}</div>}
-                      </section>
-                    ))}
-                    {day.projectGroups.map((group) => (
-                      <section key={`project-${group.projectId}`} className="overflow-hidden rounded-2xl border border-[var(--sortd-border)] bg-white" aria-label={group.projectName || "Untitled project"}>
-                        <button type="button" aria-expanded={!isGroupCollapsed(`upcoming:${day.key}:project:${group.projectId}`)} onClick={() => toggleGroup(`upcoming:${day.key}:project:${group.projectId}`)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-[var(--sortd-muted)]">
-                          <span><span className="block font-semibold text-[var(--sortd-navy)]">{group.projectName || "Untitled project"}</span><span className="text-xs text-slate-500">{group.tasks.length} remaining</span></span><span aria-hidden="true">{isGroupCollapsed(`upcoming:${day.key}:project:${group.projectId}`) ? "+" : "−"}</span>
-                        </button>
-                        {!isGroupCollapsed(`upcoming:${day.key}:project:${group.projectId}`) && <div className="space-y-2 border-t border-[var(--sortd-border)] p-3">{group.tasks.map((task) => renderTask(task, { showProject: false }))}</div>}
-                      </section>
-                    ))}
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {day.routineGroups.map(group => renderGroupCard("routine", group.routineId, group.routineName, group.tasks.length, 0, day.key))}
+                    {day.projectGroups.map(group => renderGroupCard("project", group.projectId, group.projectName, group.tasks.length, 0, day.key))}
                   </div>
                 )}
               </section>
@@ -863,7 +845,30 @@ export default function MyDayView({
         </section>
       )}
 
-      {selectedRoutineTask && (
+             {activeGroup && (
+         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 p-3 sm:p-6" onMouseDown={e => { if (e.target === e.currentTarget) setActiveGroup(null); }}>
+           <section role="dialog" aria-modal="true" aria-labelledby="my-day-group-title" className="flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-[var(--sortd-surface)] shadow-2xl">
+             <header className="flex items-start justify-between gap-3 border-b border-[var(--sortd-border)] p-5">
+               <div><p className="text-xs font-semibold uppercase tracking-widest text-[var(--sortd-teal-dark)]">{activeGroup.kind}</p>
+                 <h2 id="my-day-group-title" className="mt-1 text-xl font-bold text-[var(--sortd-navy)]">{activeGroupName}</h2>
+                 <p className="mt-1 text-sm text-slate-500">{activeGroupTasks.length} remaining · {activeGroup.date ? formatShortDate(activeGroup.date) : "Today & overdue"}</p></div>
+               <button type="button" onClick={() => setActiveGroup(null)} aria-label="Close" className="rounded-lg px-3 py-2 text-xl text-slate-600 hover:bg-[var(--sortd-muted)]">×</button>
+             </header>
+             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4 sm:p-5">
+               {activeGroupTasks.length ? activeGroupTasks.map(task => activeGroup.kind === "routine"
+                 ? renderRoutineTask(task as RoutineTaskForDay)
+                 : renderTask(task as TaskWithProject, {showStatus:true, showProject:false}))
+                 : <p className="py-10 text-center text-sm text-slate-500">All caught up!</p>}
+             </div>
+             <footer className="flex justify-end gap-3 border-t border-[var(--sortd-border)] p-4">
+               {activeGroup.kind === "project" && <button type="button" onClick={() => {onOpenProject(activeGroup.id);setActiveGroup(null);}} className="rounded-xl px-4 py-2 text-sm font-semibold text-[var(--sortd-teal-dark)]">Open project</button>}
+               <button type="button" onClick={() => setActiveGroup(null)} className="rounded-xl bg-[var(--sortd-navy)] px-4 py-2 text-sm font-semibold text-white">Done</button>
+             </footer>
+           </section>
+         </div>
+       )}
+
+{selectedRoutineTask && (
           <ItemDetailsModal
             kind="routine"
             item={{ ...selectedRoutineTask, ...currentRoutineTask }}
