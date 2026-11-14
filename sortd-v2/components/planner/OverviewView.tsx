@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUpRight, CalendarClock, FolderKanban, Target, ShoppingBag, UtensilsCrossed, ChevronRight, Sparkles } from "lucide-react";
 import type { AppView, Dream, FoodData, Goal, Routine, ShoppingList, SortdList } from "@/lib/types";
 
@@ -17,6 +17,9 @@ type Props = {
   onCompleteRoutineTask: (routineId: string, taskId: string) => void;
   onChangeShoppingLists: (lists: ShoppingList[]) => void;
 };
+
+type InsightFeedback = Record<string, { status: "helpful" | "not-useful" | "later"; until?: string }>;
+const INSIGHT_FEEDBACK_KEY = "sortd-insights-feedback-v2";
 
 function localKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -48,6 +51,44 @@ export default function OverviewView({ projects, routines, goals, dreams, shoppi
   const [shoppingTab, setShoppingTab] = useState<"today" | "week">("week");
   const [showAllDay, setShowAllDay] = useState(false);
   const [showAllShopping, setShowAllShopping] = useState(false);
+  const [showMoreInsights, setShowMoreInsights] = useState(false);
+  const [insightFeedback, setInsightFeedback] = useState<InsightFeedback>({});
+  const [feedbackReady, setFeedbackReady] = useState(false);
+  const [showInsightPreferences, setShowInsightPreferences] = useState(false);
+  const [hiddenCategories, setHiddenCategories] = useState<string[]>([]);
+
+  // Load browser-only preferences after mount. Deferring the state updates
+  // avoids synchronous setState in an effect and keeps SSR hydration consistent.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = window.localStorage.getItem(INSIGHT_FEEDBACK_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved) as {
+            feedback?: InsightFeedback;
+            hiddenCategories?: string[];
+          };
+          setInsightFeedback(parsed.feedback ?? {});
+          setHiddenCategories(
+            Array.isArray(parsed.hiddenCategories) ? parsed.hiddenCategories : []
+          );
+        }
+      } catch {
+        // Browser storage may be unavailable or contain invalid old data.
+      } finally {
+        setFeedbackReady(true);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!feedbackReady) return;
+    try {
+      window.localStorage.setItem(INSIGHT_FEEDBACK_KEY, JSON.stringify({ feedback: insightFeedback, hiddenCategories }));
+    } catch { /* Keep the interface usable if browser storage is disabled. */ }
+  }, [feedbackReady, insightFeedback, hiddenCategories]);
   const now = new Date();
   const today = localKey(now);
   const weekEnd = localKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
@@ -73,11 +114,92 @@ export default function OverviewView({ projects, routines, goals, dreams, shoppi
   selectedDayItems.sort((a,b) => a.date.localeCompare(b.date));
   const mealEntries = foodData.mealPlan.filter(entry => entry.date === today);
   const mealTypes = ["breakfast", "lunch", "dinner"] as const;
-  const insight = overdue > 0
-    ? `${overdue} item${overdue === 1 ? " is" : "s are"} overdue across your tasks and routines.`
-    : upcoming.length > 0
-      ? `${upcoming.length} project task${upcoming.length === 1 ? " is" : "s are"} due in the next seven days.`
-      : "Nothing overdue or due in the next seven days. You have room to choose what matters next.";
+  // Explainable, local insights: no AI request or external data transfer.
+  // Each insight has a stable ID so it can be dismissed for this visit.
+  type WorkspaceInsight = {
+    id: string;
+    priority: number;
+    label: string;
+    message: string;
+    actionLabel: string;
+    action: () => void;
+  };
+  const insights: WorkspaceInsight[] = [];
+  const addInsight = (item: WorkspaceInsight) => insights.push(item);
+
+  const projectsDueSoon = currentProjects.filter(p => p.targetDate && p.targetDate >= today && p.targetDate <= weekEnd);
+  const projectsPastTarget = currentProjects.filter(p => p.targetDate && p.targetDate < today);
+  const unlinkedDreams = dreams.filter(d => !goals.some(g => g.dreamId === d.id));
+  const activeGoals = goals.filter(g => g.status === "active");
+  const goalsWithoutProjects = activeGoals.filter(g => !projects.some(p => p.goalId === g.id));
+  const unplannedProjectTasks = openTasks.filter(t => !t.dueDate);
+  const shoppingCost = planned.reduce((sum, item) => sum + (item.estimatedCost ?? 0), 0);
+
+  if (projectsPastTarget.length) addInsight({
+    id: "projects-past-target", priority: 100, label: "Projects",
+    message: `${projectsPastTarget.length} active or planned project${projectsPastTarget.length === 1 ? " has" : "s have"} passed its target date. It may be worth reviewing the dates or next steps.`,
+    actionLabel: "Review projects", action: () => onNavigate("projects"),
+  });
+  if (projectsDueSoon.length) addInsight({
+    id: "projects-due-soon", priority: 90, label: "Coming up",
+    message: `${projectsDueSoon.length} project${projectsDueSoon.length === 1 ? " has" : "s have"} a target date within the next seven days.`,
+    actionLabel: "View projects", action: () => onNavigate("projects"),
+  });
+  if (upcoming.length) addInsight({
+    id: "tasks-due-soon", priority: 80, label: "Coming up",
+    message: `${upcoming.length} project task${upcoming.length === 1 ? " is" : "s are"} due within the next seven days.`,
+    actionLabel: "See upcoming tasks", action: () => onNavigate("my-day"),
+  });
+  if (overdue) addInsight({
+    id: "overdue-items", priority: 65, label: "Your day",
+    message: `${overdue} item${overdue === 1 ? " is" : "s are"} overdue across your routines and project tasks. You can review them at your own pace.`,
+    actionLabel: "Review overdue items", action: () => { setDayTab("overdue"); setShowAllDay(false); },
+  });
+  if (todayShopping.length) addInsight({
+    id: "shopping-today", priority: 60, label: "Shopping",
+    message: `${todayShopping.length} planned purchase${todayShopping.length === 1 ? " is" : "s are"} scheduled for today or earlier.`,
+    actionLabel: "Review shopping", action: () => onNavigate("shopping"),
+  });
+  if (unplannedProjectTasks.length >= 3) addInsight({
+    id: "tasks-without-dates", priority: 40, label: "Projects",
+    message: `${unplannedProjectTasks.length} open project tasks have no due date. That's fine if they're flexible — no need to schedule them unless it helps.`,
+    actionLabel: "Explore projects", action: () => onNavigate("projects"),
+  });
+  if (goalsWithoutProjects.length) addInsight({
+    id: "goals-without-projects", priority: 30, label: "Goals",
+    message: `${goalsWithoutProjects.length} active goal${goalsWithoutProjects.length === 1 ? " isn't" : "s aren't"} linked to a project yet. You could connect one when you're ready to take action.`,
+    actionLabel: "Explore goals", action: () => onNavigate("goals"),
+  });
+  if (unlinkedDreams.length) addInsight({
+    id: "dreams-to-explore", priority: 20, label: "Dreams",
+    message: `${unlinkedDreams.length} dream${unlinkedDreams.length === 1 ? " has" : "s have"} no linked goals. Some ideas are worth keeping without a plan.`,
+    actionLabel: "Explore dreams", action: () => onNavigate("dreams"),
+  });
+  if (planned.length && shoppingCost > 0) addInsight({
+    id: "shopping-budget", priority: 15, label: "Shopping",
+    message: `Your planned purchases through the next seven days total approximately ${money(shoppingCost)} in entered estimates.`,
+    actionLabel: "View shopping plans", action: () => onNavigate("shopping"),
+  });
+  const visibleInsights = insights
+    .filter(item => !hiddenCategories.includes(item.label))
+    .filter(item => {
+      const feedback = insightFeedback[item.id];
+      if (!feedback) return true;
+      if (feedback.status === "not-useful") return false;
+      if (feedback.status === "later" && feedback.until && feedback.until > today) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const aBoost = insightFeedback[a.id]?.status === "helpful" ? 5 : 0;
+      const bBoost = insightFeedback[b.id]?.status === "helpful" ? 5 : 0;
+      return (b.priority + bBoost) - (a.priority + aBoost);
+    });
+  const insightCategories = Array.from(new Set(insights.map(item => item.label)));
+  function recordInsightFeedback(id: string, status: "helpful" | "not-useful" | "later") {
+    const until = status === "later" ? localKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7)) : undefined;
+    setInsightFeedback(prev => ({ ...prev, [id]: { status, until } }));
+  }
+  const featuredInsight = visibleInsights[0];
 
   function updateShopping(listId: string, itemId: string, updates: { purchased?: boolean; plannedPurchaseDate?: string | null }) {
     onChangeShoppingLists(shoppingLists.map(list => list.id !== listId ? list : {
@@ -114,14 +236,49 @@ export default function OverviewView({ projects, routines, goals, dreams, shoppi
     </Panel>
     <section style={{ background: "linear-gradient(110deg, #e1f0e9, #f1f7ee)" }} className="sortd-insight-card rounded-2xl border border-[#c7ddd4] p-4 sm:p-5" aria-label="Worth knowing">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/75 text-xl text-[var(--sortd-teal-dark)]" aria-hidden="true">✦</div>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/75 text-[var(--sortd-teal-dark)]" aria-hidden="true"><Sparkles size={20} /></div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-[var(--sortd-navy)]">Worth knowing</h2>
             <span className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-medium text-[var(--sortd-teal-dark)]">From your workspace</span>
           </div>
-          <p className="mt-2 text-sm leading-6 text-[var(--sortd-text)]">{insight}</p>
-          <button type="button" onClick={() => { setDayTab(overdue > 0 ? "overdue" : "tasks"); setShowAllDay(false); }} className="mt-3 text-sm font-semibold text-[var(--sortd-teal-dark)] hover:underline">{overdue > 0 ? "Review overdue items" : "Review your day"} →</button>
+          {featuredInsight ? <>
+            <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-[#0f766e]">{featuredInsight.label}</p>
+            <p className="mt-1 text-sm leading-6 text-[var(--sortd-text)]">{featuredInsight.message}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button type="button" onClick={featuredInsight.action} className="text-sm font-semibold text-[var(--sortd-teal-dark)] hover:underline">{featuredInsight.actionLabel} →</button>
+              <button type="button" onClick={() => recordInsightFeedback(featuredInsight.id, "helpful")} className="text-xs text-[#0f766e] hover:underline" aria-label="Mark this insight helpful">Useful ✓</button>
+              <button type="button" onClick={() => recordInsightFeedback(featuredInsight.id, "later")} className="text-xs text-[#64748b] hover:underline">Remind me later</button>
+              <button type="button" onClick={() => recordInsightFeedback(featuredInsight.id, "not-useful")} className="text-xs text-[#64748b] hover:underline">Not useful</button>
+            </div>
+          </> : <p className="mt-2 text-sm leading-6 text-[var(--sortd-text)]">Nothing needs highlighting right now. Your space, your pace.</p>}
+          <div className="mt-3 border-t border-[#c7ddd4] pt-3">
+            <button type="button" onClick={() => setShowInsightPreferences(v => !v)} aria-expanded={showInsightPreferences} className="text-xs font-medium text-[#52677b] hover:underline">{showInsightPreferences ? "Hide insight preferences" : "Customise insights"}</button>
+            {showInsightPreferences && <div className="mt-3 space-y-3 rounded-xl bg-white/70 p-3">
+              <p className="text-xs text-[#52677b]">Choose which areas appear. Feedback is saved in this browser, not your account.</p>
+              <div className="flex flex-wrap gap-3">{insightCategories.map(category => <label key={category} className="flex items-center gap-2 text-xs text-[#102a43]"><input type="checkbox" checked={!hiddenCategories.includes(category)} onChange={event => setHiddenCategories(prev => event.target.checked ? prev.filter(c => c !== category) : [...prev, category])} className="accent-[#0f766e]" />{category}</label>)}</div>
+              <button type="button" onClick={() => { setInsightFeedback({}); setHiddenCategories([]); }} className="text-xs font-semibold text-[#0f766e] hover:underline">Reset insight feedback and preferences</button>
+            </div>}
+          </div>
+          {visibleInsights.length > 1 && <>
+            <button type="button" aria-expanded={showMoreInsights} onClick={() => setShowMoreInsights(value => !value)} className="mt-4 flex items-center gap-1 text-xs font-semibold text-[#0f766e] hover:underline">
+              {showMoreInsights ? "Hide other insights" : `See ${visibleInsights.length - 1} more insight${visibleInsights.length === 2 ? "" : "s"}`}
+              <ChevronRight size={14} className={`transition-transform ${showMoreInsights ? "rotate-90" : ""}`} />
+            </button>
+            {showMoreInsights && <div className="mt-3 space-y-2 border-t border-[#c7ddd4] pt-3">
+              {visibleInsights.slice(1, 5).map(item => <div key={item.id} className="rounded-xl border border-white/70 bg-white/65 p-3">
+                <p className="text-xs font-semibold text-[#0f766e]">{item.label}</p>
+                <p className="mt-1 text-sm leading-5 text-[#102a43]">{item.message}</p>
+                <div className="mt-2 flex flex-wrap gap-4">
+                  <button type="button" onClick={item.action} className="text-xs font-semibold text-[#0f766e] hover:underline">{item.actionLabel} →</button>
+                  <button type="button" onClick={() => recordInsightFeedback(item.id, "helpful")} className="text-xs text-[#0f766e] hover:underline">Useful ✓</button>
+                  <button type="button" onClick={() => recordInsightFeedback(item.id, "later")} className="text-xs text-[#64748b] hover:underline">Later</button>
+                  <button type="button" onClick={() => recordInsightFeedback(item.id, "not-useful")} className="text-xs text-[#64748b] hover:underline">Not useful</button>
+                </div>
+              </div>)}
+              {visibleInsights.length > 5 && <p className="text-xs text-[#64748b]">Showing the five highest-priority insights.</p>}
+            </div>}
+          </>}
         </div>
       </div>
     </section>

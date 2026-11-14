@@ -103,7 +103,9 @@ export default function ProjectDetails({
         </select>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <details className="rounded-xl border border-[var(--sortd-border)] p-3">
+        <summary className="cursor-pointer text-sm font-medium focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal)]">Advanced scheduling</summary>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
           Default schedule
           <select
@@ -140,6 +142,7 @@ export default function ProjectDetails({
           </label>
         </div>
       </div>
+      </details>
     </div>
   );
 }

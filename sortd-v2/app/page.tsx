@@ -43,6 +43,7 @@ import {
   ScheduleSettings,
   ShoppingList,
   SortdList,
+  ProjectCover,
   Task,
   FoodData,
   AdhocTask,
@@ -976,6 +977,11 @@ export default function Home() {
     });
   }
 
+  function updateProjectCover(cover?: ProjectCover) {
+    if (!activeList) return;
+    updateActiveList({...activeList, cover});
+  }
+
   function updateProjectDescription(description: string) {
     if (!activeList) return;
 
@@ -1271,6 +1277,7 @@ export default function Home() {
 
               onChangeProjectName={updateListName}
 
+              onChangeProjectCover={updateProjectCover}
               onChangeProjectDescription={updateProjectDescription}
 
               onChangeProjectStatus={updateProjectStatus}

@@ -68,7 +68,12 @@ export type ProjectStatus =
   | "paused"
   | "completed";
 
+export type ProjectCover =
+  | { source: "unsplash"; url: string; photographer: string; photographerUrl: string; unsplashId: string }
+  | { source: "upload"; path: string };
+
 export type SortdList = {
+  cover?: ProjectCover;
   id: string;
   name: string;
   description?: string;

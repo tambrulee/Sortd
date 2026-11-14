@@ -1,248 +1,23 @@
 "use client";
-
-import {
-  PointerEvent as ReactPointerEvent,
-  useRef,
-  useState,
-} from "react";
-
+import { useState } from "react";
 import ArchivedTasks from "@/components/task_management/ArchivedTasks";
-import CollectionSwitcher from "@/components/planner/CollectionSwitcher";
 import ControlPanel from "@/components/settings/ControlPanel";
 import ProjectDetails from "@/components/planner/ProjectDetails";
 import TaskList from "@/components/task_management/TaskList";
 import ConfirmDialog from "@/components/prompts/ConfirmDialog";
+import ProjectUploadedCover from "@/components/planner/ProjectUploadedCover";
+import ProjectCoverPicker from "@/components/planner/ProjectCoverPicker";
+import { Dream, Goal, ProjectStatus, ProjectCover, ScheduleContext, SortdList, Task } from "@/lib/types";
 
-import {
-  Dream,
-  Goal,
-  ProjectStatus,
-  ScheduleContext,
-  SortdList,
-  Task,
-} from "@/lib/types";
-
-type TaskFilter =
-  | "all"
-  | "high"
-  | "low-energy";
-
-type ProjectViewMode =
-  | "list"
-  | "board"
-  | "timeline";
-
-
-type TimelineInteractionMode =
-  | "move"
-  | "resize-start"
-  | "resize-end";
-
-type TimelineInteraction = {
-  projectId: string;
-  mode: TimelineInteractionMode;
-
-  pointerStartX: number;
-
-  originalStart: string;
-  originalEnd: string;
-
-  previewStart: string;
-  previewEnd: string;
-};
-
-const TIMELINE_DAY_WIDTH = 8;
-
-const PROJECT_COLUMNS: {
-  status: ProjectStatus;
-  label: string;
-  description: string;
-}[] = [
-  {
-    status: "backlog",
-    label: "Backlog",
-    description: "Ideas and future projects",
-  },
-  {
-    status: "planned",
-    label: "Planned",
-    description: "Ready to start",
-  },
-  {
-    status: "active",
-    label: "In Progress",
-    description: "Currently moving",
-  },
-  {
-    status: "paused",
-    label: "Waiting",
-    description: "Paused or blocked",
-  },
-  {
-    status: "completed",
-    label: "Done",
-    description: "Finished projects",
-  },
+type TaskFilter = "all" | "high" | "low-energy";
+const STATUS_GROUPS: {status: ProjectStatus; label: string}[] = [
+  {status:"active",label:"In progress"}, {status:"planned",label:"Planned"},
+  {status:"paused",label:"Waiting"}, {status:"backlog",label:"Ideas & backlog"},
+  {status:"completed",label:"Completed"}
 ];
-
-function getProjectStatus(
-  project: SortdList,
-): ProjectStatus {
-  return project.status ?? "active";
-}
-
-function getProjectStatusLabel(
-  status?: ProjectStatus,
-) {
-  switch (status) {
-    case "backlog":
-      return "Backlog";
-
-    case "planned":
-      return "Planned";
-
-    case "paused":
-      return "Waiting";
-
-    case "completed":
-      return "Done";
-
-    case "active":
-    default:
-      return "In Progress";
-  }
-}
-
-function getProjectStatusColour(
-  project: SortdList,
-) {
-  switch (project.status) {
-    case "backlog":
-      return "bg-slate-300";
-
-    case "planned":
-      return "bg-[var(--sortd-teal)]";
-
-    case "paused":
-      return "bg-amber-400";
-
-    case "completed":
-      return "bg-[var(--sortd-muted)]0";
-
-    case "active":
-    default:
-      return "bg-[var(--sortd-teal)]";
-  }
-}
-
-function getOpenTaskCount(
-  project: SortdList,
-) {
-  return project.tasks.filter(
-    (task) => !task.completed,
-  ).length;
-}
-
-function formatProjectDate(
-  date?: string,
-) {
-  if (!date) {
-    return undefined;
-  }
-
-  return new Intl.DateTimeFormat(
-    "en-GB",
-    {
-      day: "numeric",
-      month: "short",
-    },
-  ).format(
-    new Date(`${date}T12:00:00`),
-  );
-}
-
-function parseProjectDate(
-  date: string,
-) {
-  const [year, month, day] =
-    date.split("-").map(Number);
-
-  return new Date(
-    year,
-    month - 1,
-    day,
-  );
-}
-
-function toDateString(
-  date: Date,
-) {
-  const year =
-    date.getFullYear();
-
-  const month = String(
-    date.getMonth() + 1,
-  ).padStart(2, "0");
-
-  const day = String(
-    date.getDate(),
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function addDays(
-  date: Date,
-  days: number,
-) {
-  const next =
-    new Date(date);
-
-  next.setDate(
-    next.getDate() + days,
-  );
-
-  return next;
-}
-
-function differenceInDays(
-  start: Date,
-  end: Date,
-) {
-  const DAY_MS =
-    1000 * 60 * 60 * 24;
-
-  return Math.round(
-    (end.getTime() -
-      start.getTime()) /
-      DAY_MS,
-  );
-}
-
-function formatTimelineMonth(
-  date: Date,
-) {
-  return date.toLocaleDateString(
-    "en-GB",
-    {
-      month: "long",
-      year: "numeric",
-    },
-  );
-}
-
-function formatTimelineMarker(
-  date: Date,
-) {
-  return date.toLocaleDateString(
-    "en-GB",
-    {
-      day: "numeric",
-      month: "short",
-    },
-  );
-}
-
+function getOpenTaskCount(project: SortdList) {return project.tasks.filter(t=>!t.completed).length;}
+function getProjectStatusLabel(status?: ProjectStatus) {return STATUS_GROUPS.find(s=>s.status===status)?.label ?? "In progress";}
+function formatProjectDate(date?: string) {return date ? new Date(`${date}T12:00:00`).toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : undefined;}
 type ProjectsViewProps = {
   projects: SortdList[];
   goals: Goal[];
@@ -267,6 +42,8 @@ type ProjectsViewProps = {
   hideCompleted: boolean;
 
   taskFilter: TaskFilter;
+
+  onChangeProjectCover: (cover?: ProjectCover) => void;
 
   onCreateProject: () => void;
 
@@ -408,14 +185,12 @@ export default function ProjectsView({
   onOpenGoal,
   onOpenDream,
   activeProject,
-  activeProjectId,
   visibleTasks,
   hideCompleted,
   taskFilter,
   onChangeProject,
   onCreateProject,
   onDeleteProject,
-  onRenameProject,
   onReorderProjects,
   onChangeProjectName,
   onChangeProjectDescription,
@@ -443,265 +218,24 @@ export default function ProjectsView({
   onDeleteTask,
   onReorderTasks,
   onRestoreTask,
+  onChangeProjectCover,
 }: ProjectsViewProps) {
-  const [
-    viewMode,
-    setViewMode,
-  ] =
-    useState<ProjectViewMode>(
-      "list",
-    );
 
-  const [
-    draggedProjectId,
-    setDraggedProjectId,
-  ] =
-    useState<string | null>(
-      null,
-    );
-
-  const [
-    timelineInteraction,
-    setTimelineInteraction,
-  ] =
-    useState<TimelineInteraction | null>(
-      null,
-    );
-
-  const [
-    projectCardOpen,
-    setProjectCardOpen,
-  ] = useState(false);
-
-  const [
-    deleteProjectOpen,
-    setDeleteProjectOpen,
-  ] = useState(false);
-
-  const suppressTimelineClick =
-    useRef(false);
-
-  const datedProjects =
-    projects.filter(
-      (project) =>
-        project.startDate ||
-        project.targetDate,
-    );
-
-  const timelineStart = (() => {
-    const dates =
-      datedProjects
-        .flatMap(
-          (project) => [
-            project.startDate,
-            project.targetDate,
-          ],
-        )
-        .filter(
-          (
-            date,
-          ): date is string =>
-            Boolean(date),
-        )
-        .map(
-          parseProjectDate,
-        );
-
-    if (
-      dates.length === 0
-    ) {
-      return new Date();
-    }
-
-    return new Date(
-      Math.min(
-        ...dates.map(
-          (date) =>
-            date.getTime(),
-        ),
-      ),
-    );
-  })();
-
-  const timelineEnd = (() => {
-    const dates =
-      datedProjects
-        .flatMap(
-          (project) => [
-            project.startDate,
-            project.targetDate,
-          ],
-        )
-        .filter(
-          (
-            date,
-          ): date is string =>
-            Boolean(date),
-        )
-        .map(
-          parseProjectDate,
-        );
-
-    if (
-      dates.length === 0
-    ) {
-      return addDays(
-        new Date(),
-        30,
-      );
-    }
-
-    return new Date(
-      Math.max(
-        ...dates.map(
-          (date) =>
-            date.getTime(),
-        ),
-      ),
-    );
-  })();
-
-  const paddedTimelineStart =
-    addDays(
-      timelineStart,
-      -14,
-    );
-
-  const paddedTimelineEnd =
-    addDays(
-      timelineEnd,
-      21,
-    );
-
-  const timelineDays =
-    Math.max(
-      1,
-      differenceInDays(
-        paddedTimelineStart,
-        paddedTimelineEnd,
-      ) + 1,
-    );
-
-  const timelineWidth =
-    timelineDays *
-    TIMELINE_DAY_WIDTH;
-
-  const timelineDates =
-    Array.from(
-      {
-        length:
-          timelineDays,
-      },
-      (_, index) =>
-        addDays(
-          paddedTimelineStart,
-          index,
-        ),
-    );
-
-  const weekMarkers =
-    timelineDates
-      .map(
-        (date, index) => ({
-          date,
-          index,
-        }),
-      )
-      .filter(
-        ({ index }) =>
-          index % 7 === 0,
-      );
-
-  const monthSegments: {
-    key: string;
-    label: string;
-    startIndex: number;
-    dayCount: number;
-  }[] = [];
-
-  timelineDates.forEach(
-    (date, index) => {
-      const key = `${date.getFullYear()}-${date.getMonth()}`;
-
-      const existing =
-        monthSegments[
-          monthSegments.length - 1
-        ];
-
-      if (
-        existing?.key === key
-      ) {
-        existing.dayCount += 1;
-      } else {
-        monthSegments.push({
-          key,
-          label:
-            formatTimelineMonth(
-              date,
-            ),
-          startIndex: index,
-          dayCount: 1,
-        });
-      }
-    },
-  );
-
-  const todayString =
-    toDateString(
-      new Date(),
-    );
-
-  const todayDate =
-    parseProjectDate(
-      todayString,
-    );
-
-  const todayOffset =
-    differenceInDays(
-      paddedTimelineStart,
-      todayDate,
-    );
-
-  const showTodayLine =
-    todayOffset >= 0 &&
-    todayOffset <=
-      timelineDays;
-
-  const openTaskCount =
-    projects.reduce(
-      (
-        total,
-        project,
-      ) =>
-        total +
-        getOpenTaskCount(
-          project,
-        ),
-      0,
-    );
-
-  const activeTasks =
-    activeProject?.tasks ??
-    [];
-
-  const linkedGoal =
-    activeProject?.goalId
-      ? goals.find(
-          (goal) =>
-            goal.id ===
-            activeProject.goalId,
-        )
-      : undefined;
-
-  const linkedDream =
-    linkedGoal?.dreamId
-      ? dreams.find(
-          (dream) =>
-            dream.id ===
-            linkedGoal.dreamId,
-        )
-      : undefined;
-
+  const [openedProjectId, setOpenedProjectId] = useState<string | null>(null);
+  const [coverPickerOpen, setCoverPickerOpen] = useState(false);
+  const [deleteProjectOpen, setDeleteProjectOpen] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [showProjectMenu, setShowProjectMenu] = useState(false);
+  const [collapsed, setCollapsed] = useState<ProjectStatus[]>(["completed"]);
+  const [search, setSearch] = useState("");
+  const openTaskCount = projects.reduce((sum,p)=>sum+getOpenTaskCount(p),0);
+  const activeTasks = activeProject?.tasks ?? [];
+  const linkedGoal = activeProject?.goalId ? goals.find(g=>g.id===activeProject.goalId) : undefined;
+  const linkedDream = linkedGoal?.dreamId ? dreams.find(d=>d.id===linkedGoal.dreamId) : undefined;
+  const showWorkspace = openedProjectId !== null && activeProject?.id === openedProjectId;
+  function openProject(id:string) {onChangeProject(id);setOpenedProjectId(id);setEditingTitle(false);setShowProjectMenu(false);}
+  function toggleGroup(status:ProjectStatus) {setCollapsed(current=>current.includes(status)?current.filter(s=>s!==status):[...current,status]);}
   function changeTask(
     taskId: string,
     updates: Partial<Task>,
@@ -892,1215 +426,103 @@ export default function ProjectsView({
     );
   }
 
-  function reorderProject(
-  draggedId: string,
-  targetId: string,
-) {
-  if (draggedId === targetId) {
-    return;
-  }
-
-  const nextProjects = [...projects];
-
-  const draggedIndex =
-    nextProjects.findIndex(
-      (project) =>
-        project.id === draggedId,
-    );
-
-  const targetIndex =
-    nextProjects.findIndex(
-      (project) =>
-        project.id === targetId,
-    );
-
-  if (
-    draggedIndex === -1 ||
-    targetIndex === -1
-  ) {
-    return;
-  }
-
-  const [movedProject] =
-    nextProjects.splice(
-      draggedIndex,
-      1,
-    );
-
-  nextProjects.splice(
-    targetIndex,
-    0,
-    movedProject,
-  );
-
-  onReorderProjects(
-    nextProjects.map(
-      (project, index) => ({
-        ...project,
-        order: index + 1,
-      }),
-    ),
-  );
-}
-
-  function moveProjectToStatus(
-    projectId: string,
-    status: ProjectStatus,
-  ) {
-    const project =
-      projects.find(
-        (item) =>
-          item.id ===
-          projectId,
-      );
-
-    if (
-      !project ||
-      getProjectStatus(
-        project,
-      ) === status
-    ) {
-      return;
-    }
-
-    const updatedProjects =
-      projects.map(
-        (item) =>
-          item.id ===
-          projectId
-            ? {
-                ...item,
-                status,
-              }
-            : item,
-      );
-
-    onReorderProjects(
-      updatedProjects,
-    );
-  }
-
-  function updateProjectDates(
-    projectId: string,
-    startDate?: string,
-    targetDate?: string,
-  ) {
-    const updatedProjects =
-      projects.map(
-        (project) =>
-          project.id ===
-          projectId
-            ? {
-                ...project,
-                startDate,
-                targetDate,
-              }
-            : project,
-      );
-
-    onReorderProjects(
-      updatedProjects,
-    );
-  }
-
-  function openProject(projectId: string) {
-    onChangeProject(projectId);
-    setProjectCardOpen(true);
-  }
-
-  function beginTimelineInteraction(
-    event: ReactPointerEvent,
-    project: SortdList,
-    mode: TimelineInteractionMode,
-  ) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const startDate =
-      project.startDate ??
-      project.targetDate;
-
-    const targetDate =
-      project.targetDate ??
-      project.startDate;
-
-    if (
-      !startDate ||
-      !targetDate
-    ) {
-      return;
-    }
-
-    event.currentTarget.setPointerCapture(
-      event.pointerId,
-    );
-
-    suppressTimelineClick.current =
-      false;
-
-    setTimelineInteraction({
-      projectId:
-        project.id,
-
-      mode,
-
-      pointerStartX:
-        event.clientX,
-
-      originalStart:
-        startDate,
-
-      originalEnd:
-        targetDate,
-
-      previewStart:
-        startDate,
-
-      previewEnd:
-        targetDate,
-    });
-  }
-
-  function handleTimelinePointerMove(
-    event: ReactPointerEvent,
-  ) {
-    if (
-      !timelineInteraction
-    ) {
-      return;
-    }
-
-    const deltaPixels =
-      event.clientX -
-      timelineInteraction.pointerStartX;
-
-    const deltaDays =
-      Math.round(
-        deltaPixels /
-          TIMELINE_DAY_WIDTH,
-      );
-
-    if (
-      deltaDays !== 0
-    ) {
-      suppressTimelineClick.current =
-        true;
-    }
-
-    const originalStart =
-      parseProjectDate(
-        timelineInteraction.originalStart,
-      );
-
-    const originalEnd =
-      parseProjectDate(
-        timelineInteraction.originalEnd,
-      );
-
-    let nextStart =
-      originalStart;
-
-    let nextEnd =
-      originalEnd;
-
-    if (
-      timelineInteraction.mode ===
-      "move"
-    ) {
-      nextStart =
-        addDays(
-          originalStart,
-          deltaDays,
-        );
-
-      nextEnd =
-        addDays(
-          originalEnd,
-          deltaDays,
-        );
-    }
-
-    if (
-      timelineInteraction.mode ===
-      "resize-start"
-    ) {
-      const proposedStart =
-        addDays(
-          originalStart,
-          deltaDays,
-        );
-
-      nextStart =
-        proposedStart >
-        originalEnd
-          ? originalEnd
-          : proposedStart;
-    }
-
-    if (
-      timelineInteraction.mode ===
-      "resize-end"
-    ) {
-      const proposedEnd =
-        addDays(
-          originalEnd,
-          deltaDays,
-        );
-
-      nextEnd =
-        proposedEnd <
-        originalStart
-          ? originalStart
-          : proposedEnd;
-    }
-
-    setTimelineInteraction(
-      (current) =>
-        current
-          ? {
-              ...current,
-
-              previewStart:
-                toDateString(
-                  nextStart,
-                ),
-
-              previewEnd:
-                toDateString(
-                  nextEnd,
-                ),
-            }
-          : null,
-    );
-  }
-
-  function finishTimelineInteraction(
-    event: ReactPointerEvent,
-  ) {
-    if (
-      !timelineInteraction
-    ) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    updateProjectDates(
-      timelineInteraction.projectId,
-      timelineInteraction.previewStart,
-      timelineInteraction.previewEnd,
-    );
-
-    setTimelineInteraction(
-      null,
-    );
-  }
-
-  function cancelTimelineInteraction() {
-    setTimelineInteraction(
-      null,
-    );
-  }
 
   return (
     <div className="min-w-0 rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-4 text-[var(--sortd-text)] shadow-sm sm:p-5">
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-            Projects
-          </h1>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-3 text-sm text-[var(--sortd-text-muted)]">
-            <span>
-              <span className="font-semibold text-[var(--sortd-text)]">
-                {
-                  projects.length
-                }
-              </span>{" "}
-              {projects.length ===
-              1
-                ? "project"
-                : "projects"}
-            </span>
-
-            <span
-              aria-hidden="true"
-              className="text-[var(--sortd-border)]"
-            >
-              ·
-            </span>
-
-            <span>
-              <span className="font-semibold text-[var(--sortd-text)]">
-                {
-                  openTaskCount
-                }
-              </span>{" "}
-              open
-            </span>
-          </div>
-
-          
-          <div className="flex rounded-xl bg-[var(--sortd-muted)] p-1">
-            {/* List */}
-            <button
-              type="button"
-              aria-pressed={viewMode === "list"}
-              onClick={() =>
-                setViewMode(
-                  "list",
-                )
-              }
-              className={`min-h-11 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
-                viewMode ===
-                "list"
-                  ? "bg-[var(--sortd-card)] text-[var(--sortd-text)] shadow-sm"
-                  : "text-[var(--sortd-text-muted)] hover:text-[var(--sortd-text)]"
-              }`}
-            >
-              List
-            </button>
-            {/* Board */}
-            <button
-              type="button"
-              aria-pressed={viewMode === "board"}
-              onClick={() =>
-                setViewMode(
-                  "board",
-                )
-              }
-              className={`min-h-11 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
-                viewMode ===
-                "board"
-                  ? "bg-[var(--sortd-card)] text-[var(--sortd-text)] shadow-sm"
-                  : "text-[var(--sortd-text-muted)] hover:text-[var(--sortd-text)]"
-              }`}
-            >
-              Board
-            </button>
-            {/* Timeline */}
-            <button
-              type="button"
-              aria-pressed={viewMode === "timeline"}
-              onClick={() =>
-                setViewMode(
-                  "timeline",
-                )
-              }
-              className={`min-h-11 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)] ${
-                viewMode ===
-                "timeline"
-                  ? "bg-[var(--sortd-card)] text-[var(--sortd-text)] shadow-sm"
-                  : "text-[var(--sortd-text-muted)] hover:text-[var(--sortd-text)]"
-              }`}
-            >
-              Timeline
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {viewMode ===
-        "board" && (
-        <div className="mb-6 overflow-x-auto pb-2">
-          <div className="grid min-w-[1100px] grid-cols-5 gap-3">
-            {PROJECT_COLUMNS.map(
-              (
-                column,
-              ) => {
-                const columnProjects =
-                  projects.filter(
-                    (
-                      project,
-                    ) =>
-                      getProjectStatus(
-                        project,
-                      ) ===
-                      column.status,
-                  );
-
-                return (
-                  <section
-                    key={
-                      column.status
-                    }
-                    onDragOver={(
-                      event,
-                    ) => {
-                      event.preventDefault();
-                    }}
-                    onDrop={(
-                      event,
-                    ) => {
-                      event.preventDefault();
-
-                      if (
-                        draggedProjectId
-                      ) {
-                        moveProjectToStatus(
-                          draggedProjectId,
-                          column.status,
-                        );
-                      }
-
-                      setDraggedProjectId(
-                        null,
-                      );
-                    }}
-                    className="min-h-[360px] rounded-2xl bg-[var(--sortd-muted)] p-3"
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-2 px-1">
-                      <div>
-                        <h2 className="text-sm font-semibold text-[var(--sortd-text)]">
-                          {
-                            column.label
-                          }
-                        </h2>
-
-                        <p className="mt-0.5 text-[11px] text-[var(--sortd-text-muted)]">
-                          {
-                            column.description
-                          }
-                        </p>
-                      </div>
-
-                      <span className="rounded-full bg-[var(--sortd-card)] px-2 py-0.5 text-xs font-medium text-[var(--sortd-text-muted)] shadow-sm">
-                        {
-                          columnProjects.length
-                        }
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {columnProjects.map(
-                        (
-                          project,
-                        ) => {
-                          const openTasks =
-                            getOpenTaskCount(
-                              project,
-                            );
-
-                          const completedTasks =
-                            project.tasks.filter(
-                              (
-                                task,
-                              ) =>
-                                task.completed,
-                            ).length;
-
-                          const totalTasks =
-                            project
-                              .tasks
-                              .length;
-
-                          const progress =
-                            totalTasks >
-                            0
-                              ? Math.round(
-                                  (completedTasks /
-                                    totalTasks) *
-                                    100,
-                                )
-                              : 0;
-
-                          return (
-                            <article
-                              key={
-                                project.id
-                              }
-                              draggable
-                              onDragStart={() =>
-                                setDraggedProjectId(
-                                  project.id,
-                                )
-                              }
-                              onDragEnd={() =>
-                                setDraggedProjectId(
-                                  null,
-                                )
-                              }
-                              onClick={() =>
-                                openProject(
-                                  project.id,
-                                )
-                              }
-                              className={`cursor-pointer rounded-xl border bg-[var(--sortd-card)] p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--sortd-teal-dark)] hover:shadow-md ${
-                                draggedProjectId ===
-                                project.id
-                                  ? "opacity-40"
-                                  : "border-[var(--sortd-border)]"
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <h3 className="min-w-0 truncate text-sm font-semibold text-[var(--sortd-text)]">
-                                  {project.name ||
-                                    "Untitled project"}
-                                </h3>
-
-                                {project.id ===
-                                  activeProjectId && (
-                                  <span
-                                    className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--sortd-teal)]"
-                                    title="Current project"
-                                  />
-                                )}
-                              </div>
-
-                              {project.description && (
-                                <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-[var(--sortd-text-muted)]">
-                                  {
-                                    project.description
-                                  }
-                                </p>
-                              )}
-
-                              {(project.startDate ||
-                                project.targetDate) && (
-                                <div className="mt-3 flex items-center gap-1 text-[11px] text-[var(--sortd-text-muted)]">
-                                  <span>
-                                    {formatProjectDate(
-                                      project.startDate,
-                                    ) ??
-                                      "No start"}
-                                  </span>
-
-                                  <span className="text-[var(--sortd-border)]">
-                                    →
-                                  </span>
-
-                                  <span>
-                                    {formatProjectDate(
-                                      project.targetDate,
-                                    ) ??
-                                      "No target"}
-                                  </span>
-                                </div>
-                              )}
-
-                              {totalTasks >
-                                0 && (
-                                <div className="mt-3">
-                                  <div className="mb-1.5 flex items-center justify-between text-[11px] text-[var(--sortd-text-muted)]">
-                                    <span>
-                                      {
-                                        openTasks
-                                      }{" "}
-                                      {openTasks ===
-                                      1
-                                        ? "task"
-                                        : "tasks"}{" "}
-                                      left
-                                    </span>
-
-                                    <span>
-                                      {
-                                        progress
-                                      }
-                                      %
-                                    </span>
-                                  </div>
-
-                                  <div className="h-1.5 overflow-hidden rounded-full bg-[var(--sortd-muted)]">
-                                    <div
-                                      className="h-full rounded-full bg-[var(--sortd-teal-dark)] transition-all"
-                                      style={{
-                                        width: `${progress}%`,
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </article>
-                          );
-                        },
-                      )}
-
-                      {columnProjects.length ===
-                        0 && (
-                        <div className="rounded-xl border border-dashed border-[var(--sortd-border)] px-3 py-6 text-center text-xs text-[var(--sortd-text-muted)]">
-                          Drop a
-                          project
-                          here
-                        </div>
-                      )}
-                    </div>
-                  </section>
-                );
-              },
-            )}
-          </div>
-        </div>
-      )}
-
-      {viewMode ===
-        "timeline" && (
-        <div className="mb-6">
-          {datedProjects.length >
-          0 ? (
-            <>
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-[var(--sortd-text)]">
-                    Project
-                    timeline
-                  </h2>
-
-                  <p className="mt-1 text-xs text-[var(--sortd-text-muted)]">
-                    Drag a bar
-                    to move a
-                    project. Drag
-                    either edge
-                    to change its
-                    dates.
-                  </p>
-                </div>
-
-                <span className="text-xs text-[var(--sortd-text-muted)]">
-                  {
-                    datedProjects.length
-                  }{" "}
-                  scheduled{" "}
-                  {datedProjects.length ===
-                  1
-                    ? "project"
-                    : "projects"}
-                </span>
-              </div>
-
-              <div className="overflow-x-auto rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)]">
-                <div
-                  style={{
-                    width:
-                      220 +
-                      timelineWidth,
-                  }}
-                >
-                  {/* Calendar header */}
-
-                  <div
-                    className="grid border-b border-[var(--sortd-border)] bg-[var(--sortd-card)]"
-                    style={{
-                      gridTemplateColumns: `220px ${timelineWidth}px`,
-                    }}
-                  >
-                    <div className="sticky left-0 z-30 flex items-end border-r border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-[var(--sortd-text-muted)]">
-                        Project
-                      </span>
-                    </div>
-
-                    <div className="relative h-[72px] overflow-hidden">
-                      {/* Month row */}
-
-                      {monthSegments.map(
-                        (
-                          month,
-                        ) => (
-                          <div
-                            key={
-                              month.key
-                            }
-                            className="absolute top-0 flex h-8 items-center border-r border-[var(--sortd-border)] px-2 text-xs font-semibold text-[var(--sortd-text)]"
-                            style={{
-                              left:
-                                month.startIndex *
-                                TIMELINE_DAY_WIDTH,
-
-                              width:
-                                month.dayCount *
-                                TIMELINE_DAY_WIDTH,
-                            }}
-                          >
-                            <span className="truncate">
-                              {
-                                month.label
-                              }
-                            </span>
-                          </div>
-                        ),
-                      )}
-
-                      {/* Week marker row */}
-
-                      {weekMarkers.map(
-                        ({
-                          date,
-                          index,
-                        }) => (
-                          <div
-                            key={`${toDateString(
-                              date,
-                            )}-header`}
-                            className="absolute bottom-0 h-10 border-l border-[var(--sortd-border)]"
-                            style={{
-                              left:
-                                index *
-                                TIMELINE_DAY_WIDTH,
-                            }}
-                          >
-                            <span className="absolute left-1 top-3 whitespace-nowrap text-[10px] text-[var(--sortd-text-muted)]">
-                              {formatTimelineMarker(
-                                date,
-                              )}
-                            </span>
-                          </div>
-                        ),
-                      )}
-
-                      {showTodayLine && (
-                        <div
-                          className="absolute bottom-0 top-0 z-20 w-px bg-[var(--sortd-teal)]"
-                          style={{
-                            left:
-                              todayOffset *
-                              TIMELINE_DAY_WIDTH,
-                          }}
-                        >
-                          <span className="absolute right-1 top-9 rounded bg-[var(--sortd-muted)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--sortd-teal-dark)]">
-                            Today
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Project rows */}
-
-                  {datedProjects.map(
-                    (
-                      project,
-                    ) => {
-                      const fallbackStart =
-                        project.startDate ??
-                        project.targetDate!;
-
-                      const fallbackEnd =
-                        project.targetDate ??
-                        project.startDate!;
-
-                      const interaction =
-                        timelineInteraction?.projectId ===
-                        project.id
-                          ? timelineInteraction
-                          : null;
-
-                      const displayStart =
-                        interaction?.previewStart ??
-                        fallbackStart;
-
-                      const displayEnd =
-                        interaction?.previewEnd ??
-                        fallbackEnd;
-
-                      const projectStart =
-                        parseProjectDate(
-                          displayStart,
-                        );
-
-                      const projectEnd =
-                        parseProjectDate(
-                          displayEnd,
-                        );
-
-                      const startOffset =
-                        differenceInDays(
-                          paddedTimelineStart,
-                          projectStart,
-                        );
-
-                      const durationDays =
-                        Math.max(
-                          1,
-                          differenceInDays(
-                            projectStart,
-                            projectEnd,
-                          ) + 1,
-                        );
-
-                      const barLeft =
-                        startOffset *
-                        TIMELINE_DAY_WIDTH;
-
-                      const logicalWidth =
-                        durationDays *
-                        TIMELINE_DAY_WIDTH;
-
-                      const barWidth =
-                        Math.max(
-                          logicalWidth,
-                          26,
-                        );
-
-                      return (
-                        <div
-                          key={
-                            project.id
-                          }
-                          className="grid border-b border-[var(--sortd-border)] last:border-b-0"
-                          style={{
-                            gridTemplateColumns: `220px ${timelineWidth}px`,
-                          }}
-                        >
-                          <div
-                            draggable
-                            onDragStart={() => {
-                              setDraggedProjectId(project.id);
-                            }}
-                            onDragOver={(event) => {
-                              event.preventDefault();
-                            }}
-                            onDrop={(event) => {
-                              event.preventDefault();
-
-                              if (draggedProjectId) {
-                                reorderProject(
-                                  draggedProjectId,
-                                  project.id,
-                                );
-                              }
-
-                              setDraggedProjectId(null);
-                            }}
-                            onDragEnd={() => {
-                              setDraggedProjectId(null);
-                            }}
-                            className="sticky left-0 z-40 flex min-w-0 items-center gap-2 border-r border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-4"
-                          >
-                            <span
-                              className="shrink-0 cursor-grab select-none text-[var(--sortd-border)] active:cursor-grabbing"
-                              title="Drag to reorder"
-                            >
-                              ⋮⋮
-                            </span>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openProject(project.id)
-                              }
-                              className="min-w-0 flex-1 text-left"
-                            >
-                              <p className="truncate text-sm font-medium text-[var(--sortd-text)]">
-                                {project.name ||
-                                  "Untitled project"}
-                              </p>
-
-                              <div className="mt-1 flex items-center gap-2">
-                                <span
-                                  className={`h-2 w-2 rounded-full ${getProjectStatusColour(
-                                    project,
-                                  )}`}
-                                />
-
-                                <p className="text-[11px] text-[var(--sortd-text-muted)]">
-                                  {getProjectStatusLabel(
-                                    project.status,
-                                  )}
-                                </p>
-                              </div>
-                            </button>
-                          </div>
-
-                          <div className="relative h-[76px] overflow-hidden bg-[var(--sortd-card)]/50">
-                            {/* Weekly grid */}
-
-                            {weekMarkers.map(
-                              ({
-                                date,
-                                index,
-                              }) => (
-                                <div
-                                  key={`${toDateString(
-                                    date,
-                                  )}-${project.id}`}
-                                  className="absolute inset-y-0 border-l border-[var(--sortd-border)]"
-                                  style={{
-                                    left:
-                                      index *
-                                      TIMELINE_DAY_WIDTH,
-                                  }}
-                                />
-                              ),
-                            )}
-
-                            {/* Today */}
-
-                            {showTodayLine && (
-                              <div
-                                className="absolute inset-y-0 z-10 w-px bg-fuchsia-300"
-                                style={{
-                                  left:
-                                    todayOffset *
-                                    TIMELINE_DAY_WIDTH,
-                                }}
-                              />
-                            )}
-
-                            {/* Project bar */}
-
-                            <div
-                              role="button"
-                              tabIndex={
-                                0
-                              }
-                              aria-label={`Open ${project.name}`}
-                              onKeyDown={(
-                                event,
-                              ) => {
-                                if (
-                                  event.key ===
-                                    "Enter" ||
-                                  event.key ===
-                                    " "
-                                ) {
-                                  event.preventDefault();
-
-                                  openProject(
-                                    project.id,
-                                  );
-                                }
-                              }}
-                              onClick={() => {
-                                if (
-                                  suppressTimelineClick.current
-                                ) {
-                                  suppressTimelineClick.current =
-                                    false;
-
-                                  return;
-                                }
-
-                                openProject(
-                                  project.id,
-                                );
-                              }}
-                              onPointerDown={(
-                                event,
-                              ) =>
-                                beginTimelineInteraction(
-                                  event,
-                                  project,
-                                  "move",
-                                )
-                              }
-                              onPointerMove={
-                                handleTimelinePointerMove
-                              }
-                              onPointerUp={
-                                finishTimelineInteraction
-                              }
-                              onPointerCancel={
-                                cancelTimelineInteraction
-                              }
-                              className={`absolute top-1/2 z-10 flex h-[48px] -translate-y-1/2 touch-none select-none items-center overflow-hidden rounded-xl bg-[var(--sortd-navy)] text-white shadow-sm transition ${
-                                interaction?.mode ===
-                                "move"
-                                  ? "cursor-grabbing shadow-md"
-                                  : "cursor-grab hover:bg-slate-800"
-                              }`}
-                              style={{
-                                left:
-                                  barLeft,
-
-                                width:
-                                  barWidth,
-                              }}
-                            >
-                              {/* Left resize handle */}
-
-                              <span
-                                role="presentation"
-                                onPointerDown={(
-                                  event,
-                                ) =>
-                                  beginTimelineInteraction(
-                                    event,
-                                    project,
-                                    "resize-start",
-                                  )
-                                }
-                                onPointerMove={
-                                  handleTimelinePointerMove
-                                }
-                                onPointerUp={
-                                  finishTimelineInteraction
-                                }
-                                onPointerCancel={
-                                  cancelTimelineInteraction
-                                }
-                                className="flex h-full w-3 shrink-0 cursor-ew-resize touch-none items-center justify-center bg-[var(--sortd-card)]/10 hover:bg-[var(--sortd-card)]/20"
-                              >
-                                <span className="h-5 w-px rounded-full bg-[var(--sortd-card)]/60" />
-                              </span>
-
-                              <div className="min-w-0 flex-1 px-2">
-                                <p className="truncate text-xs font-semibold">
-                                  {
-                                    project.name
-                                  }
-                                </p>
-
-                                <p className="truncate text-[10px] text-slate-200">
-                                  {formatProjectDate(
-                                    displayStart,
-                                  )}{" "}
-                                  →{" "}
-                                  {formatProjectDate(
-                                    displayEnd,
-                                  )}
-                                </p>
-                              </div>
-
-                              {/* Right resize handle */}
-
-                              <span
-                                role="presentation"
-                                onPointerDown={(
-                                  event,
-                                ) =>
-                                  beginTimelineInteraction(
-                                    event,
-                                    project,
-                                    "resize-end",
-                                  )
-                                }
-                                onPointerMove={
-                                  handleTimelinePointerMove
-                                }
-                                onPointerUp={
-                                  finishTimelineInteraction
-                                }
-                                onPointerCancel={
-                                  cancelTimelineInteraction
-                                }
-                                className="flex h-full w-3 shrink-0 cursor-ew-resize touch-none items-center justify-center bg-[var(--sortd-card)]/10 hover:bg-[var(--sortd-card)]/20"
-                              >
-                                <span className="h-5 w-px rounded-full bg-[var(--sortd-card)]/60" />
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    },
-                  )}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-[var(--sortd-border)] px-6 py-12 text-center">
-              <p className="font-medium text-[var(--sortd-text)]">
-                No projects
-                have dates yet.
-              </p>
-
-              <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">
-                Add a start
-                or target date
-                to see projects
-                here.
-              </p>
-            </div>
-          )}
-
-          {projects.some(
-            (project) =>
-              !project.startDate &&
-              !project.targetDate,
-          ) && (
-            <div className="mt-5">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--sortd-text-muted)]">
-                Not scheduled
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                {projects
-                  .filter(
-                    (
-                      project,
-                    ) =>
-                      !project.startDate &&
-                      !project.targetDate,
-                  )
-                  .map(
-                    (
-                      project,
-                    ) => (
-                      <button
-                        key={
-                          project.id
-                        }
-                        type="button"
-                        onClick={() =>
-                          openProject(
-                            project.id,
-                          )
-                        }
-                        className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-sm text-[var(--sortd-text-muted)] transition hover:border-[var(--sortd-teal-dark)] hover:text-[var(--sortd-text)]"
-                      >
-                        {
-                          project.name
-                        }
-                      </button>
-                    ),
-                  )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {viewMode ===
-        "list" && (
+      {!showWorkspace ? (
         <>
-          <CollectionSwitcher
-            items={
-              projects
-            }
-            activeItemId={
-              activeProjectId
-            }
-            label="Current project"
-            placeholder="Select a project"
-            itemPluralLabel="Projects"
-            createLabel="+ New"
-            deleteLabel="Delete project"
-            onChangeItem={
-              onChangeProject
-            }
-            onCreateItem={
-              onCreateProject
-            }
-            onDeleteItem={() => {
-              setDeleteProjectOpen(true);
-            }}
-            onRenameItem={
-              onRenameProject
-            }
-            onReorderItems={
-              onReorderProjects
-            }
-            getCount={
-              getOpenTaskCount
-            }
-            getStatusColour={
-              getProjectStatusColour
-            }
-            getStatusLabel={(
-              project,
-            ) =>
-              project.status ??
-              "active"
-            }
-            canDelete={
-              projects.length >
-              1
-            }
-          />
-
+          <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div><h1 className="text-2xl font-semibold">Projects</h1><p className="text-sm text-[var(--sortd-text-muted)]">The things you&apos;re bringing to life.</p></div>
+            <button onClick={()=>{onCreateProject();setOpenedProjectId(null);}} className="rounded-xl bg-[var(--sortd-navy)] px-4 py-2.5 text-sm font-medium text-white">+ New project</button>
+          </header>
+          <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
+            {[[projects.length,"Projects"],[openTaskCount,"Open tasks"],[projects.filter(p=>p.status==="active").length,"In progress"]].map(([value,label])=>(
+              <div key={label} className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-3 sm:p-4"><p className="text-xl font-semibold">{value}</p><p className="text-xs text-[var(--sortd-text-muted)]">{label}</p></div>
+            ))}
+          </div>
+          <div className="mb-6 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-4">
+            <p className="text-sm font-semibold">✦ Project pulse</p>
+            <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">{projects.filter(p=>p.status==="active" && getOpenTaskCount(p)===0).length > 0 ? `${projects.filter(p=>p.status==="active" && getOpenTaskCount(p)===0).length} in-progress projects have no outstanding tasks. Consider adding a next step or marking them complete.` : `${projects.filter(p=>p.status==="active").length} projects are in progress, with ${openTaskCount} tasks open across all projects.`}</p>
+          </div>
+          <label className="mb-5 block"><span className="sr-only">Search projects</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search projects..." className="w-full rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-4 py-3 text-sm sm:max-w-sm" /></label>
+          {STATUS_GROUPS.map(group=>{
+            const matches=projects.filter(p=>(p.status??"active")===group.status && `${p.name} ${p.description??""}`.toLowerCase().includes(search.toLowerCase()));
+            if (!matches.length && search) return null;
+            const isCollapsed=collapsed.includes(group.status);
+            return <section key={group.status} className="mb-7">
+              <button type="button" onClick={()=>toggleGroup(group.status)} aria-expanded={!isCollapsed} className="mb-3 flex w-full items-center justify-between gap-2 text-left"><span className="font-semibold">{group.label} <span className="ml-1 text-sm font-normal text-[var(--sortd-text-muted)]">({matches.length})</span></span><span className="text-[var(--sortd-text-muted)]">{isCollapsed?"▸":"▾"}</span></button>
+              {!isCollapsed && <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{matches.map(project=>{
+                const completed=project.tasks.filter(t=>t.completed).length;
+                const progress=project.tasks.length?Math.round(100*completed/project.tasks.length):0;
+                return <button key={project.id} type="button" onClick={()=>openProject(project.id)} className="group overflow-hidden rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal)]">
+                  <div className="relative h-36 overflow-hidden bg-gradient-to-br from-[#1f0825] via-[#477b73] to-[#cdbfd1]">
+                    {project.cover?.source==="unsplash" && <img src={project.cover.url} alt="" className="h-full w-full object-cover transition group-hover:scale-105" />}
+                    {project.cover?.source==="upload" && <ProjectUploadedCover path={project.cover.path} />}
+                    {!project.cover && <div className="flex h-full items-center justify-center text-4xl text-white/70">✦</div>}
+                  </div>
+                  <div className="space-y-2 p-4"><p className="font-semibold">{project.name||"Untitled project"}</p><p className="line-clamp-2 min-h-9 text-xs leading-5 text-[var(--sortd-text-muted)]">{project.description||"Add a description to bring this project to life."}</p>
+                    <div className="flex justify-between text-xs text-[var(--sortd-text-muted)]"><span>{getOpenTaskCount(project)} open tasks</span><span>{project.targetDate?`Due ${formatProjectDate(project.targetDate)}`:`${progress}% complete`}</span></div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-[var(--sortd-muted)]"><div className="h-full rounded-full bg-[var(--sortd-teal)]" style={{width:`${progress}%`}} /></div>
+                    {project.cover?.source==="unsplash" && <span className="block text-[10px] text-[var(--sortd-text-muted)]">Photo by {project.cover.photographer} · Unsplash</span>}
+                  </div>
+                </button>;
+              })}</div>}
+              {!isCollapsed && !matches.length && <p className="rounded-xl border border-dashed border-[var(--sortd-border)] p-4 text-sm text-[var(--sortd-text-muted)]">No projects here yet.</p>}
+            </section>;
+          })}
+        </>
+      ) : (
+        <>
+          <button type="button" onClick={()=>setOpenedProjectId(null)} className="mb-4 text-sm text-[var(--sortd-teal-dark)]">← All projects</button>
+          <div className="relative mb-4 h-44 overflow-hidden rounded-2xl bg-gradient-to-br from-[#1f0825] via-[#477b73] to-[#cdbfd1]">
+            {activeProject?.cover?.source==="unsplash" && <img src={activeProject.cover.url} alt="" className="h-full w-full object-cover" />}
+            {activeProject?.cover?.source==="upload" && <ProjectUploadedCover path={activeProject.cover.path} />}
+            <button type="button" onClick={()=>setCoverPickerOpen(true)} className="absolute bottom-3 right-3 rounded-lg bg-white/95 px-3 py-2 text-xs font-semibold text-slate-900 shadow">Change cover</button>
+          </div>
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              {editingTitle ? (
+                <input autoFocus aria-label="Project name" value={titleDraft} onChange={e=>setTitleDraft(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter"){if(titleDraft.trim())onChangeProjectName(titleDraft.trim());setEditingTitle(false);}if(e.key==="Escape")setEditingTitle(false);}}
+                  onBlur={()=>{if(titleDraft.trim())onChangeProjectName(titleDraft.trim());setEditingTitle(false);}}
+                  className="w-full max-w-lg rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-2xl font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--sortd-teal)]" />
+              ) : (
+                <div className="flex items-center gap-2"><h1 className="text-2xl font-semibold">{activeProject?.name}</h1>
+                  <button type="button" aria-label="Edit project name" title="Edit project name" onClick={()=>{setTitleDraft(activeProject?.name??"");setEditingTitle(true);}} className="rounded-lg px-2 py-1 text-sm text-[var(--sortd-text-muted)] hover:bg-[var(--sortd-muted)] focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal)]">✎</button>
+                </div>
+              )}
+              {activeProject?.description && <p className="mt-1 text-sm text-[var(--sortd-text-muted)]">{activeProject.description}</p>}
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--sortd-text-muted)]">
+                {activeProject?.targetDate && <span className="rounded-full bg-[var(--sortd-muted)] px-3 py-1">Target {formatProjectDate(activeProject.targetDate)}</span>}
+                <span className="rounded-full bg-[var(--sortd-muted)] px-3 py-1">{activeProject ? getOpenTaskCount(activeProject) : 0} open tasks</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2"><span className="rounded-full bg-[var(--sortd-muted)] px-3 py-1 text-xs">{getProjectStatusLabel(activeProject?.status)}</span>
+              <div className="relative"><button type="button" aria-label="Project actions" aria-expanded={showProjectMenu} onClick={()=>setShowProjectMenu(v=>!v)} className="rounded-lg border border-[var(--sortd-border)] px-3 py-1 text-lg focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal)]">⋯</button>
+                {showProjectMenu && <div className="absolute right-0 top-full z-20 mt-2 min-w-40 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-1 shadow-lg"><button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50" onClick={()=>{setShowProjectMenu(false);setDeleteProjectOpen(true);}}>Delete project</button></div>}
+              </div>
+            </div>
+          </div>
+          {activeProject && (()=>{
+            const total=activeProject.tasks.length;
+            const open=getOpenTaskCount(activeProject);
+            const done=total-open;
+            const overdue=Boolean(activeProject.targetDate && activeProject.targetDate < new Date().toISOString().slice(0,10) && activeProject.status!=="completed");
+            const observation=overdue
+              ? `The target date has passed${open ? ` and ${open} task${open===1?" remains":"s remain"}` : ""}. Would reviewing the deadline or remaining scope help?`
+              : open===0 ? "No open tasks remain. Is this project ready to be marked complete?"
+              : done===0 ? `${open} task${open===1?" is":"s are"} open. Choose a next step that feels manageable.`
+              : `${done} of ${total} tasks completed. ${open} remaining — you've made progress.`;
+            return <section aria-label="Project Pulse" className="mb-5 rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-4 sm:p-5">
+              <div className="mb-4 flex items-center gap-3"><span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--sortd-muted)] text-lg text-[var(--sortd-teal-dark)]">✦</span><div><h2 className="text-lg font-semibold">Project Pulse</h2><p className="text-xs text-[var(--sortd-text-muted)]">A snapshot of where things stand</p></div></div>
+              <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <div className="rounded-xl bg-[var(--sortd-muted)] p-3"><p className="text-xl font-semibold">{open}</p><p className="text-xs text-[var(--sortd-text-muted)]">Open tasks</p></div>
+                <div className="rounded-xl bg-[var(--sortd-muted)] p-3"><p className="text-xl font-semibold">{done}</p><p className="text-xs text-[var(--sortd-text-muted)]">Completed tasks</p></div>
+                <div className="col-span-2 rounded-xl bg-[var(--sortd-muted)] p-3 sm:col-span-1"><p className="text-xl font-semibold">{total ? `${Math.round(done/total*100)}%` : "—"}</p><p className="text-xs text-[var(--sortd-text-muted)]">Task completion</p></div>
+              </div>
+              <p className="text-sm font-semibold">What deserves attention</p><p className="mt-1 text-sm leading-6 text-[var(--sortd-text-muted)]">{observation}</p>
+            </section>;
+          })()}
           {activeProject && (
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
               {linkedDream && (
@@ -2147,22 +569,98 @@ export default function ProjectsView({
                 </span>
               )}
 
-              <span className="text-[var(--sortd-border)]">
-                →
-              </span>
-
-              <span className="font-medium text-[var(--sortd-text)]">
-                {
-                  activeProject.name
-                }
-              </span>
             </div>
           )}
 
           {activeProject ? (
             <>
-              <details className="group mt-5 border-b border-[var(--sortd-border)] pb-4">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-1 py-2 text-sm text-[var(--sortd-text-muted)] transition hover:text-[var(--sortd-text)] [&::-webkit-details-marker]:hidden">
+              <section className="mt-5">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h2 className="text-base font-semibold text-[var(--sortd-text)]">
+                    Tasks
+                  </h2>
+
+                  <span className="text-xs text-[var(--sortd-text-muted)]">
+                    {
+                      visibleTasks.length
+                    }{" "}
+                    {visibleTasks.length ===
+                    1
+                      ? "item"
+                      : "items"}
+                  </span>
+                </div>
+
+                <ControlPanel
+                  onAddTask={
+                    onAddTask
+                  }
+                  hideCompleted={
+                    hideCompleted
+                  }
+                  onToggleHideCompleted={
+                    onToggleHideCompleted
+                  }
+                  onArchiveCompleted={
+                    onArchiveCompleted
+                  }
+                  hasCompleted={activeTasks.some(
+                    (
+                      task,
+                    ) =>
+                      task.completed,
+                  )}
+                  taskFilter={
+                    taskFilter
+                  }
+                  onChangeTaskFilter={
+                    onChangeTaskFilter
+                  }
+                />
+
+                <div className="min-w-0 space-y-2 pb-4">
+                  <TaskList
+                    tasks={
+                      visibleTasks
+                    }
+                    currentProjectId={
+                      activeProject.id
+                    }
+                    projectOptions={projects.map(
+                      (
+                        project,
+                      ) => ({
+                        id:
+                          project.id,
+
+                        name:
+                          project.name ||
+                          "Untitled project",
+                      }),
+                    )}
+                    onAddTask={
+                      onAddTask
+                    }
+                    onChangeTask={
+                      changeTask
+                    }
+                    onToggleTask={
+                      onToggleTask
+                    }
+                    onDeleteTask={
+                      onDeleteTask
+                    }
+                    onReorderTasks={
+                      onReorderTasks
+                    }
+                    onMoveTask={
+                      moveTaskToProject
+                    }
+                  />
+                </div>
+              </section>
+              <details className="group mt-7 rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-4 sm:p-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm text-[var(--sortd-text)] transition hover:bg-[var(--sortd-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--sortd-teal)] [&::-webkit-details-marker]:hidden">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">
                       Project
@@ -2197,28 +695,7 @@ export default function ProjectsView({
                   </span>
                 </summary>
 
-                <div className="pt-4 [&_input]:min-w-0 [&_input]:border-[var(--sortd-border)] [&_input]:bg-[var(--sortd-card)] [&_select]:border-[var(--sortd-border)] [&_select]:bg-[var(--sortd-card)] [&_textarea]:border-[var(--sortd-border)] [&_textarea]:bg-[var(--sortd-card)]">
-                  <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-[var(--sortd-text-muted)]">
-                    Project name
-
-                    <input
-                      value={
-                        activeProject.name
-                      }
-                      onChange={(
-                        event,
-                      ) =>
-                        onChangeProjectName(
-                          event
-                            .target
-                            .value,
-                        )
-                      }
-                      placeholder="Project name"
-                      className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-sm text-[var(--sortd-text)] outline-none transition focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal-dark)]/20"
-                    />
-                  </label>
-
+                <div className="mt-4 border-t border-[var(--sortd-border)] pt-4 [&_input]:min-w-0 [&_input]:border-[var(--sortd-border)] [&_input]:bg-[var(--sortd-card)] [&_select]:border-[var(--sortd-border)] [&_select]:bg-[var(--sortd-card)] [&_textarea]:border-[var(--sortd-border)] [&_textarea]:bg-[var(--sortd-card)]">
                   <label className="mb-4 flex flex-col gap-1.5 text-xs font-medium text-[var(--sortd-text-muted)]">
                     Supports goal
 
@@ -2323,91 +800,7 @@ export default function ProjectsView({
                 </div>
               </details>
 
-              <section className="mt-5">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h2 className="text-base font-semibold text-[var(--sortd-text)]">
-                    Tasks
-                  </h2>
 
-                  <span className="text-xs text-[var(--sortd-text-muted)]">
-                    {
-                      visibleTasks.length
-                    }{" "}
-                    {visibleTasks.length ===
-                    1
-                      ? "item"
-                      : "items"}
-                  </span>
-                </div>
-
-                <ControlPanel
-                  onAddTask={
-                    onAddTask
-                  }
-                  hideCompleted={
-                    hideCompleted
-                  }
-                  onToggleHideCompleted={
-                    onToggleHideCompleted
-                  }
-                  onArchiveCompleted={
-                    onArchiveCompleted
-                  }
-                  hasCompleted={activeTasks.some(
-                    (
-                      task,
-                    ) =>
-                      task.completed,
-                  )}
-                  taskFilter={
-                    taskFilter
-                  }
-                  onChangeTaskFilter={
-                    onChangeTaskFilter
-                  }
-                />
-
-                <div className="min-w-0 space-y-2 pb-4">
-                  <TaskList
-                    tasks={
-                      visibleTasks
-                    }
-                    currentProjectId={
-                      activeProject.id
-                    }
-                    projectOptions={projects.map(
-                      (
-                        project,
-                      ) => ({
-                        id:
-                          project.id,
-
-                        name:
-                          project.name ||
-                          "Untitled project",
-                      }),
-                    )}
-                    onAddTask={
-                      onAddTask
-                    }
-                    onChangeTask={
-                      changeTask
-                    }
-                    onToggleTask={
-                      onToggleTask
-                    }
-                    onDeleteTask={
-                      onDeleteTask
-                    }
-                    onReorderTasks={
-                      onReorderTasks
-                    }
-                    onMoveTask={
-                      moveTaskToProject
-                    }
-                  />
-                </div>
-              </section>
 
               {(activeProject
                 .archivedTasks
@@ -2463,132 +856,11 @@ export default function ProjectsView({
               </p>
             </div>
           )}
+
         </>
       )}
-      {projectCardOpen && activeProject && (
-  <div
-    className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/30 p-4 backdrop-blur-sm"
-    onMouseDown={(event) => {
-      if (event.target === event.currentTarget) {
-        setProjectCardOpen(false);
-      }
-    }}
-  >
-    <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-[var(--sortd-card)] p-6 shadow-2xl">
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--sortd-text-muted)]">
-            Project
-          </p>
-
-          <input
-            value={activeProject.name}
-            onChange={(event) =>
-              onChangeProjectName(event.target.value)
-            }
-            className="mt-1 w-full bg-transparent text-xl font-semibold text-[var(--sortd-text)] outline-none"
-          />
-
-          <div className="mt-2 flex items-center gap-2">
-            <span
-              className={`h-2 w-2 rounded-full ${getProjectStatusColour(
-                activeProject,
-              )}`}
-            />
-
-            <span className="text-sm text-[var(--sortd-text-muted)]">
-              {getProjectStatusLabel(activeProject.status)}
-            </span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setProjectCardOpen(false)}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--sortd-muted)] text-[var(--sortd-text-muted)] transition hover:bg-[var(--sortd-border)] hover:text-[var(--sortd-text)]"
-          aria-label="Close project"
-        >
-          ✕
-        </button>
-      </div>
-
-      <ProjectDetails
-        description={activeProject.description ?? ""}
-        status={activeProject.status ?? "active"}
-        startDate={activeProject.startDate}
-        targetDate={activeProject.targetDate}
-        scheduleContext={
-          activeProject.scheduleContext ?? "personal"
-        }
-        earliestStartTime={
-          activeProject.earliestStartTime
-        }
-        latestEndTime={
-          activeProject.latestEndTime
-        }
-        onChangeDescription={
-          onChangeProjectDescription
-        }
-        onChangeStatus={
-          onChangeProjectStatus
-        }
-        onChangeStartDate={
-          onChangeProjectStartDate
-        }
-        onChangeTargetDate={
-          onChangeProjectTargetDate
-        }
-        onChangeScheduleContext={
-          onChangeProjectScheduleContext
-        }
-        onChangeEarliestStartTime={
-          onChangeProjectEarliestStartTime
-        }
-        onChangeLatestEndTime={
-          onChangeProjectLatestEndTime
-        }
-      />
-
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--sortd-border)] pt-4">
-        <span className="text-sm text-[var(--sortd-text-muted)]">
-          {getOpenTaskCount(activeProject)} open{" "}
-          {getOpenTaskCount(activeProject) === 1
-            ? "task"
-            : "tasks"}
-        </span>
-
-        <button
-          type="button"
-          onClick={() => {
-            setProjectCardOpen(false);
-            setViewMode("list");
-          }}
-          className="rounded-xl bg-[var(--sortd-navy)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--sortd-navy-dark)]"
-        >
-          View project tasks →
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-<ConfirmDialog
-  open={deleteProjectOpen}
-  title="Delete project?"
-  description={
-    activeProject
-      ? `Delete “${activeProject.name}” and its tasks? This can't be undone.`
-      : "Delete this project? This can't be undone."
-  }
-  confirmLabel="Delete project"
-  onCancel={() => {
-    setDeleteProjectOpen(false);
-  }}
-  onConfirm={() => {
-    setDeleteProjectOpen(false);
-    setProjectCardOpen(false);
-    onDeleteProject();
-  }}
-/>
+      {coverPickerOpen && activeProject && <ProjectCoverPicker projectId={activeProject.id} current={activeProject.cover} onSelect={cover=>{onChangeProjectCover(cover);setCoverPickerOpen(false);}} onClose={()=>setCoverPickerOpen(false)} />}
+      <ConfirmDialog open={deleteProjectOpen} title="Delete project?" description={`Delete “${activeProject?.name??"this project"}” and its tasks? This cannot be undone.`} confirmLabel="Delete project" onCancel={()=>setDeleteProjectOpen(false)} onConfirm={()=>{setDeleteProjectOpen(false);setOpenedProjectId(null);onDeleteProject();}} />
     </div>
   );
 }
