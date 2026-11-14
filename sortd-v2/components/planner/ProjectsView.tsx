@@ -463,7 +463,7 @@ export default function ProjectsView({
                   <div className="space-y-2 p-4"><p className="font-semibold">{project.name||"Untitled project"}</p><p className="line-clamp-2 min-h-9 text-xs leading-5 text-[var(--sortd-text-muted)]">{project.description||"Add a description to bring this project to life."}</p>
                     <div className="flex justify-between text-xs text-[var(--sortd-text-muted)]"><span>{getOpenTaskCount(project)} open tasks</span><span>{project.targetDate?`Due ${formatProjectDate(project.targetDate)}`:`${progress}% complete`}</span></div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-[var(--sortd-muted)]"><div className="h-full rounded-full bg-[var(--sortd-teal)]" style={{width:`${progress}%`}} /></div>
-                    {project.cover?.source==="unsplash" && <span className="block text-[10px] text-[var(--sortd-text-muted)]">Photo by {project.cover.photographer} · Unsplash</span>}
+                    {project.cover?.source==="unsplash" && <span className="block text-[10px] text-[var(--sortd-text-muted)]"></span>}
                   </div>
                 </button>;
               })}</div>}
