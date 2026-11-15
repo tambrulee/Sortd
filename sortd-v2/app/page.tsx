@@ -11,13 +11,13 @@ import {
 
 // Components
 import Header from "@/components/general/Header";
-import ProjectsView from "@/components/planner/ProjectsView";
+import ProjectsView from "@/components/planner/project/ProjectsView";
 import Footer from "@/components/general/Footer";
 import WorkspaceNav from "@/components/planner/WorkspaceNav";
 import MyDayView from "@/components/planner/MyDayView";
 import OverviewView from "@/components/planner/OverviewView";
 import AuthPanel from "@/components/general/AuthPanel";
-import RoutinesView from "@/components/planner/RoutinesView";
+import RoutinesView from "@/components/planner/routine/RoutinesView";
 import { createDefaultScheduleSettings } from "@/lib/schedule";
 import ToDosView from "@/components/planner/ToDosView";
 import ShoppingView from "@/components/food_shopping/ShoppingView";
@@ -28,7 +28,6 @@ import FoodView from "@/components/food_shopping/FoodView";
 
 // AskSortd
 import AskSortd from "@/components/ai/AskSortd";
-import { PanelLeftOpen, Menu } from "lucide-react";
 
 // Types and storage utilities
 import {
@@ -471,7 +470,7 @@ export default function Home() {
     saveHideCompleted(hideCompleted);
   }, [hideCompleted, user]);
 
-  
+
   useEffect(() => {
   const title = pageTitles[activeView] ?? "Overview";
 
@@ -894,27 +893,6 @@ export default function Home() {
                   ...updates,
                 }
               : task,
-          ),
-        };
-      }),
-    );
-  }
-
-  function deleteProjectTaskById(
-    projectId: string,
-    taskId: string,
-  ) {
-    setLists((currentLists) =>
-      currentLists.map((item) => {
-        if (item.id !== projectId) {
-          return item;
-        }
-
-        return {
-          ...item,
-          tasks: item.tasks.filter(
-            (projectTask) =>
-              projectTask.id !== taskId,
           ),
         };
       }),

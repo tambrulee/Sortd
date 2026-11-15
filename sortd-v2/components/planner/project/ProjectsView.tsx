@@ -2,11 +2,11 @@
 import { useState } from "react";
 import ArchivedTasks from "@/components/task_management/ArchivedTasks";
 import ControlPanel from "@/components/settings/ControlPanel";
-import ProjectDetails from "@/components/planner/ProjectDetails";
+import ProjectDetails from "@/components/planner/project/ProjectDetails";
 import TaskList from "@/components/task_management/TaskList";
 import ConfirmDialog from "@/components/prompts/ConfirmDialog";
-import ProjectUploadedCover from "@/components/planner/ProjectUploadedCover";
-import ProjectCoverPicker from "@/components/planner/ProjectCoverPicker";
+import ProjectUploadedCover from "@/components/planner/project/ProjectUploadedCover";
+import ProjectCoverPicker from "@/components/planner/project/ProjectCoverPicker";
 import { Dream, Goal, ProjectStatus, ProjectCover, ScheduleContext, SortdList, Task } from "@/lib/types";
 
 type TaskFilter = "all" | "high" | "low-energy";

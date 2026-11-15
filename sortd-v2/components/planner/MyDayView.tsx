@@ -1,27 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ProjectUploadedCover from "@/components/planner/ProjectUploadedCover";
+import ProjectUploadedCover from "@/components/planner/project/ProjectUploadedCover";
 import {
   Routine,
   SortdList,
   Task,
 } from "@/lib/types";
-
-import {
-  closestCenter,
-  DndContext,
-  DragEndEvent,
-} from "@dnd-kit/core";
-
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-
-import { CSS } from "@dnd-kit/utilities";
 
 import ItemDetailsModal from "@/components/task_management/ItemDetailsModal";
 
@@ -154,128 +139,6 @@ function formatShortDate(
   );
 }
 
-function SortableMyDayRoutineTask({
-  task,
-  today,
-  onComplete,
-  onEdit,
-  selecting,
-  selected,
-  onToggleSelect,
-}: {
-  task: RoutineTaskForDay;
-  selecting: boolean;
-  selected: boolean;
-  onToggleSelect: () => void;
-  today: string;
-
-  onComplete: (
-    routineId: string,
-    taskId: string,
-  ) => void;
-
-  onEdit: (
-    task: RoutineTaskForDay,
-  ) => void;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: `${task.routineId}-${task.id}`,
-  });
-
-  const style = {
-    transform:
-      CSS.Transform.toString(
-        transform,
-      ),
-
-    transition,
-  };
-
-  const isOverdue =
-    task.nextDueDate < today;
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`flex min-w-0 flex-wrap items-center gap-2 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-1.5 transition sm:px-4 ${
-        isDragging
-          ? "z-50 opacity-60 shadow-lg"
-          : ""
-      }`}
-    >
-      {selecting ? (
-        <input type="checkbox" checked={selected} onChange={onToggleSelect} aria-label={`Select ${task.title}`} className="h-4 w-4 shrink-0 accent-[var(--sortd-teal-dark)]" />
-      ) : (
-      <button
-        type="button"
-        {...attributes}
-        {...listeners}
-        className="flex h-7 w-5 shrink-0 touch-none cursor-grab items-center justify-center rounded-lg text-xs text-slate-400 active:cursor-grabbing"
-        aria-label={`Reorder ${task.title}`}
-        title="Drag to reorder"
-      >
-        ⋮⋮
-      </button>
-      )}
-
-      {!selecting && <button
-        type="button"
-        onClick={() =>
-          onComplete(
-            task.routineId,
-            task.id,
-          )
-        }
-        aria-label={`Complete ${task.title}`}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-xs font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
-      >
-        ✓
-      </button>}
-
-      <div className="min-w-0 flex-1">
-        <p className="break-words [overflow-wrap:anywhere] font-medium text-slate-900">
-          {task.title ||
-            "Untitled routine task"}
-        </p>
-
-        <p className="mt-0.5 break-words [overflow-wrap:anywhere] text-xs text-slate-500">
-          {task.routineName}
-        </p>
-      </div>
-
-      <span
-        className={`order-last max-w-full sm:ml-0 rounded-full sm:order-none sm:shrink-0 px-2 py-0.5 text-xs font-medium ${
-          isOverdue
-            ? "bg-red-100 text-red-700"
-            : "bg-amber-100 text-amber-800"
-        }`}
-      >
-        {isOverdue
-          ? "Overdue"
-          : "Due today"}
-      </span>
-
-      {!selecting && <button
-        type="button"
-        onClick={() => onEdit(task)}
-        aria-label={`Edit ${task.title}`}
-        title="Routine task details"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
-      >
-        •••
-      </button>}
-    </div>
-  );
-}
-
 export default function MyDayView({
   tasks,
   routines,
@@ -295,12 +158,8 @@ export default function MyDayView({
   const [itemDisplayMode, setItemDisplayMode] = useState<"all" | "grouped">("grouped");
 
   const [selecting, setSelecting] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [activeGroup, setActiveGroup] = useState<{kind: "routine" | "project"; id: string; date?: string} | null>(null);
   useEffect(() => { if (!activeGroup) return; const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setActiveGroup(null); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [activeGroup]);
-  const [upcomingDay, setUpcomingDay] = useState<string | null>(null);
-  const toggleGroup = (key: string) => setExpandedGroups((current) => current.includes(key) ? current.filter((item) => item !== key) : [...current, key]);
-  const isGroupCollapsed = (key: string) => !expandedGroups.includes(key);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [bulkDate, setBulkDate] = useState("");
 
@@ -463,83 +322,6 @@ export default function MyDayView({
     day: "numeric",
     month: "long",
   }).format(new Date());
-
-  function handleRoutineDragEnd(
-    event: DragEndEvent,
-  ) {
-    const { active, over } = event;
-
-    if (
-      !over ||
-      active.id === over.id
-    ) {
-      return;
-    }
-
-    const oldIndex =
-      actionableRoutineTasks.findIndex(
-        (task) =>
-          `${task.routineId}-${task.id}` ===
-          active.id,
-      );
-
-    const newIndex =
-      actionableRoutineTasks.findIndex(
-        (task) =>
-          `${task.routineId}-${task.id}` ===
-          over.id,
-      );
-
-    if (
-      oldIndex < 0 ||
-      newIndex < 0
-    ) {
-      return;
-    }
-
-    const reordered =
-      arrayMove(
-        actionableRoutineTasks,
-        oldIndex,
-        newIndex,
-      );
-
-    const orderMap = new Map(
-      reordered.map(
-        (task, index) => [
-          `${task.routineId}-${task.id}`,
-          index + 1,
-        ],
-      ),
-    );
-
-    onChangeRoutines(
-      routines.map((routine) => ({
-        ...routine,
-
-        tasks: routine.tasks.map(
-          (task) => {
-            const nextOrder =
-              orderMap.get(
-                `${routine.id}-${task.id}`,
-              );
-
-            if (
-              nextOrder === undefined
-            ) {
-              return task;
-            }
-
-            return {
-              ...task,
-              myDayOrder:
-                nextOrder,
-            };
-          },
-        ),
-      })),
-    );
-  }
 
   const selectableProjectTasks = dayViewMode === "today" ? actionableProjectTasks : upcomingTasks;
   const selectableRoutineTasks = dayViewMode === "today" ? actionableRoutineTasks : upcomingRoutineTasks;

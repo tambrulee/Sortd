@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Sun,
   ListTodo,
-  CalendarDays,
   Repeat2,
   FolderKanban,
   Target,
