@@ -181,6 +181,21 @@ function getDesktopLayout() {
   return window.matchMedia("(min-width: 768px)").matches;
 }
 
+const pageTitles: Record<AppView, string> = {
+  overview: "Overview",
+  "my-day": "My Day",
+  upcoming: "Upcoming",
+  planner: "To-dos",
+  routines: "Routines",
+  projects: "Projects",
+  goals: "Goals",
+  dreams: "Dreams",
+  shopping: "Shopping",
+  food: "Food",
+  settings: "Settings",
+};
+
+
 export default function Home() {
   const [routines, setRoutines] = useState<Routine[]>([]);
 
@@ -456,9 +471,14 @@ export default function Home() {
     saveHideCompleted(hideCompleted);
   }, [hideCompleted, user]);
 
+  
   useEffect(() => {
-    document.title = activeList?.name || "Sort'd";
-  }, [activeList?.name]);
+  const title = pageTitles[activeView] ?? "Overview";
+
+  document.title = user
+    ? `${title} · Sort'd`
+    : "Sort'd";
+}, [activeView, user]);
 
   // Load cloud workspace for the user when they log in
   useEffect(() => {

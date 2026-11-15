@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { ChevronDown, LogOut, Menu, PanelLeftOpen, Settings2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -12,9 +12,19 @@ type Props = {
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
   onOpenSettings?: () => void;
+
+  pageTitle?: string;
 };
 
-export default function Header({ user, onUserChange, onToggleSidebar, sidebarOpen, onOpenSettings }: Props) {
+export default function Header({
+  user,
+  onUserChange,
+  onToggleSidebar,
+  sidebarOpen,
+  onOpenSettings,
+  pageTitle,
+}: Props) {
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [error, setError] = useState("");
   const [signingOut, setSigningOut] = useState(false);
@@ -28,6 +38,12 @@ export default function Header({ user, onUserChange, onToggleSidebar, sidebarOpe
     setMenuOpen(false);
     onUserChange?.(null);
   }
+
+  useEffect(() => {
+    document.title = pageTitle
+      ? `${pageTitle} · Sort'd`
+      : "Sort'd";
+  }, [pageTitle]);
 
   return (
     <header className="relative z-30 border-b border-[#25445b] bg-[#102a43] text-white shadow-[0_6px_22px_rgba(16,42,67,0.12)]">
