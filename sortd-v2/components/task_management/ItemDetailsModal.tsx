@@ -78,24 +78,13 @@ const SESSION_OPTIONS = [
 export default function ItemDetailsModal(props: ItemDetailsModalProps) {
   const { item, onClose, onDelete } = props;
 
-  const [intervalDraft, setIntervalDraft] = useState(() => props.kind === "routine" ? String(props.item.interval) : "");
-  const routineInterval = props.kind === "routine" ? props.item.interval : undefined;
-  useEffect(() => {
-    setIntervalDraft(routineInterval === undefined ? "" : String(routineInterval));
-  }, [item.id, routineInterval]);
-
-  const [mounted, setMounted] = useState(false);
+  const [intervalDraft, setIntervalDraft] = useState(() =>
+    props.kind === "routine" ? String(props.item.interval ?? "") : "",
+  );
   const dialogRef = useRef<HTMLElement>(null);
-  const closeRef = useRef(onClose);
   const titleId = useId();
-  closeRef.current = onClose;
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -105,7 +94,6 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
       .filter((element): element is HTMLElement => element instanceof HTMLElement && element !== overlay && !["SCRIPT", "STYLE"].includes(element.tagName))
       .map((element) => ({ element, wasInert: element.inert }));
     background.forEach(({ element }) => { element.inert = true; });
-    // Focus the close button without opening the mobile keyboard immediately.
     dialog?.querySelector<HTMLButtonElement>("button")?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -114,7 +102,7 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
-        closeRef.current();
+        onClose();
       }
       if (event.key !== "Tab" || !dialog) return;
       const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('button, input, select, textarea, summary, a[href], [tabindex]:not([tabindex="-1"])'))
@@ -135,7 +123,7 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
       document.removeEventListener("keydown", handleKeyDown);
       if (previousFocus?.isConnected) previousFocus.focus();
     };
-  }, [mounted]);
+  }, [onClose]);
 
   function updateSharedItem(updates: SharedItemUpdates) {
     if (props.kind === "task") {
@@ -159,8 +147,6 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
 
   const labelClassName =
     "flex min-w-0 flex-col gap-1.5 text-sm font-medium text-[var(--sortd-text-muted)]";
-
-  if (!mounted) return null;
 
   return createPortal(
     <div

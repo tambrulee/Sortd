@@ -92,8 +92,6 @@ export default function ShoppingView({
 
   const [sortBy, setSortBy] = useState<SortOption>("name");
 
-  const [showAllShops, setShowAllShops] = useState(false);
-
   const [selectedItemRef, setSelectedItemRef] = useState<{
     listId: string;
     itemId: string;
@@ -222,57 +220,6 @@ export default function ShoppingView({
       }
     });
 
-  const needItems = dashboardItems.filter(
-    (item) => (item.intent ?? "need") === "need",
-  );
-
-  const wantItems = dashboardItems.filter((item) => item.intent === "want");
-
-  const needTotal = needItems.reduce(
-    (total, item) => total + (item.estimatedCost ?? 0),
-    0,
-  );
-
-  const wantTotal = wantItems.reduce(
-    (total, item) => total + (item.estimatedCost ?? 0),
-    0,
-  );
-
-  const grandTotal = dashboardItems.reduce(
-    (total, item) => total + (item.estimatedCost ?? 0),
-    0,
-  );
-
-  const shopSummary = Object.entries(
-    dashboardItems.reduce<
-      Record<
-        string,
-        {
-          count: number;
-          total: number;
-        }
-      >
-    >((summary, item) => {
-      const shop = item.shop?.trim() || "No shop";
-
-      if (!summary[shop]) {
-        summary[shop] = {
-          count: 0,
-          total: 0,
-        };
-      }
-
-      summary[shop].count += 1;
-
-      summary[shop].total += item.estimatedCost ?? 0;
-
-      return summary;
-    }, {}),
-  ).sort(([, first], [, second]) => second.total - first.total);
-
-  const visibleShopSummary = showAllShops
-    ? shopSummary
-    : shopSummary.slice(0, 5);
 
   function updateList(updatedList: ShoppingList) {
     onChangeShoppingLists(

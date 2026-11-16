@@ -188,7 +188,7 @@ const pageTitles: Record<AppView, string> = {
   routines: "Routines",
   projects: "Projects",
   goals: "Goals",
-  dreams: "Dreams",
+  dreams: "Bucket List",
   shopping: "Shopping",
   food: "Food",
   settings: "Settings",

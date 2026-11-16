@@ -7,7 +7,6 @@ import { ProjectCover, RecurrenceUnit, Routine, RoutineTask } from "@/lib/types"
 import ItemDetailsModal from "@/components/task_management/ItemDetailsModal";
 import ConfirmDialog from "@/components/prompts/ConfirmDialog";
 import ProjectUploadedCover from "@/components/planner/project/ProjectUploadedCover";
-import RoutineCoverPicker from "@/components/planner/routine/RoutineCoverPicker";
 
 import { closestCenter, DndContext, DragEndEvent } from "@dnd-kit/core";
 
@@ -19,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 
 import { CSS } from "@dnd-kit/utilities";
+import RoutineCoverPicker from "./RoutineCoverPicker";
 
 type RoutinesViewProps = {
   routines: Routine[];
@@ -1106,6 +1106,7 @@ export default function RoutinesView({
 
           {editingRoutineTask && editingRoutine && (
             <ItemDetailsModal
+              key={`${editingRoutine.id}-${editingRoutineTask.id}`}
               kind="routine"
               item={editingRoutineTask}
               containerLabel="Routine"
