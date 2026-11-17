@@ -7,6 +7,7 @@ export type Dream = {
   description: string;
   category: string;
   createdAt: string;
+  cover?: ProjectCover;
 };
 
 export type Task = {
@@ -139,6 +140,7 @@ export type AppView =
   | "projects"
   | "routines"
   | "shopping"
+  | "fitness"
   | "food"
   | "goals"
   | "dreams"
@@ -377,4 +379,45 @@ export type DailyPlanEntry = {
   durationMinutes: number;
   context: ScheduleContext;
   completed?: boolean;
+};
+
+// Fitness: reusable exercises, named regimes and a recurring weekly plan.
+export type FitnessMeasure = "weight" | "distance" | "duration" | "reps";
+export type FitnessLibraryExercise = {
+  id: string;
+  name: string;
+  category: string;
+  measures: FitnessMeasure[];
+  distanceUnit?: "km" | "m";
+};
+export type FitnessRegimeExercise = {
+  id: string;
+  exerciseId: string;
+  sets?: number;
+  reps?: number;
+  weightKg?: number;
+  distance?: number;
+  durationMinutes?: number;
+};
+export type FitnessRegime = {
+  id: string;
+  name: string;
+  exercises: FitnessRegimeExercise[];
+  createdAt: string;
+  category?: string;
+  description?: string;
+};
+export type FitnessSession = {
+  id: string; workoutId: string; workoutName: string; startedAt: string; completedAt?: string;
+  exercises: { id: string; exerciseId: string; name: string; sets: { id: string; reps: number; weightKg: number; completed: boolean }[] }[];
+};
+export type FitnessData = {
+  exercises?: FitnessLibraryExercise[];
+  regimes?: FitnessRegime[];
+  weeklyPlan?: { day: number; regimeId: string }[];
+  // Kept for backward compatibility with the previous Fitness prototype.
+  workouts?: { id: string; name: string; description?: string; exercises: { id: string; name: string; sets: number; reps: number; weightKg: number }[]; createdAt: string }[];
+  sessions?: FitnessSession[];
+  schedule?: { date: string; workoutId: string }[];
+  weeklyTarget?: number;
 };

@@ -12,6 +12,7 @@ import {
   Sparkles,
   ShoppingBag,
   UtensilsCrossed,
+  Dumbbell,
   Settings2,
 } from "lucide-react";
 
@@ -31,6 +32,7 @@ const navigationItems = [
   { id: "dreams", label: "Dreams", icon: Sparkles },
   { id: "shopping", label: "Shopping", icon: ShoppingBag },
   { id: "food", label: "Food", icon: UtensilsCrossed },
+  { id: "fitness", label: "Fitness", icon: Dumbbell },
   { id: "settings", label: "Settings", icon: Settings2 },
 ] as const;
 

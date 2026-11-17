@@ -25,6 +25,7 @@ import GoalsView from "@/components/planner/GoalsView";
 import DreamsView from "@/components/planner/DreamsView";
 import SettingsControlPanel from "@/components/settings/SettingsControlPanel";
 import FoodView from "@/components/food_shopping/FoodView";
+import FitnessView from "@/components/planner/FitnessView";
 
 // AskSortd
 import AskSortd from "@/components/ai/AskSortd";
@@ -45,6 +46,7 @@ import {
   ProjectCover,
   Task,
   FoodData,
+  FitnessData,
   AdhocTask,
   PlannerOverride,
   DailyPlanEntry,
@@ -160,6 +162,7 @@ type CloudWorkspaceData = {
   shoppingLists?: ShoppingList[];
 
   foodData?: FoodData;
+  fitnessData?: FitnessData;
 
   scheduleSettings?: ScheduleSettings;
 
@@ -191,6 +194,7 @@ const pageTitles: Record<AppView, string> = {
   dreams: "Bucket List",
   shopping: "Shopping",
   food: "Food",
+  fitness: "Fitness",
   settings: "Settings",
 };
 
@@ -256,6 +260,7 @@ export default function Home() {
     shoppingList: [],
   });
 
+  const [fitnessData, setFitnessData] = useState<FitnessData>({workouts:[],sessions:[],schedule:[],weeklyTarget:5});
   const [user, setUser] = useState<User | null>(null);
   const isDesktopLayout = useSyncExternalStore(subscribeToDesktopLayout, getDesktopLayout, () => false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
@@ -499,6 +504,7 @@ export default function Home() {
         goals: [],
         dreams: [],
         shoppingLists: [],
+        fitnessData: {workouts:[],sessions:[],schedule:[],weeklyTarget:5},
         foodData: {
           meals: [],
           mealPlan: [],
@@ -555,6 +561,7 @@ export default function Home() {
 
         setShoppingLists(cloudWorkspace.shoppingLists ?? []);
 
+        setFitnessData(cloudWorkspace.fitnessData ?? {workouts:[],sessions:[],schedule:[],weeklyTarget:5});
         setFoodData(
           cloudWorkspace.foodData ?? {
             meals: [],
@@ -600,6 +607,7 @@ export default function Home() {
         goals: [],
         dreams: [],
         shoppingLists: [],
+        fitnessData: {workouts:[],sessions:[],schedule:[],weeklyTarget:5},
         foodData: {
           meals: [],
           mealPlan: [],
@@ -654,6 +662,7 @@ export default function Home() {
         dreams,
         shoppingLists,
         foodData,
+        fitnessData,
         scheduleSettings,
         plannerOverrides,
         dailyPlanEntries,
@@ -715,6 +724,7 @@ export default function Home() {
     dreams,
     shoppingLists,
     foodData,
+    fitnessData,
     scheduleSettings,
     user,
     plannerOverrides,
@@ -1364,6 +1374,8 @@ export default function Home() {
               shoppingLists={shoppingLists}
               onChangeShoppingLists={setShoppingLists}
             />
+          ) : activeView === "fitness" ? (
+            <FitnessView data={fitnessData} onChange={setFitnessData} />
           ) : activeView === "food" ? (
             <FoodView foodData={foodData} onChangeFoodData={setFoodData} />
           ) : activeView === "dreams" ? (

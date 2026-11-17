@@ -15,7 +15,7 @@ async function responseError(response: Response, fallback: string): Promise<stri
 
 export default function CoverPicker({ itemId, itemType, current, onSelect, onClose }: {
   itemId: string;
-  itemType?: "project" | "routine" | "bucket list";
+  itemType?: "project" | "routine" | "dream" | "bucket list" | "workout";
   current?: ProjectCover;
   onSelect: (cover?: ProjectCover) => void;
   onClose: () => void;
@@ -106,7 +106,7 @@ export default function CoverPicker({ itemId, itemType, current, onSelect, onClo
     }
   }
 
-  return <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-3" role="dialog" aria-modal="true" aria-label="Choose project cover">
+  return <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-3" role="dialog" aria-modal="true" aria-label="Choose cover">
     <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-[var(--sortd-card)] p-4 sm:p-6">
       <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Choose a {itemType ?? "project"} cover</h2><button type="button" onClick={onClose} aria-label="Close">✕</button></div>
       <div className="mb-4 flex gap-2"><button type="button" onClick={() => setTab("unsplash")} className={`rounded-lg px-3 py-2 text-sm ${tab === "unsplash" ? "bg-[var(--sortd-muted)] font-semibold" : ""}`}>Unsplash library</button><button type="button" onClick={() => setTab("upload")} className={`rounded-lg px-3 py-2 text-sm ${tab === "upload" ? "bg-[var(--sortd-muted)] font-semibold" : ""}`}>Upload your own</button></div>
