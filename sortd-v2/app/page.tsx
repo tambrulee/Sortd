@@ -272,6 +272,11 @@ export default function Home() {
   }
 
   const cloudReadyForUserRef = useRef<string | null>(null);
+  const [workspaceSaveStatus, setWorkspaceSaveStatus] = useState<"loading" | "saving" | "saved" | "error">("loading");
+  // Serialize complete-workspace writes so an older request cannot finish last.
+  const workspaceSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const workspaceSaveGenerationRef = useRef(0);
+  const workspaceSaveRevisionRef = useRef(0);
 
   const [lists, setLists] = useState<SortdList[]>(() => {
     const storedLists = getStoredLists();
@@ -492,7 +497,9 @@ export default function Home() {
     }
 
     const userId = user.id;
+    cloudReadyForUserRef.current = null;
     let cancelled = false;
+    queueMicrotask(() => { if (!cancelled) setWorkspaceSaveStatus("loading"); });
 
     async function loadCloudWorkspace() {
       const localWorkspace: CloudWorkspaceData = {
@@ -536,6 +543,7 @@ export default function Home() {
 
       if (error) {
         console.error("Unable to load cloud workspace:", error);
+        setWorkspaceSaveStatus("error");
         return;
       }
 
@@ -548,6 +556,7 @@ export default function Home() {
         cloudWorkspace.lists.length > 0
       ) {
         cloudReadyForUserRef.current = userId;
+        setWorkspaceSaveStatus("saved");
 
         setLists(cloudWorkspace.lists);
 
@@ -632,12 +641,14 @@ export default function Home() {
 
       if (uploadError) {
         console.error("Unable to create cloud workspace:", uploadError);
+        setWorkspaceSaveStatus("error");
         return;
       }
 
       setDailyPlanEntries([]);
       setAdhocTasks([]);
       cloudReadyForUserRef.current = userId;
+      setWorkspaceSaveStatus("saved");
     }
 
     loadCloudWorkspace();
@@ -645,91 +656,56 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user?.id]);
 
-  // Save cloud workspace when lists, activeListId, or hideCompleted changes
+  // Debounced, serialized workspace saves. Never save before the cloud load completes.
   useEffect(() => {
-    if (!user || cloudReadyForUserRef.current !== user.id) {
-      return;
-    }
+    if (!user || cloudReadyForUserRef.current !== user.id) return;
 
-    const saveTimer = window.setTimeout(async () => {
-      const workspace: CloudWorkspaceData = {
-        version: 1,
-        lists,
-        routines,
-        goals,
-        dreams,
-        shoppingLists,
-        foodData,
-        fitnessData,
-        scheduleSettings,
-        plannerOverrides,
-        dailyPlanEntries,
-        adhocTasks,
-        activeListId,
-        hideCompleted,
-      };
-
-      try {
-        console.log(
-          "Saving time windows:",
-          lists.map((project) => ({
-            project: project.name,
-            earliestStartTime: project.earliestStartTime,
-            latestEndTime: project.latestEndTime,
-            tasks: project.tasks.map((task) => ({
-              title: task.title,
-              earliestStartTime: task.earliestStartTime,
-              latestEndTime: task.latestEndTime,
-            })),
-          })),
-        );
-
-        const { data, error } = await supabase
-          .from("workspaces")
-          .upsert(
-            {
-              user_id: user.id,
-              data: workspace,
-              updated_at: new Date().toISOString(),
-            },
-            {
-              onConflict: "user_id",
-            },
-          )
-          .select();
-
-        if (error) {
-          console.error("Unable to save cloud workspace:", error);
-
-          return;
-        }
-
-        console.log("Cloud workspace saved:", data);
-      } catch (error) {
-        console.error("Cloud workspace save request failed:", error);
+    const userId = user.id;
+    const revision = ++workspaceSaveRevisionRef.current;
+    const generation = workspaceSaveGenerationRef.current;
+    const workspace: CloudWorkspaceData = {
+      version: 1, lists, routines, goals, dreams, shoppingLists,
+      foodData, fitnessData, scheduleSettings, plannerOverrides,
+      dailyPlanEntries, adhocTasks, activeListId, hideCompleted,
+    };
+    const saveTimer = window.setTimeout(() => {
+      if (generation === workspaceSaveGenerationRef.current && revision === workspaceSaveRevisionRef.current) {
+        setWorkspaceSaveStatus("saving");
       }
+      workspaceSaveQueueRef.current = workspaceSaveQueueRef.current
+        .catch(() => undefined)
+        .then(async () => {
+          if (generation !== workspaceSaveGenerationRef.current ||
+              cloudReadyForUserRef.current !== userId) return;
+          // If a more recent state exists, skip this queued snapshot.
+          if (revision !== workspaceSaveRevisionRef.current) return;
+          try {
+            const { error } = await supabase.from("workspaces").upsert(
+              { user_id: userId, data: workspace, updated_at: new Date().toISOString() },
+              { onConflict: "user_id" },
+            );
+            if (error) throw error;
+            if (revision === workspaceSaveRevisionRef.current &&
+                cloudReadyForUserRef.current === userId) {
+              setWorkspaceSaveStatus("saved");
+            }
+          } catch (error) {
+            console.error("Unable to save cloud workspace:", error);
+            if (revision === workspaceSaveRevisionRef.current &&
+                cloudReadyForUserRef.current === userId) {
+              setWorkspaceSaveStatus("error");
+            }
+          }
+        });
     }, 800);
 
-    return () => {
-      window.clearTimeout(saveTimer);
-    };
+    return () => window.clearTimeout(saveTimer);
   }, [
-    lists,
-    activeListId,
-    hideCompleted,
-    routines,
-    goals,
-    dreams,
-    shoppingLists,
-    foodData,
-    fitnessData,
-    scheduleSettings,
-    user,
-    plannerOverrides,
-    dailyPlanEntries,
-    adhocTasks,
+    lists, activeListId, hideCompleted, routines, goals, dreams,
+    shoppingLists, foodData, fitnessData, scheduleSettings, user?.id,
+    plannerOverrides, dailyPlanEntries, adhocTasks,
   ]);
 
   function updateActiveList(updatedList: SortdList) {
@@ -1375,7 +1351,7 @@ export default function Home() {
               onChangeShoppingLists={setShoppingLists}
             />
           ) : activeView === "fitness" ? (
-            <FitnessView data={fitnessData} onChange={setFitnessData} />
+            <FitnessView data={fitnessData} onChange={setFitnessData} saveStatus={workspaceSaveStatus} />
           ) : activeView === "food" ? (
             <FoodView foodData={foodData} onChangeFoodData={setFoodData} />
           ) : activeView === "dreams" ? (

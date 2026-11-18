@@ -412,6 +412,7 @@ export type FitnessSession = {
   exercises: { id: string; exerciseId: string; name: string; sets: { id: string; reps: number; weightKg: number; completed: boolean }[] }[];
 };
 export type FitnessData = {
+  covers?: Record<string, ProjectCover>;
   exercises?: FitnessLibraryExercise[];
   regimes?: FitnessRegime[];
   weeklyPlan?: { day: number; regimeId: string }[];
