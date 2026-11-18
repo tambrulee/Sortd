@@ -262,6 +262,7 @@ export default function Home() {
 
   const [fitnessData, setFitnessData] = useState<FitnessData>({workouts:[],sessions:[],schedule:[],weeklyTarget:5});
   const [user, setUser] = useState<User | null>(null);
+  const workspaceUserId = user?.id ?? null;
   const isDesktopLayout = useSyncExternalStore(subscribeToDesktopLayout, getDesktopLayout, () => false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -272,6 +273,9 @@ export default function Home() {
   }
 
   const cloudReadyForUserRef = useRef<string | null>(null);
+  // A user is writable only after the fetched workspace has committed to React state.
+  const [hydratedUserId, setHydratedUserId] = useState<string | null>(null);
+  const skipHydrationSaveRef = useRef<string | null>(null);
   const [workspaceSaveStatus, setWorkspaceSaveStatus] = useState<"loading" | "saving" | "saved" | "error">("loading");
   // Serialize complete-workspace writes so an older request cannot finish last.
   const workspaceSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -491,15 +495,24 @@ export default function Home() {
 
   // Load cloud workspace for the user when they log in
   useEffect(() => {
-    if (!user) {
+    if (!workspaceUserId) {
       cloudReadyForUserRef.current = null;
+      workspaceSaveGenerationRef.current += 1;
+      queueMicrotask(() => setHydratedUserId(null));
       return;
     }
 
-    const userId = user.id;
+    const userId = workspaceUserId;
     cloudReadyForUserRef.current = null;
+    workspaceSaveGenerationRef.current += 1;
+    workspaceSaveRevisionRef.current += 1;
     let cancelled = false;
-    queueMicrotask(() => { if (!cancelled) setWorkspaceSaveStatus("loading"); });
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setHydratedUserId(null);
+        setWorkspaceSaveStatus("loading");
+      }
+    });
 
     async function loadCloudWorkspace() {
       const localWorkspace: CloudWorkspaceData = {
@@ -555,6 +568,8 @@ export default function Home() {
         Array.isArray(cloudWorkspace.lists) &&
         cloudWorkspace.lists.length > 0
       ) {
+        // Commit the fetched data first. The save effect must skip this hydration render.
+        skipHydrationSaveRef.current = userId;
         cloudReadyForUserRef.current = userId;
         setWorkspaceSaveStatus("saved");
 
@@ -598,6 +613,8 @@ export default function Home() {
           const task = override.sourceType === "task" ? cloudWorkspace.lists.find((project) => project.id === override.parentId)?.tasks.find((task) => task.id === override.sourceId) : override.sourceType === "routine" ? (cloudWorkspace.routines ?? []).find((routine) => routine.id === override.parentId)?.tasks.find((task) => task.id === override.sourceId) : cloudWorkspace.adhocTasks?.find((task) => task.id === override.sourceId);
           return { id: crypto.randomUUID(), sourceType: override.sourceType, sourceId: override.sourceId, parentId: override.parentId, occurrenceDate: override.occurrenceDate, title: task?.title ?? "Previously planned task", parentName: "Existing plan", date: override.date, order: index, startTime: override.preferredStartTime, durationMinutes: task && "durationMinutes" in task ? task.durationMinutes ?? 30 : 30, context: "any" as const };
         }));
+        // React batches the setters above with this readiness update.
+        setHydratedUserId(userId);
 
         return;
       }
@@ -647,7 +664,9 @@ export default function Home() {
 
       setDailyPlanEntries([]);
       setAdhocTasks([]);
+      skipHydrationSaveRef.current = userId;
       cloudReadyForUserRef.current = userId;
+      setHydratedUserId(userId);
       setWorkspaceSaveStatus("saved");
     }
 
@@ -656,13 +675,19 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [workspaceUserId]);
 
   // Debounced, serialized workspace saves. Never save before the cloud load completes.
   useEffect(() => {
-    if (!user || cloudReadyForUserRef.current !== user.id) return;
+    if (!workspaceUserId || hydratedUserId !== workspaceUserId || cloudReadyForUserRef.current !== workspaceUserId) return;
+    // The first committed render after a cloud load is NOT a user edit.
+    // Without this guard it can write the component's old default values over Supabase.
+    if (skipHydrationSaveRef.current === workspaceUserId) {
+      skipHydrationSaveRef.current = null;
+      return;
+    }
 
-    const userId = user.id;
+    const userId = workspaceUserId;
     const revision = ++workspaceSaveRevisionRef.current;
     const generation = workspaceSaveGenerationRef.current;
     const workspace: CloudWorkspaceData = {
@@ -682,6 +707,20 @@ export default function Home() {
           // If a more recent state exists, skip this queued snapshot.
           if (revision !== workspaceSaveRevisionRef.current) return;
           try {
+            // Read the currently stored Fitness state before any whole-workspace replacement.
+            // A stale/empty snapshot must never erase saved workouts on reload.
+            const { data: latestRow, error: readError } = await supabase
+              .from("workspaces").select("data").eq("user_id", userId).maybeSingle();
+            if (readError) throw readError;
+            if (generation !== workspaceSaveGenerationRef.current ||
+                revision !== workspaceSaveRevisionRef.current ||
+                cloudReadyForUserRef.current !== userId) return;
+            const persisted = (latestRow?.data as CloudWorkspaceData | undefined)?.fitnessData;
+            const storedRegimes = persisted?.regimes?.length ?? 0;
+            const nextRegimes = workspace.fitnessData?.regimes?.length ?? 0;
+            if (storedRegimes > 0 && nextRegimes === 0) {
+              throw new Error("Protected existing workouts: refusing to overwrite saved Fitness regimes with an empty array. Check workspace hydration before saving.");
+            }
             const { error } = await supabase.from("workspaces").upsert(
               { user_id: userId, data: workspace, updated_at: new Date().toISOString() },
               { onConflict: "user_id" },
@@ -704,8 +743,8 @@ export default function Home() {
     return () => window.clearTimeout(saveTimer);
   }, [
     lists, activeListId, hideCompleted, routines, goals, dreams,
-    shoppingLists, foodData, fitnessData, scheduleSettings, user?.id,
-    plannerOverrides, dailyPlanEntries, adhocTasks,
+    shoppingLists, foodData, fitnessData, scheduleSettings, workspaceUserId,
+    hydratedUserId, plannerOverrides, dailyPlanEntries, adhocTasks,
   ]);
 
   function updateActiveList(updatedList: SortdList) {
@@ -1173,6 +1212,20 @@ export default function Home() {
           </div>
         </section>
 
+        <Footer />
+      </main>
+    );
+  }
+
+  if (hydratedUserId !== user.id) {
+    return (
+      <main className="flex min-h-screen flex-col bg-[var(--sortd-bg)] text-[var(--sortd-text)]">
+        <Header user={user} onUserChange={setUser} />
+        <div className="flex flex-1 items-center justify-center p-8 text-sm text-[var(--sortd-text-muted)]">
+          {workspaceSaveStatus === "error"
+            ? "Unable to load your workspace. Changes are disabled to protect your saved data."
+            : "Loading your saved workspace…"}
+        </div>
         <Footer />
       </main>
     );
