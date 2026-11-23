@@ -15,7 +15,7 @@ async function responseError(response: Response, fallback: string): Promise<stri
 
 export default function CoverPicker({ itemId, itemType, current, onSelect, onClose }: {
   itemId: string;
-  itemType?: "project" | "routine" | "dream" | "bucket list" | "workout";
+  itemType?: "project" | "routine" | "dream" | "goal" | "bucket list" | "workout";
   current?: ProjectCover;
   onSelect: (cover?: ProjectCover) => void;
   onClose: () => void;

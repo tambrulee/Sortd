@@ -114,12 +114,14 @@ export interface Project {
 export type GoalStatus = "active" | "paused" | "completed";
 
 export interface Goal {
+  cover?: ProjectCover;
   id: string;
   title: string;
   description?: string;
   dreamId?: string;
   status: GoalStatus;
   createdAt: string;
+  
 }
 
 // Workspace structure for the Sortd app
@@ -422,3 +424,5 @@ export type FitnessData = {
   schedule?: { date: string; workoutId: string }[];
   weeklyTarget?: number;
 };
+
+export type OverviewPins = { projects: string[]; goals: string[]; dreams: string[] };

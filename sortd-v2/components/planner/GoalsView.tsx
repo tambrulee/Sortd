@@ -3,6 +3,8 @@
 import { useId, useMemo, useState } from "react";
 import { Dream, Goal, SortdList } from "@/lib/types";
 import ConfirmDialog from "@/components/prompts/ConfirmDialog";
+import CoverPicker from "@/components/covers/CoverPicker";
+import CoverDisplay from "@/components/covers/CoverDisplay";
 
 type GoalsViewProps = {
   goals: Goal[];
@@ -32,7 +34,7 @@ function GoalCard({ goal, dreams, progress, onSave, onDelete, onCreateProjectFor
   goal: Goal;
   dreams: Dream[];
   progress: ReturnType<typeof getGoalProgress>;
-  onSave: (updates: GoalDraft) => void;
+  onSave: (updates: Partial<Goal>) => void;
   onDelete: () => void;
   onCreateProjectForGoal?: GoalsViewProps["onCreateProjectForGoal"];
   onOpenDream?: GoalsViewProps["onOpenDream"];
@@ -41,6 +43,7 @@ function GoalCard({ goal, dreams, progress, onSave, onDelete, onCreateProjectFor
   const id = useId();
   const [editing, setEditing] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
+  const [coverPickerOpen, setCoverPickerOpen] = useState(false);
   const [draft, setDraft] = useState<GoalDraft>(() => ({ title: goal.title, description: goal.description ?? "", status: goal.status, dreamId: goal.dreamId }));
   const linkedDream = dreams.find((dream) => dream.id === goal.dreamId);
   const { linkedProjects, totalTasks, completedTasks, progress: percent } = progress;
@@ -49,7 +52,9 @@ function GoalCard({ goal, dreams, progress, onSave, onDelete, onCreateProjectFor
     setEditing(true);
   }
   return (
-    <article className="min-w-0 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-4 sm:p-5">
+    <article className="min-w-0 overflow-hidden rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)]">
+      <div className="relative h-36 sm:h-44"><CoverDisplay cover={goal.cover} alt={goal.title} className="h-full w-full" /><button type="button" onClick={() => setCoverPickerOpen(true)} className="absolute bottom-3 right-3 rounded-lg bg-white/90 px-3 py-2 text-xs font-semibold text-[var(--sortd-navy)]">Change cover</button></div>
+      <div className="p-4 sm:p-5">
       {editing ? (
         <form onSubmit={(event) => {
           event.preventDefault();
@@ -129,6 +134,8 @@ function GoalCard({ goal, dreams, progress, onSave, onDelete, onCreateProjectFor
           </div>
         </>
       )}
+      </div>
+      {coverPickerOpen && <CoverPicker itemId={goal.id} itemType="goal" current={goal.cover} onSelect={cover => { onSave({ cover }); setCoverPickerOpen(false); }} onClose={() => setCoverPickerOpen(false)} />}
     </article>
   );
 }

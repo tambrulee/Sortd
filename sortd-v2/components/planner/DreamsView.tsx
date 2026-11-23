@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Compass, Plus, Sparkles, Target, Trash2 } from "lucide-react";
 import { Dream, Goal, SortdList } from "@/lib/types";
 import ConfirmDialog from "@/components/prompts/ConfirmDialog";
+import CoverPicker from "@/components/covers/CoverPicker";
+import CoverDisplay from "@/components/covers/CoverDisplay";
 
 type DreamsViewProps = {
   dreams: Dream[];
@@ -17,14 +19,7 @@ type DreamsViewProps = {
 type Filter = "all" | "exploring" | "in-motion";
 
 const fieldClass = "w-full min-w-0 rounded-xl border border-[var(--sortd-border)] bg-white px-4 py-3 text-sm text-[var(--sortd-text)] outline-none focus:border-[var(--sortd-teal-dark)] focus:ring-2 focus:ring-[var(--sortd-teal)]/15";
-const covers = [
-  "from-[#203e49] via-[#537b79] to-[#c4b79c]",
-  "from-[#352d4b] via-[#77708e] to-[#d3b6aa]",
-  "from-[#244b40] via-[#6b8c73] to-[#d7c9a6]",
-  "from-[#443b4a] via-[#a17e80] to-[#d8bfa3]",
-  "from-[#24405b] via-[#638ca2] to-[#b9c9c5]",
-  "from-[#534438] via-[#a48c69] to-[#e0c9a2]",
-];
+
 
 export default function DreamsView({ dreams, goals, projects, onChangeDreams, onChangeGoals, onOpenGoal }: DreamsViewProps) {
   const [newTitle, setNewTitle] = useState("");
@@ -32,6 +27,7 @@ export default function DreamsView({ dreams, goals, projects, onChangeDreams, on
   const [activeId, setActiveId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
+  const [coverPickerId, setCoverPickerId] = useState<string | null>(null);
 
   const summaries = useMemo(() => new Map(dreams.map(dream => {
     const linkedGoals = goals.filter(goal => goal.dreamId === dream.id);
@@ -74,8 +70,7 @@ export default function DreamsView({ dreams, goals, projects, onChangeDreams, on
   }
 
   const summary = activeDream ? summaries.get(activeDream.id) : undefined;
-  const activeIndex = activeDream ? dreams.findIndex(dream => dream.id === activeDream.id) : -1;
-  const coverClass = covers[(activeIndex < 0 ? 0 : activeIndex) % covers.length];
+
 
   return (
     <section className="min-w-0 space-y-6 pb-8 text-[var(--sortd-text)]">
@@ -116,12 +111,11 @@ export default function DreamsView({ dreams, goals, projects, onChangeDreams, on
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {visible.map(dream => {
                 const item = summaries.get(dream.id)!;
-                const index = dreams.findIndex(candidate => candidate.id === dream.id);
                 return (
                   <button key={dream.id} type="button" onClick={() => openDream(dream.id)} className="group min-w-0 overflow-hidden rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                    <div className={`relative flex h-40 items-end overflow-hidden bg-gradient-to-br ${covers[index % covers.length]} p-4 sm:h-44`}>
+                    <div className="relative h-40 overflow-hidden sm:h-44">
+                      <CoverDisplay cover={dream.cover} alt={dream.title} className="h-full w-full" />
                       <div className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-[var(--sortd-navy)]">{item.linkedGoals.length ? "In motion" : "Exploring"}</div>
-                      <Sparkles className="text-white/70" size={29} strokeWidth={1.5} />
                     </div>
                     <div className="space-y-3 p-5">
                       <h2 className="break-words text-lg font-semibold text-[var(--sortd-navy)]">{dream.title || "Untitled dream"}</h2>
@@ -139,7 +133,7 @@ export default function DreamsView({ dreams, goals, projects, onChangeDreams, on
         <div className="space-y-6">
           <button type="button" onClick={() => { setActiveId(null); setEditingTitle(false); }} className="inline-flex items-center gap-2 text-sm font-medium text-[var(--sortd-teal-dark)] hover:underline"><ArrowLeft size={17} /> All dreams</button>
           <div className="overflow-hidden rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)]">
-            <div className={`relative flex h-48 items-end bg-gradient-to-br ${coverClass} p-6 sm:h-64`}><Sparkles className="text-white/75" size={40} strokeWidth={1.4} /><span className="absolute right-5 top-5 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-[var(--sortd-navy)]">{summary?.linkedGoals.length ? "In motion" : "Exploring"}</span></div>
+            <div className="relative h-48 sm:h-64"><CoverDisplay cover={activeDream.cover} alt={activeDream.title} className="h-full w-full" /><span className="absolute right-5 top-5 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-[var(--sortd-navy)]">{summary?.linkedGoals.length ? "In motion" : "Exploring"}</span><button type="button" onClick={() => setCoverPickerId(activeDream.id)} className="absolute bottom-4 right-4 rounded-lg bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--sortd-navy)]">Change cover</button></div>
             <div className="space-y-5 p-5 sm:p-7">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 {editingTitle ? <input autoFocus aria-label="Dream title" value={activeDream.title} onChange={event => updateDream(activeDream.id, { title: event.target.value })} onBlur={() => setEditingTitle(false)} onKeyDown={event => { if (event.key === "Enter") setEditingTitle(false); }} className={fieldClass + " max-w-xl text-xl font-semibold"} /> : <button type="button" onClick={() => setEditingTitle(true)} title="Click to edit dream title" className="break-words text-left text-2xl font-semibold tracking-tight text-[var(--sortd-navy)] hover:text-[var(--sortd-teal-dark)] sm:text-3xl">{activeDream.title || "Untitled dream"}</button>}
@@ -165,6 +159,7 @@ export default function DreamsView({ dreams, goals, projects, onChangeDreams, on
         </div>
       )}
 
+      {coverPickerId && <CoverPicker itemId={coverPickerId} itemType="dream" current={dreams.find(d => d.id === coverPickerId)?.cover} onSelect={cover => { updateDream(coverPickerId, { cover }); setCoverPickerId(null); }} onClose={() => setCoverPickerId(null)} />}
       <ConfirmDialog open={Boolean(deleteId)} title="Delete dream?" description={deleteDream ? `Delete “${deleteDream.title}”?${deleteGoalCount ? ` It has ${deleteGoalCount} linked ${deleteGoalCount === 1 ? "goal" : "goals"}, which will remain in Goals.` : ""} This can't be undone.` : "Delete this dream? This can't be undone."} confirmLabel="Delete dream" onCancel={() => setDeleteId(null)} onConfirm={() => { if (!deleteId) return; onChangeDreams(dreams.filter(dream => dream.id !== deleteId)); if (activeId === deleteId) setActiveId(null); setDeleteId(null); }} />
     </section>
   );

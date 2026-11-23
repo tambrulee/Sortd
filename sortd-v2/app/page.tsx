@@ -47,6 +47,7 @@ import {
   Task,
   FoodData,
   FitnessData,
+  OverviewPins,
   AdhocTask,
   PlannerOverride,
   DailyPlanEntry,
@@ -163,6 +164,7 @@ type CloudWorkspaceData = {
 
   foodData?: FoodData;
   fitnessData?: FitnessData;
+  overviewPins?: OverviewPins;
 
   scheduleSettings?: ScheduleSettings;
 
@@ -261,6 +263,7 @@ export default function Home() {
   });
 
   const [fitnessData, setFitnessData] = useState<FitnessData>({workouts:[],sessions:[],schedule:[],weeklyTarget:5});
+  const [overviewPins, setOverviewPins] = useState<OverviewPins>({ projects: [], goals: [], dreams: [] });
   const [user, setUser] = useState<User | null>(null);
   const workspaceUserId = user?.id ?? null;
   const isDesktopLayout = useSyncExternalStore(subscribeToDesktopLayout, getDesktopLayout, () => false);
@@ -585,6 +588,7 @@ export default function Home() {
 
         setShoppingLists(cloudWorkspace.shoppingLists ?? []);
 
+        setOverviewPins(cloudWorkspace.overviewPins ?? { projects: [], goals: [], dreams: [] });
         setFitnessData(cloudWorkspace.fitnessData ?? {workouts:[],sessions:[],schedule:[],weeklyTarget:5});
         setFoodData(
           cloudWorkspace.foodData ?? {
@@ -692,7 +696,7 @@ export default function Home() {
     const generation = workspaceSaveGenerationRef.current;
     const workspace: CloudWorkspaceData = {
       version: 1, lists, routines, goals, dreams, shoppingLists,
-      foodData, fitnessData, scheduleSettings, plannerOverrides,
+      foodData, fitnessData, overviewPins, scheduleSettings, plannerOverrides,
       dailyPlanEntries, adhocTasks, activeListId, hideCompleted,
     };
     const saveTimer = window.setTimeout(() => {
@@ -743,7 +747,7 @@ export default function Home() {
     return () => window.clearTimeout(saveTimer);
   }, [
     lists, activeListId, hideCompleted, routines, goals, dreams,
-    shoppingLists, foodData, fitnessData, scheduleSettings, workspaceUserId,
+    shoppingLists, foodData, fitnessData, overviewPins, scheduleSettings, workspaceUserId,
     hydratedUserId, plannerOverrides, dailyPlanEntries, adhocTasks,
   ]);
 
@@ -1254,7 +1258,7 @@ export default function Home() {
 
           <div className="min-w-0 w-full max-w-full [&>*]:min-w-0 [&>*]:max-w-full">
           {activeView === "overview" ? (
-            <OverviewView projects={lists} routines={routines} goals={goals} dreams={dreams} shoppingLists={shoppingLists} foodData={foodData} onNavigate={setActiveView} onOpenProject={(id) => { setActiveListId(id); setActiveView("projects"); }} onCompleteProjectTask={completeProjectTask} onCompleteRoutineTask={completeRoutineTask} onChangeShoppingLists={setShoppingLists} />
+            <OverviewView projects={lists} routines={routines} goals={goals} dreams={dreams} shoppingLists={shoppingLists} foodData={foodData} fitnessData={fitnessData} overviewPins={overviewPins} onChangeOverviewPins={setOverviewPins} onNavigate={setActiveView} onOpenProject={(id) => { setActiveListId(id); setActiveView("projects"); }} onCompleteProjectTask={completeProjectTask} onCompleteRoutineTask={completeRoutineTask} onChangeShoppingLists={setShoppingLists} />
           ) : activeView === "my-day" ? (
             <MyDayView
               tasks={allTasks}
