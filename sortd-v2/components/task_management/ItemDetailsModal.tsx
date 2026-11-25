@@ -82,6 +82,13 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
     props.kind === "routine" ? String(props.item.interval ?? "") : "",
   );
   const dialogRef = useRef<HTMLElement>(null);
+  // Keep the latest close handler without restarting the modal accessibility effect.
+  // Keep the latest close handler without updating refs during render.
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
   const titleId = useId();
 
   useEffect(() => {
@@ -102,7 +109,7 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
       }
       if (event.key !== "Tab" || !dialog) return;
       const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('button, input, select, textarea, summary, a[href], [tabindex]:not([tabindex="-1"])'))
@@ -123,7 +130,7 @@ export default function ItemDetailsModal(props: ItemDetailsModalProps) {
       document.removeEventListener("keydown", handleKeyDown);
       if (previousFocus?.isConnected) previousFocus.focus();
     };
-  }, [onClose]);
+  }, []);
 
   function updateSharedItem(updates: SharedItemUpdates) {
     if (props.kind === "task") {
