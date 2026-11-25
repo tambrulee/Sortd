@@ -320,7 +320,11 @@ export type MealIngredient = {
   id: string;
   name: string;
   quantity?: string;
+  aisle?: FoodAisle;
+  estimatedPrice?: number;
 };
+
+export type FoodAisle = "Fruit & vegetables" | "Meat & poultry" | "Fish & seafood" | "Dairy & eggs" | "Bakery" | "Pasta, rice & grains" | "Tins & jars" | "Frozen" | "Herbs, spices & condiments" | "Drinks" | "Other";
 
 export type MealType = "breakfast" | "lunch" | "dinner";
 
@@ -334,6 +338,8 @@ export type Meal = {
   portionsAvailable: number;
 
   ingredients: MealIngredient[];
+  cover?: ProjectCover;
+  estimatedPrice?: number;
 
   prepMinutes?: number;
   cookMinutes?: number;
@@ -345,7 +351,8 @@ export type Meal = {
 export type MealPlanEntry = {
   id: string;
   date: string;
-  mealId: string;
+  mealId?: string;
+  adhocTitle?: string;
 
   mealType: MealType;
 
@@ -358,6 +365,8 @@ export type FoodShoppingItem = {
   quantity?: string;
   purchased: boolean;
   createdAt: string;
+  aisle?: FoodAisle;
+  estimatedPrice?: number;
 };
 
 export type FoodData = {

@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 
-import { FoodData, Meal, MealPlanEntry, MealType } from "@/lib/types";
+import { FoodData, Meal, MealPlanEntry, MealType, FoodAisle } from "@/lib/types";
 
+import CoverDisplay from "@/components/covers/CoverDisplay";
+import { FOOD_AISLES } from "@/lib/foodAisles";
 import MealDetailsModal from "@/components/food_shopping/MealDetailsModal";
 import ConfirmDialog from "@/components/prompts/ConfirmDialog";
 
@@ -82,6 +84,7 @@ export default function FoodView({
   const [weekAnchor, setWeekAnchor] = useState(new Date());
 
   const [newMealName, setNewMealName] = useState("");
+  const [quickShoppingItem, setQuickShoppingItem] = useState("");
 
   const [newMealType, setNewMealType] = useState<MealType>("dinner");
 
@@ -93,8 +96,8 @@ export default function FoodView({
   ] = useState<string | null>(null);
 
  const [shoppingSort, setShoppingSort] = useState<
-    "manual" | "unpurchased" | "az" | "recent" | "purchased"
-  >("manual");
+    "manual" | "unpurchased" | "az" | "recent" | "purchased" | "aisle"
+  >("aisle");
 
   const [draggedShoppingItemId, setDraggedShoppingItemId] =
     useState<string | null>(null);
@@ -214,6 +217,25 @@ export default function FoodView({
     });
   }
 
+  function addQuickShoppingItem() {
+    const title = quickShoppingItem.trim();
+    if (!title) return;
+    onChangeFoodData({
+      ...foodData,
+      shoppingList: [
+        ...(foodData.shoppingList ?? []),
+        {
+          id: crypto.randomUUID(),
+          title,
+          purchased: false,
+          createdAt: new Date().toISOString(),
+          aisle: "Other",
+        },
+      ],
+    });
+    setQuickShoppingItem("");
+  }
+
   function buyIngredients(meal: Meal) {
     if (meal.ingredients.length === 0) {
       return;
@@ -234,6 +256,8 @@ export default function FoodView({
         id: crypto.randomUUID(),
         title: ingredient.name,
         quantity: ingredient.quantity,
+        aisle: ingredient.aisle ?? "Other",
+        estimatedPrice: ingredient.estimatedPrice,
         purchased: false,
         createdAt: new Date().toISOString(),
       }));
@@ -271,6 +295,8 @@ const sortedShoppingList = [...shoppingList].sort((a, b) => {
   switch (shoppingSort) {
     case "manual":
       return 0;
+    case "aisle":
+      return (a.aisle ?? "Other").localeCompare(b.aisle ?? "Other");
 
     case "az":
       return a.title.localeCompare(b.title);
@@ -316,7 +342,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
 }
 
   return (
-    <div className="space-y-6 rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-4 sm:p-6">
+    <div className="min-w-0 space-y-6 rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-4 sm:p-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-[var(--sortd-teal-dark)]">Food</p>
@@ -443,11 +469,12 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                             {label}
                           </p>
 
-                          {sectionEntry && plannedMeal ? (
+                          {sectionEntry && (plannedMeal || sectionEntry.adhocTitle) ? (
                             <div className="rounded-xl bg-[var(--sortd-card)] p-3">
+                              {plannedMeal?.cover && <div className="mb-2 h-24 overflow-hidden rounded-lg"><CoverDisplay className="h-full w-full" cover={plannedMeal.cover} alt={plannedMeal.name} /></div>}
                               <div className="flex items-center justify-between gap-2">
                                 <p className="text-sm font-semibold text-[var(--sortd-text)]">
-                                  {plannedMeal.name}
+                                  {plannedMeal?.name ?? sectionEntry.adhocTitle}
                                 </p>
 
                                 <button
@@ -456,7 +483,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                                     removePlanEntry(sectionEntry.id)
                                   }
                                   className="text-[var(--sortd-text-muted)] hover:text-red-500 min-h-11 min-w-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
-                                  aria-label={`Remove ${plannedMeal.name}`}
+                                  aria-label={`Remove ${plannedMeal?.name ?? sectionEntry.adhocTitle}`}
                                 >
                                   ×
                                 </button>
@@ -485,6 +512,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                               ))}
                             </select>
                           )}
+                          {entries.filter(e => e.mealType === value && e.adhocTitle && e.id !== sectionEntry?.id).map(e => <div key={e.id} className="mt-2 flex items-center justify-between gap-2 text-sm"><span>{e.adhocTitle}</span><button type="button" aria-label={`Remove ${e.adhocTitle}`} onClick={() => removePlanEntry(e.id)}>×</button></div>)}
                         </section>
                       );
                     })}
@@ -575,6 +603,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                             key={meal.id}
                             className="rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-5 transition hover:border-[var(--sortd-border)]"
                           >
+                            <button type="button" onClick={() => setSelectedMeal(meal)} className="mb-3 block h-36 w-full overflow-hidden rounded-xl bg-[#eaf3ef]"><CoverDisplay className="h-full w-full" cover={meal.cover} alt={meal.name} /></button>
                             <div className="flex items-start justify-between gap-4">
                               <button type="button" onClick={() => setSelectedMeal(meal)} className="min-h-11 min-w-11 min-w-0 flex-1 text-left text-lg font-semibold text-[var(--sortd-text)] hover:text-[var(--sortd-teal-dark)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]">
                                 {meal.name || "Untitled meal"}
@@ -682,7 +711,7 @@ function moveShoppingItem(draggedId: string, targetId: string) {
             {shoppingList.length > 0 && (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-[var(--sortd-text-muted)]">
-                  {shoppingList.filter((item) => !item.purchased).length} left
+                  {shoppingList.filter((item) => !item.purchased).length} left · £{shoppingList.filter(item => !item.purchased).reduce((sum,item) => sum+(item.estimatedPrice ?? 0),0).toFixed(2)} estimated
                 </span>
 
                 <select
@@ -695,11 +724,12 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                         | "unpurchased"
                         | "az"
                         | "recent"
-                        | "purchased",
+                        | "purchased" | "aisle",
                     )
                   }
                   className="rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-2 text-base sm:text-sm text-[var(--sortd-text)] min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
                 >
+                  <option value="aisle">By supermarket aisle</option>
                   <option value="manual">Manual order</option>
                   <option value="unpurchased">Unbought first</option>
                   <option value="az">A–Z</option>
@@ -708,6 +738,20 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                 </select>
               </div>
             )}
+          </div>
+
+          <div className="flex flex-wrap gap-2 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-3">
+            <input
+              aria-label="Add one-off food shopping item"
+              value={quickShoppingItem}
+              onChange={(event) => setQuickShoppingItem(event.target.value)}
+              onKeyDown={(event) => { if (event.key === "Enter") addQuickShoppingItem(); }}
+              placeholder="Add a one-off food item…"
+              className="min-h-11 min-w-0 flex-1 rounded-lg border border-[var(--sortd-border)] bg-white px-3 py-2 text-base sm:text-sm"
+            />
+            <button type="button" onClick={addQuickShoppingItem} disabled={!quickShoppingItem.trim()} className="min-h-11 rounded-lg bg-[#102a43] px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">
+              Add item
+            </button>
           </div>
 
           {shoppingList.length === 0 ? (
@@ -804,11 +848,14 @@ function moveShoppingItem(draggedId: string, targetId: string) {
                       {item.title}
                     </p>
 
+                    <p className="text-xs text-[var(--sortd-teal-dark)]">{item.aisle ?? "Other"}</p>
                     {item.quantity && (
                       <p className="text-sm text-[var(--sortd-text-muted)]">{item.quantity}</p>
                     )}
                   </div>
 
+                  <input aria-label={`Price of ${item.title} in pounds`} type="number" min="0" step="0.01" placeholder="£" value={item.estimatedPrice ?? ""} onChange={e => onChangeFoodData({...foodData,shoppingList:shoppingList.map(i => i.id === item.id ? {...i,estimatedPrice:e.target.value === "" ? undefined : Math.max(0,Number(e.target.value))} : i)})} className="w-20 min-w-0 rounded-lg border bg-white p-2 text-sm" />
+                  <select aria-label={`Aisle for ${item.title}`} value={item.aisle ?? "Other"} onChange={e => onChangeFoodData({...foodData,shoppingList:shoppingList.map(i => i.id === item.id ? {...i,aisle:e.target.value as FoodAisle} : i)})} className="max-w-28 min-w-0 rounded-lg border bg-white p-2 text-xs">{FOOD_AISLES.map(a => <option key={a}>{a}</option>)}</select>
                   {shoppingSort === "manual" && <div className="flex shrink-0">
                     <button type="button" aria-label={`Move ${item.title} earlier`} disabled={shoppingList[0]?.id === item.id} onClick={() => moveShoppingItem(item.id, shoppingList[shoppingList.findIndex((entry) => entry.id === item.id) - 1].id)} className="min-h-11 min-w-11 min-w-11 text-[var(--sortd-text-muted)] disabled:opacity-30">↑</button>
                     <button type="button" aria-label={`Move ${item.title} later`} disabled={shoppingList[shoppingList.length - 1]?.id === item.id} onClick={() => moveShoppingItem(item.id, shoppingList[shoppingList.findIndex((entry) => entry.id === item.id) + 1].id)} className="min-h-11 min-w-11 min-w-11 text-[var(--sortd-text-muted)] disabled:opacity-30">↓</button>

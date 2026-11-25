@@ -19,7 +19,7 @@ export default function CoverDisplay({ cover, alt, className = "" }: { cover?: P
         <div className="flex h-full items-center justify-center text-white/75"><Sparkles size={32} strokeWidth={1.4} /></div>
       )}
       {cover?.source === "unsplash" && !failed && cover.photographerUrl && (
-        <a href={cover.photographerUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="absolute bottom-2 left-2 z-10 rounded bg-black/60 px-2 py-1 text-[10px] text-white">{cover.photographer} / Unsplash</a>
+        <a href={cover.photographerUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="absolute bottom-2 left-2 z-10 rounded bg-black/60 px-2 py-1 text-[10px] text-white"></a>
       )}
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowUpRight, Sparkles, Pin, Check } from "lucide-react";
+import CoverDisplay from "@/components/covers/CoverDisplay";
 import ProjectUploadedCover from "@/components/planner/project/ProjectUploadedCover";
 import type { AdhocTask, AppView, Dream, FoodData, FitnessData, Goal, Routine, ShoppingList, SortdList, ProjectCover, OverviewPins } from "@/lib/types";
 
@@ -256,7 +257,7 @@ export default function OverviewView({ adhocTasks, onCompleteAdhocTask, projects
   const todaysLegacyWorkout = fitnessData.schedule?.filter(s => s.date === today).map(s => fitnessData.workouts?.find(w => w.id === s.workoutId)).find(Boolean);
   const workoutName = todaysRegime?.name ?? todaysLegacyWorkout?.name;
   const workoutCover = todaysRegime ? fitnessData.covers?.[todaysRegime.id] : todaysLegacyWorkout ? fitnessData.covers?.[todaysLegacyWorkout.id] : undefined;
-  const todayMealNames = mealTypes.map(type => ({ type, names: mealEntries.filter(e => e.mealType === type).map(e => foodData.meals.find(m => m.id === e.mealId)?.name).filter((name): name is string => Boolean(name)) }));
+  const todayMealNames = mealTypes.map(type => ({ type, entries: mealEntries.filter(e => e.mealType === type).map(e => ({name: foodData.meals.find(m => m.id === e.mealId)?.name ?? e.adhocTitle, cover: foodData.meals.find(m => m.id === e.mealId)?.cover})).filter(e => Boolean(e.name)) }));
   const togglePin = (kind: keyof OverviewPins, id: string) => {
     const current = overviewPins[kind];
     const next = current.includes(id) ? current.filter(item => item !== id) : current.length < 4 ? [...current, id] : current;
@@ -327,7 +328,7 @@ export default function OverviewView({ adhocTasks, onCompleteAdhocTask, projects
     <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
       <section className="min-w-0 rounded-2xl bg-[#eaf3ef] p-4 sm:p-5">
         {sectionHeading("On the menu", () => onNavigate("food"), "Meal plan", "Today")}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">{todayMealNames.map(meal => <div key={meal.type} className="min-w-0 border-t border-[#c8ddd4] pt-3"><p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[#0f766e]">{meal.type}</p><p className="mt-1 break-words text-sm font-medium leading-5">{meal.names.join(", ") || "Not planned"}</p></div>)}</div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">{todayMealNames.map(meal => <div key={meal.type} className="min-w-0 border-t border-[#c8ddd4] pt-3"><p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[#0f766e]">{meal.type}</p><div className="mt-2 space-y-2">{meal.entries.length ? meal.entries.map((entry,index) => <div key={index} className="flex items-center gap-2">{entry.cover && <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg"><CoverDisplay className="h-full w-full" cover={entry.cover} alt={entry.name ?? "Meal"} /></div>}<span className="min-w-0 break-words text-sm font-medium">{entry.name}</span></div>) : <p className="text-sm text-[#64748b]">Not planned</p>}</div></div>)}</div>
       </section>
       <section className="min-w-0 rounded-2xl bg-[#102a43] p-3 text-white shadow-sm sm:p-4">
         <div className="mb-3 flex items-center justify-between gap-2"><div><p className="text-[10px] uppercase tracking-[0.17em] text-[#a7e1d6]">Today</p><h2 className="text-lg font-semibold">Your workout</h2></div><button type="button" onClick={() => onNavigate("fitness")} className="flex items-center gap-1 text-xs font-semibold text-[#b3e7dc]">Fitness <ArrowUpRight size={15}/></button></div>

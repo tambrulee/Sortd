@@ -2,9 +2,13 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
+import CoverPicker from "@/components/covers/CoverPicker";
+import CoverDisplay from "@/components/covers/CoverDisplay";
+import { FOOD_AISLES } from "@/lib/foodAisles";
+
 import { createPortal } from "react-dom";
 
-import { Meal, MealIngredient, MealType } from "@/lib/types";
+import { Meal, MealIngredient, MealType, FoodAisle } from "@/lib/types";
 
 type MealDetailsModalProps = {
   meal: Meal;
@@ -45,6 +49,9 @@ export default function MealDetailsModal({
   const [ingredientName, setIngredientName] = useState("");
 
   const [ingredientQuantity, setIngredientQuantity] = useState("");
+  const [ingredientAisle, setIngredientAisle] = useState<FoodAisle>("Other");
+  const [ingredientPrice, setIngredientPrice] = useState("");
+  const [coverOpen, setCoverOpen] = useState(false);
 
   function updateDraft(updates: Partial<Meal>) {
     setDraft((current) => ({
@@ -64,6 +71,8 @@ export default function MealDetailsModal({
       name,
 
       quantity: ingredientQuantity.trim() || undefined,
+      aisle: ingredientAisle,
+      estimatedPrice: ingredientPrice === "" ? undefined : Math.max(0, Number(ingredientPrice)),
     };
 
     updateDraft({
@@ -72,6 +81,7 @@ export default function MealDetailsModal({
 
     setIngredientName("");
     setIngredientQuantity("");
+    setIngredientPrice("");
   }
 
   function removeIngredient(ingredientId: string) {
@@ -108,6 +118,9 @@ export default function MealDetailsModal({
         </div>
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+          <div className="space-y-2"><p className="text-sm font-semibold">Meal cover</p><div className="h-36 w-full overflow-hidden rounded-2xl bg-[#eaf3ef]"><CoverDisplay className="h-full w-full" cover={draft.cover} alt={draft.name} /></div><button type="button" onClick={() => setCoverOpen(true)} className="rounded-xl border px-3 py-2 text-sm">Choose cover image</button></div>
+          {coverOpen && <CoverPicker itemId={draft.id} itemType="meal" current={draft.cover} onSelect={cover => { updateDraft({cover}); setCoverOpen(false); }} onClose={() => setCoverOpen(false)} />}
+          <label className="block text-sm">Estimated total meal cost (£)<input type="number" min="0" step="0.01" value={draft.estimatedPrice ?? ""} onChange={e => updateDraft({estimatedPrice: e.target.value === "" ? undefined : Math.max(0,Number(e.target.value))})} className="mt-1 w-full rounded-xl border bg-[var(--sortd-card)] p-3" placeholder="Optional" /></label>
           <label className="block text-sm text-[var(--sortd-text-muted)]">
             Meal name
             <input
@@ -238,6 +251,8 @@ export default function MealDetailsModal({
                 className="text-base sm:text-sm min-w-0 w-full sm:w-32 rounded-xl border border-[var(--sortd-border)] px-3 py-2 min-h-11 bg-[var(--sortd-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sortd-teal-dark)]"
               />
 
+              <select aria-label="Ingredient aisle" value={ingredientAisle} onChange={e => setIngredientAisle(e.target.value as FoodAisle)} className="min-h-11 rounded-xl border bg-[var(--sortd-card)] px-2 text-sm">{FOOD_AISLES.map(aisle => <option key={aisle}>{aisle}</option>)}</select>
+              <input aria-label="Ingredient estimated price in pounds" type="number" min="0" step="0.01" placeholder="Price £" value={ingredientPrice} onChange={e => setIngredientPrice(e.target.value)} className="min-h-11 min-w-0 rounded-xl border bg-[var(--sortd-card)] px-3 text-sm" />
               <button
                 type="button"
                 onClick={addIngredient}
@@ -258,6 +273,7 @@ export default function MealDetailsModal({
                       {ingredient.name}
                     </span>
 
+                    <p className="text-xs text-[var(--sortd-text-muted)]">{ingredient.aisle ?? "Other"}{ingredient.estimatedPrice != null ? ` · £${ingredient.estimatedPrice.toFixed(2)}` : ""}</p>
                     {ingredient.quantity && (
                       <span className="ml-2 text-sm text-[var(--sortd-text-muted)]">
                         {ingredient.quantity}

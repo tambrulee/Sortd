@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import CoverDisplay from "@/components/covers/CoverDisplay";
+import type { FoodData } from "@/lib/types";
 import ProjectUploadedCover from "@/components/planner/project/ProjectUploadedCover";
 import {
   Routine,
@@ -22,6 +24,8 @@ type RoutineTaskForDay = Routine["tasks"][number] & {
 };
 
 type MyDayViewProps = {
+  foodData: FoodData;
+  onOpenFood: () => void;
   tasks: TaskWithProject[];
   adhocTasks: AdhocTask[];
   onCompleteAdhocTask: (id: string) => void;
@@ -144,17 +148,16 @@ function formatShortDate(
 }
 
 export default function MyDayView({
+  foodData, onOpenFood,
   tasks,
   adhocTasks,
   onCompleteAdhocTask,
-  onUpdateAdhocTask,
   routines,
   projects,
   onChangeRoutines,
   onOpenProject,
   onCompleteProjectTask,
   onCompleteRoutineTask,
-  onUpdateProjectTask,
   onUpdateRoutineTask,
   onDeleteRoutineTask,
 }: MyDayViewProps) {
@@ -164,24 +167,8 @@ export default function MyDayView({
 
   const [itemDisplayMode, setItemDisplayMode] = useState<"all" | "grouped">("grouped");
 
-  const [selecting, setSelecting] = useState(false);
   const [activeGroup, setActiveGroup] = useState<{kind: "routine" | "project"; id: string; date?: string} | null>(null);
   useEffect(() => { if (!activeGroup) return; const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setActiveGroup(null); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [activeGroup]);
-  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
-  const [bulkDate, setBulkDate] = useState("");
-
-  const projectKey = (task: TaskWithProject) => `project:${task.projectId}:${task.id}`;
-  const routineKey = (task: RoutineTaskForDay) => `routine:${task.routineId}:${task.id}`;
-  function toggleSelected(key: string) {
-    setSelectedKeys((current) => current.includes(key) ? current.filter((item) => item !== key) : [...current, key]);
-  }
-  function exitSelection() {
-    setSelecting(false);
-    setSelectedKeys([]);
-    setBulkDate("");
-  }
-
-
   const [
     selectedRoutineTask,
     setSelectedRoutineTask,
@@ -196,7 +183,6 @@ export default function MyDayView({
   const adhocOverdue = openAdhocTasks.filter(t => t.plannedDate! < today);
   const actionableAdhoc = [...adhocOverdue, ...adhocToday].sort((a,b) => a.plannedDate!.localeCompare(b.plannedDate!));
   const upcomingAdhoc = openAdhocTasks.filter(t => t.plannedDate! > today && t.plannedDate! <= toDateKey(addDays(parseDateKey(today), 7))).sort((a,b) => a.plannedDate!.localeCompare(b.plannedDate!));
-  const adhocKey = (task: AdhocTask) => `adhoc:${task.id}`;
   const openTasks = tasks.filter((task) => !task.completed);
 
   const openRoutineTasks = routines
@@ -337,30 +323,10 @@ export default function MyDayView({
     month: "long",
   }).format(new Date());
 
-  const selectableProjectTasks = dayViewMode === "today" ? actionableProjectTasks : upcomingTasks;
-  const selectableRoutineTasks = dayViewMode === "today" ? actionableRoutineTasks : upcomingRoutineTasks;
-  const selectableAdhoc = dayViewMode === "today" ? actionableAdhoc : upcomingAdhoc;
-  const visibleKeys = [...selectableProjectTasks.map(projectKey), ...selectableRoutineTasks.map(routineKey), ...selectableAdhoc.map(adhocKey)];
-  const selectedVisibleKeys = selectedKeys.filter((key) => visibleKeys.includes(key));
-  const allVisibleSelected = visibleKeys.length > 0 && visibleKeys.every((key) => selectedKeys.includes(key));
-
-  function applyBulkDate() {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(bulkDate) || selectedVisibleKeys.length === 0) return;
-    const chosen = new Set(selectedVisibleKeys);
-    selectableProjectTasks.forEach((task) => {
-      if (chosen.has(projectKey(task))) onUpdateProjectTask(task.projectId, task.id, { dueDate: bulkDate });
-    });
-    selectableRoutineTasks.forEach((task) => {
-      if (chosen.has(routineKey(task))) onUpdateRoutineTask(task.routineId, task.id, { nextDueDate: bulkDate });
-    });
-    selectableAdhoc.forEach(task => { if (chosen.has(adhocKey(task))) onUpdateAdhocTask(task.id, { plannedDate: bulkDate }); });
-    exitSelection();
-  }
-
   function renderAdhoc(task: AdhocTask) {
     const overdue = !!task.plannedDate && task.plannedDate < today;
     return <div key={`adhoc:${task.id}`} className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-white px-3 py-2 sm:px-4">
-      {selecting ? <input type="checkbox" checked={selectedKeys.includes(adhocKey(task))} onChange={() => toggleSelected(adhocKey(task))} aria-label={`Select ${task.title}`} className="h-5 w-5 shrink-0" /> : <button type="button" onClick={() => onCompleteAdhocTask(task.id)} aria-label={`Complete ${task.title}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-[var(--sortd-teal-dark)]">✓</button>}
+      <button type="button" onClick={() => onCompleteAdhocTask(task.id)} aria-label={`Complete ${task.title}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-[var(--sortd-teal-dark)]">✓</button>
       <div className="min-w-0 flex-1"><p className="break-words font-medium text-slate-900">{task.title}</p><p className="text-xs text-slate-500">To-do{task.priority ? ` · ${task.priority} priority` : ""}</p></div>
       <span className={`shrink-0 text-xs ${overdue ? "text-red-700" : "text-slate-500"}`}>{overdue ? "Overdue" : formatShortDate(task.plannedDate)}</span>
     </div>;
@@ -381,8 +347,7 @@ export default function MyDayView({
         key={`${task.projectId}-${task.id}`}
         className="flex min-w-0 w-full flex-wrap items-center gap-2 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-1.5 sm:px-4"
       >
-        {selecting && <input type="checkbox" checked={selectedKeys.includes(projectKey(task))} onChange={() => toggleSelected(projectKey(task))} aria-label={`Select ${task.title}`} className="h-4 w-4 shrink-0 accent-[var(--sortd-teal-dark)]" />}
-        {!selecting && <button
+        <button
           type="button"
           onClick={() => onCompleteProjectTask(task.projectId, task.id)}
           aria-label={`Complete ${task.title}`}
@@ -390,11 +355,11 @@ export default function MyDayView({
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-xs font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
-        </button>}
+        </button>
 
         <button
           type="button"
-          onClick={() => selecting ? toggleSelected(projectKey(task)) : onOpenProject(task.projectId)}
+          onClick={() => onOpenProject(task.projectId)}
           className="min-h-11 min-w-0 flex-1 text-left"
         >
           <p className="break-words [overflow-wrap:anywhere] font-medium text-slate-900">
@@ -439,17 +404,16 @@ export default function MyDayView({
         key={`${task.routineId}-${task.id}`}
         className="flex min-w-0 flex-wrap items-center gap-2 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 py-1.5 sm:px-4"
       >
-        {selecting && <input type="checkbox" checked={selectedKeys.includes(routineKey(task))} onChange={() => toggleSelected(routineKey(task))} aria-label={`Select ${task.title}`} className="h-4 w-4 shrink-0 accent-[var(--sortd-teal-dark)]" />}
-        {!selecting && <button
+        <button
           type="button"
           onClick={() => onCompleteRoutineTask(task.routineId, task.id)}
           aria-label={`Complete ${task.title}`}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-xs font-bold text-[var(--sortd-teal-dark)] transition hover:bg-[var(--sortd-teal-dark)] hover:text-white"
         >
           ✓
-        </button>}
+        </button>
 
-        <div className="min-w-0 flex-1" onClick={selecting ? () => toggleSelected(routineKey(task)) : undefined}>
+        <div className="min-w-0 flex-1">
           <p className="break-words [overflow-wrap:anywhere] font-medium text-slate-900">
             {task.title || "Untitled routine task"}
           </p>
@@ -467,7 +431,7 @@ export default function MyDayView({
           {isOverdue ? "Overdue" : task.nextDueDate === today ? "Due today" : formatShortDate(task.nextDueDate)}
         </span>
 
-        {!selecting && <button
+        <button
           type="button"
           onClick={() =>
             setSelectedRoutineTask(task)
@@ -477,7 +441,7 @@ export default function MyDayView({
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm text-slate-500 transition hover:bg-[var(--sortd-muted)] hover:text-slate-900"
         >
           •••
-        </button>}
+        </button>
       </div>
     );
   }
@@ -534,6 +498,7 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
 
   return (
     <div className="min-w-0 w-full max-w-full rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-3 shadow-sm sm:p-5 md:p-8">
+      <section className="mb-5 rounded-2xl border border-[#dce7e3] bg-[#eaf3ef] p-4 sm:p-5"><div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold text-[#102a43]">On the menu</h2><button type="button" onClick={onOpenFood} className="text-xs font-semibold text-[#0f766e]">Open Food ↗</button></div><div className="grid gap-3 sm:grid-cols-3">{(["breakfast","lunch","dinner"] as const).map(type => {const entries = foodData.mealPlan.filter(entry => entry.date === today && entry.mealType === type); return <div key={type} className="min-w-0 rounded-xl bg-white p-3"><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#0f766e]">{type}</p>{entries.length ? entries.map(entry => {const meal = foodData.meals.find(m => m.id === entry.mealId); return <div key={entry.id} className="mb-2 flex items-center gap-2">{meal?.cover && <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg"><CoverDisplay className="h-full w-full" cover={meal.cover} alt={meal.name} /></div>}<span className="min-w-0 text-sm font-medium">{meal?.name ?? entry.adhocTitle ?? "Meal"}</span></div>;}) : <p className="text-sm text-slate-500">Not planned</p>}</div>;})}</div></section>
       <header className="mb-6">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#102a43] via-[#123b4c] to-[#176269] px-5 py-7 text-white shadow-lg sm:px-8 sm:py-9">
           <div className="pointer-events-none absolute -right-12 -top-24 h-64 w-64 rounded-full border border-white/10" />
@@ -545,17 +510,13 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
           <nav aria-label="My Day views" className="flex min-w-0 rounded-xl bg-[var(--sortd-muted)] p-1">
             {(["today", "upcoming"] as const).map((view) => (
               <button key={view} type="button" aria-pressed={dayViewMode === view}
-                onClick={() => { setDayViewMode(view); exitSelection(); }}
+                onClick={() => setDayViewMode(view)}
                 className={`min-h-10 rounded-lg px-5 py-2 text-sm font-semibold capitalize transition ${dayViewMode === view ? "bg-white text-[#102a43] shadow-sm" : "text-slate-500 hover:text-slate-900"}`}>
                 {view === "today" ? "Today" : "Next 7 days"}
               </button>
             ))}
           </nav>
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => selecting ? exitSelection() : setSelecting(true)}
-              className={`min-h-10 rounded-xl border px-3 py-2 text-sm font-semibold transition ${selecting ? "border-teal-600 bg-teal-50 text-teal-800" : "border-[var(--sortd-border)] bg-white text-[#102a43] hover:bg-[var(--sortd-muted)]"}`}>
-              {selecting ? "Cancel rescheduling" : "Reschedule multiple"}
-            </button>
             <div role="group" aria-label="Routine and task grouping" className="flex rounded-xl bg-[var(--sortd-muted)] p-1">
               {(["grouped", "all"] as const).map((mode) => (
                 <button key={mode} type="button" aria-pressed={itemDisplayMode === mode} onClick={() => setItemDisplayMode(mode)}
@@ -567,26 +528,6 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
           </div>
         </div>
       </header>
-
-      {selecting && (
-        <section className="mb-5 rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-card)] p-3 sm:p-4" aria-label="Bulk update due dates">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-medium text-slate-800">{selectedVisibleKeys.length} selected</p>
-            <div className="flex flex-wrap gap-3 text-sm">
-              <button type="button" disabled={!visibleKeys.length} onClick={() => setSelectedKeys((current) => allVisibleSelected ? current.filter((key) => !visibleKeys.includes(key)) : [...new Set([...current, ...visibleKeys])])} className="font-medium text-[var(--sortd-teal-dark)] disabled:opacity-40">{allVisibleSelected ? "Deselect all" : "Select all shown"}</button>
-              <button type="button" onClick={() => setSelectedKeys([])} className="text-slate-500">Clear</button>
-            </div>
-          </div>
-          <div className="mt-3 flex flex-wrap items-end gap-2">
-            <label className="flex w-full min-w-0 flex-col gap-1 sm:w-auto text-xs font-medium text-slate-600">New due date
-              <input type="date" value={bulkDate} onChange={(event) => setBulkDate(event.target.value)} className="min-h-11 min-w-0 w-full max-w-full rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-card)] px-3 text-base sm:text-sm text-slate-900" />
-            </label>
-            <button type="button" onClick={() => setBulkDate(toDateKey(addDays(parseDateKey(today), 1)))} className="min-h-11 rounded-lg border border-[var(--sortd-border)] px-3 text-sm">Tomorrow</button>
-            <button type="button" onClick={() => setBulkDate(toDateKey(addDays(parseDateKey(today), 7)))} className="min-h-11 rounded-lg border border-[var(--sortd-border)] px-3 text-sm">In 7 days</button>
-            <button type="button" disabled={!bulkDate || !selectedVisibleKeys.length} onClick={applyBulkDate} className="min-h-11 rounded-lg bg-[var(--sortd-teal-dark)] px-4 text-sm font-semibold text-white disabled:opacity-40">Update {selectedVisibleKeys.length} {selectedVisibleKeys.length === 1 ? "date" : "dates"}</button>
-          </div>
-        </section>
-      )}
 
       {dayViewMode === "today" && (
         <div className="space-y-7">

@@ -1,0 +1,1 @@
+export const FOOD_AISLES = ["Fruit & vegetables", "Meat & poultry", "Fish & seafood", "Dairy & eggs", "Bakery", "Pasta, rice & grains", "Tins & jars", "Frozen", "Herbs, spices & condiments", "Drinks", "Other"] as const;
