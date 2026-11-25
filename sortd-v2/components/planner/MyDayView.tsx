@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import ProjectUploadedCover from "@/components/planner/project/ProjectUploadedCover";
 import {
   Routine,
+  AdhocTask,
   SortdList,
   Task,
 } from "@/lib/types";
@@ -22,6 +23,9 @@ type RoutineTaskForDay = Routine["tasks"][number] & {
 
 type MyDayViewProps = {
   tasks: TaskWithProject[];
+  adhocTasks: AdhocTask[];
+  onCompleteAdhocTask: (id: string) => void;
+  onUpdateAdhocTask: (id: string, updates: Partial<AdhocTask>) => void;
   routines: Routine[];
   projects: SortdList[];
 
@@ -141,6 +145,9 @@ function formatShortDate(
 
 export default function MyDayView({
   tasks,
+  adhocTasks,
+  onCompleteAdhocTask,
+  onUpdateAdhocTask,
   routines,
   projects,
   onChangeRoutines,
@@ -184,6 +191,12 @@ export default function MyDayView({
     ? routines.find((routine) => routine.id === selectedRoutineTask.routineId)?.tasks.find((task) => task.id === selectedRoutineTask.id)
     : undefined;
 
+  const openAdhocTasks = adhocTasks.filter(t => !t.completed && !!t.plannedDate);
+  const adhocToday = openAdhocTasks.filter(t => t.plannedDate === today);
+  const adhocOverdue = openAdhocTasks.filter(t => t.plannedDate! < today);
+  const actionableAdhoc = [...adhocOverdue, ...adhocToday].sort((a,b) => a.plannedDate!.localeCompare(b.plannedDate!));
+  const upcomingAdhoc = openAdhocTasks.filter(t => t.plannedDate! > today && t.plannedDate! <= toDateKey(addDays(parseDateKey(today), 7))).sort((a,b) => a.plannedDate!.localeCompare(b.plannedDate!));
+  const adhocKey = (task: AdhocTask) => `adhoc:${task.id}`;
   const openTasks = tasks.filter((task) => !task.completed);
 
   const openRoutineTasks = routines
@@ -262,6 +275,7 @@ export default function MyDayView({
   const allActionableItems = [
     ...actionableRoutineTasks.map((task) => ({ kind: "routine" as const, date: task.nextDueDate, task })),
     ...actionableProjectTasks.map((task) => ({ kind: "project" as const, date: task.dueDate ?? today, task })),
+    ...actionableAdhoc.map((task) => ({ kind: "adhoc" as const, date: task.plannedDate!, task })),
   ].sort((a, b) => a.date.localeCompare(b.date));
 
   const todayDate =
@@ -325,7 +339,8 @@ export default function MyDayView({
 
   const selectableProjectTasks = dayViewMode === "today" ? actionableProjectTasks : upcomingTasks;
   const selectableRoutineTasks = dayViewMode === "today" ? actionableRoutineTasks : upcomingRoutineTasks;
-  const visibleKeys = [...selectableProjectTasks.map(projectKey), ...selectableRoutineTasks.map(routineKey)];
+  const selectableAdhoc = dayViewMode === "today" ? actionableAdhoc : upcomingAdhoc;
+  const visibleKeys = [...selectableProjectTasks.map(projectKey), ...selectableRoutineTasks.map(routineKey), ...selectableAdhoc.map(adhocKey)];
   const selectedVisibleKeys = selectedKeys.filter((key) => visibleKeys.includes(key));
   const allVisibleSelected = visibleKeys.length > 0 && visibleKeys.every((key) => selectedKeys.includes(key));
 
@@ -338,7 +353,17 @@ export default function MyDayView({
     selectableRoutineTasks.forEach((task) => {
       if (chosen.has(routineKey(task))) onUpdateRoutineTask(task.routineId, task.id, { nextDueDate: bulkDate });
     });
+    selectableAdhoc.forEach(task => { if (chosen.has(adhocKey(task))) onUpdateAdhocTask(task.id, { plannedDate: bulkDate }); });
     exitSelection();
+  }
+
+  function renderAdhoc(task: AdhocTask) {
+    const overdue = !!task.plannedDate && task.plannedDate < today;
+    return <div key={`adhoc:${task.id}`} className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--sortd-border)] bg-white px-3 py-2 sm:px-4">
+      {selecting ? <input type="checkbox" checked={selectedKeys.includes(adhocKey(task))} onChange={() => toggleSelected(adhocKey(task))} aria-label={`Select ${task.title}`} className="h-5 w-5 shrink-0" /> : <button type="button" onClick={() => onCompleteAdhocTask(task.id)} aria-label={`Complete ${task.title}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[var(--sortd-teal-dark)] text-[var(--sortd-teal-dark)]">✓</button>}
+      <div className="min-w-0 flex-1"><p className="break-words font-medium text-slate-900">{task.title}</p><p className="text-xs text-slate-500">To-do{task.priority ? ` · ${task.priority} priority` : ""}</p></div>
+      <span className={`shrink-0 text-xs ${overdue ? "text-red-700" : "text-slate-500"}`}>{overdue ? "Overdue" : formatShortDate(task.plannedDate)}</span>
+    </div>;
   }
 
   function renderTask(
@@ -493,6 +518,7 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
       label: index === 0 ? "Tomorrow" : new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "short" }).format(date),
       tasks: upcomingTasks.filter((task) => task.dueDate === key),
       routines: upcomingRoutineTasks.filter((task) => task.nextDueDate === key),
+      adhoc: upcomingAdhoc.filter(task => task.plannedDate === key),
       projectGroups: Array.from(new Set(upcomingTasks.filter((task) => task.dueDate === key).map((task) => task.projectId))).map((projectId) => {
         const tasks = upcomingTasks.filter((task) => task.dueDate === key && task.projectId === projectId);
         return { projectId, projectName: tasks[0].projectName, tasks };
@@ -502,7 +528,7 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
         return { routineId, routineName: tasks[0].routineName, tasks };
       }),
     };
-  }).filter((day) => day.tasks.length + day.routines.length > 0);
+  }).filter((day) => day.tasks.length + day.routines.length + day.adhoc.length > 0);
 
   const emptyClassName = "rounded-xl border border-[var(--sortd-border)] bg-[var(--sortd-muted)] px-4 py-6 text-sm text-slate-500";
 
@@ -565,13 +591,13 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
       {dayViewMode === "today" && (
         <div className="space-y-7">
           <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-[var(--sortd-border)] bg-white px-5 py-4 text-sm text-slate-500">
-            <p><strong className="font-semibold text-slate-900">{dueToday.length + routineTasksDueToday.length}</strong> due today</p>
-            <p><strong className={overdue.length + overdueRoutineTasks.length > 0 ? "font-semibold text-red-700" : "font-semibold text-slate-900"}>{overdue.length + overdueRoutineTasks.length}</strong> overdue</p>
+            <p><strong className="font-semibold text-slate-900">{dueToday.length + routineTasksDueToday.length + adhocToday.length}</strong> due today</p>
+            <p><strong className={overdue.length + overdueRoutineTasks.length > 0 ? "font-semibold text-red-700" : "font-semibold text-slate-900"}>{overdue.length + overdueRoutineTasks.length + adhocOverdue.length}</strong> overdue</p>
             <p title="Estimates for items due today; excludes overdue items and items without an estimate.">{workloadMinutes > 0 ? `${formatDuration(workloadMinutes)} estimated today` : "No time estimated today"}</p>
           </div>
           {itemDisplayMode === "all" ? (
             <section aria-label="All routines and tasks" className="space-y-2">
-              {allActionableItems.length > 0 ? allActionableItems.map((item) => item.kind === "routine" ? renderRoutineTask(item.task) : renderTask(item.task, { showStatus: true })) : <p className={emptyClassName}>Nothing needs your attention today.</p>}
+              {allActionableItems.length > 0 ? allActionableItems.map((item) => item.kind === "routine" ? renderRoutineTask(item.task) : item.kind === "adhoc" ? renderAdhoc(item.task) : renderTask(item.task, { showStatus: true })) : <p className={emptyClassName}>Nothing needs your attention today.</p>}
             </section>
           ) : (
             <>
@@ -585,6 +611,10 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
                     {routineGroups.map((group) => renderGroupCard("routine", group.routineId, group.routineName, group.tasks.length, group.tasks.filter(t => t.nextDueDate < today).length))}
                   </div>
                 ) : <p className={emptyClassName}>No routines due today.</p>}
+              </section>
+              <section aria-labelledby="my-day-adhoc" className="space-y-3">
+                <h2 id="my-day-adhoc" className="text-lg font-semibold text-[var(--sortd-navy)]">To-dos · {actionableAdhoc.length}</h2>
+                {actionableAdhoc.length ? <div className="space-y-2">{actionableAdhoc.map(renderAdhoc)}</div> : <p className={emptyClassName}>No scheduled to-dos due today.</p>}
               </section>
               <section aria-labelledby="my-day-tasks" className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
@@ -614,11 +644,13 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
                   <div className="space-y-2">
                     {day.routines.map((task) => renderRoutineTask(task))}
                     {day.tasks.map((task) => renderTask(task))}
+                    {day.adhoc.map(renderAdhoc)}
                   </div>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {day.routineGroups.map(group => renderGroupCard("routine", group.routineId, group.routineName, group.tasks.length, 0, day.key))}
                     {day.projectGroups.map(group => renderGroupCard("project", group.projectId, group.projectName, group.tasks.length, 0, day.key))}
+                    {day.adhoc.length > 0 && <div className="rounded-2xl border border-[var(--sortd-border)] bg-white p-4"><h4 className="mb-3 font-semibold text-[var(--sortd-navy)]">To-dos · {day.adhoc.length}</h4><div className="space-y-2">{day.adhoc.map(renderAdhoc)}</div></div>}
                   </div>
                 )}
               </section>

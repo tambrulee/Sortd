@@ -1258,9 +1258,12 @@ export default function Home() {
 
           <div className="min-w-0 w-full max-w-full [&>*]:min-w-0 [&>*]:max-w-full">
           {activeView === "overview" ? (
-            <OverviewView projects={lists} routines={routines} goals={goals} dreams={dreams} shoppingLists={shoppingLists} foodData={foodData} fitnessData={fitnessData} overviewPins={overviewPins} onChangeOverviewPins={setOverviewPins} onNavigate={setActiveView} onOpenProject={(id) => { setActiveListId(id); setActiveView("projects"); }} onCompleteProjectTask={completeProjectTask} onCompleteRoutineTask={completeRoutineTask} onChangeShoppingLists={setShoppingLists} />
+            <OverviewView adhocTasks={adhocTasks} onCompleteAdhocTask={completeAdhocTask} projects={lists} routines={routines} goals={goals} dreams={dreams} shoppingLists={shoppingLists} foodData={foodData} fitnessData={fitnessData} overviewPins={overviewPins} onChangeOverviewPins={setOverviewPins} onNavigate={setActiveView} onOpenProject={(id) => { setActiveListId(id); setActiveView("projects"); }} onCompleteProjectTask={completeProjectTask} onCompleteRoutineTask={completeRoutineTask} onChangeShoppingLists={setShoppingLists} />
           ) : activeView === "my-day" ? (
             <MyDayView
+              adhocTasks={adhocTasks}
+              onCompleteAdhocTask={completeAdhocTask}
+              onUpdateAdhocTask={updateAdhocTask}
               tasks={allTasks}
               routines={routines}
               projects={lists}

@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, Sparkles, Pin, Check } from "lucide-react";
 import ProjectUploadedCover from "@/components/planner/project/ProjectUploadedCover";
-import type { AppView, Dream, FoodData, FitnessData, Goal, Routine, ShoppingList, SortdList, ProjectCover, OverviewPins } from "@/lib/types";
+import type { AdhocTask, AppView, Dream, FoodData, FitnessData, Goal, Routine, ShoppingList, SortdList, ProjectCover, OverviewPins } from "@/lib/types";
 
 type Props = {
   projects: SortdList[];
+  adhocTasks: AdhocTask[];
+  onCompleteAdhocTask: (id: string) => void;
   routines: Routine[];
   goals: Goal[];
   dreams: Dream[];
@@ -88,7 +90,7 @@ function CoverImage({
 }
 
 
-export default function OverviewView({ projects, routines, goals, dreams, shoppingLists, foodData, fitnessData, overviewPins, onChangeOverviewPins, onNavigate, onOpenProject, onCompleteProjectTask, onCompleteRoutineTask }: Props) {
+export default function OverviewView({ adhocTasks, onCompleteAdhocTask, projects, routines, goals, dreams, shoppingLists, foodData, fitnessData, overviewPins, onChangeOverviewPins, onNavigate, onOpenProject, onCompleteProjectTask, onCompleteRoutineTask }: Props) {
   const [dayTab, setDayTab] = useState<"routines" | "tasks" | "overdue" | null>(null);
   const [insightFeedback, setInsightFeedback] = useState<InsightFeedback>({});
   const [feedbackReady, setFeedbackReady] = useState(false);
@@ -129,22 +131,27 @@ export default function OverviewView({ projects, routines, goals, dreams, shoppi
   const now = new Date();
   const today = localKey(now);
   const weekEnd = localKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
+  const openAdhoc = adhocTasks.filter(t => !t.completed && !!t.plannedDate);
+  const adhocToday = openAdhoc.filter(t => t.plannedDate! <= today);
+  const adhocOverdue = adhocToday.filter(t => t.plannedDate! < today);
+  const upcomingAdhoc = openAdhoc.filter(t => t.plannedDate! > today && t.plannedDate! <= weekEnd).sort((a,b) => a.plannedDate!.localeCompare(b.plannedDate!));
   const openTasks = projects.flatMap(p => p.tasks.filter(t => !t.completed && t.title.trim()).map(t => ({ ...t, projectId: p.id, projectName: p.name })));
   const activeRoutines = routines.filter(r => !r.archived).flatMap(r => r.tasks.filter(t => t.active).map(t => ({ ...t, routineId: r.id, routineName: r.name })));
   const tasksToday = openTasks.filter(t => t.dueDate && t.dueDate <= today);
   const routinesToday = activeRoutines.filter(t => t.nextDueDate <= today);
   const overdueTasks = tasksToday.filter(t => t.dueDate! < today);
   const overdueRoutines = routinesToday.filter(t => t.nextDueDate < today);
-  const overdue = overdueTasks.length + overdueRoutines.length;
+  const overdue = overdueTasks.length + overdueRoutines.length + adhocOverdue.length;
   const upcoming = openTasks.filter(t => t.dueDate && t.dueDate > today && t.dueDate <= weekEnd).sort((a,b) => a.dueDate!.localeCompare(b.dueDate!));
+  const agendaUpcoming = [...upcoming.map(t => ({ id: `project:${t.projectId}:${t.id}`, title: t.title, date: t.dueDate!, open: () => onOpenProject(t.projectId) })), ...upcomingAdhoc.map(t => ({ id: `adhoc:${t.id}`, title: t.title, date: t.plannedDate!, open: () => onNavigate("planner") }))].sort((a,b) => a.date.localeCompare(b.date));
   const currentProjects = projects.filter(p => p.status === "active" || p.status === "planned");
   const planned = shoppingLists.filter(l => !l.archived).flatMap(l => l.items.map(item => ({ ...item, listId: l.id, listName: l.name }))).filter(item => !item.purchased && item.plannedPurchaseDate && item.plannedPurchaseDate <= weekEnd).sort((a,b) => a.plannedPurchaseDate!.localeCompare(b.plannedPurchaseDate!));
   const todayShopping = planned.filter(item => item.plannedPurchaseDate! <= today);
   const selectedDayItems = dayTab === "routines"
     ? routinesToday.map(t => ({ kind: "routine" as const, id: `${t.routineId}:${t.id}`, title: t.title, subtitle: t.routineName, date: t.nextDueDate, parentId: t.routineId, taskId: t.id }))
     : dayTab === "tasks"
-      ? tasksToday.map(t => ({ kind: "task" as const, id: `${t.projectId}:${t.id}`, title: t.title, subtitle: t.projectName, date: t.dueDate!, parentId: t.projectId, taskId: t.id }))
-      : [...overdueRoutines.map(t => ({ kind: "routine" as const, id: `${t.routineId}:${t.id}`, title: t.title, subtitle: t.routineName, date: t.nextDueDate, parentId: t.routineId, taskId: t.id })), ...overdueTasks.map(t => ({ kind: "task" as const, id: `${t.projectId}:${t.id}`, title: t.title, subtitle: t.projectName, date: t.dueDate!, parentId: t.projectId, taskId: t.id }))];
+      ? [...tasksToday.map(t => ({ kind: "task" as const, id: `${t.projectId}:${t.id}`, title: t.title, subtitle: t.projectName, date: t.dueDate!, parentId: t.projectId, taskId: t.id })), ...adhocToday.map(t => ({kind: "adhoc" as const, id: `adhoc:${t.id}`, title: t.title, subtitle: "To-do", date: t.plannedDate!, parentId: "", taskId: t.id}))]
+      : [...overdueRoutines.map(t => ({ kind: "routine" as const, id: `${t.routineId}:${t.id}`, title: t.title, subtitle: t.routineName, date: t.nextDueDate, parentId: t.routineId, taskId: t.id })), ...overdueTasks.map(t => ({ kind: "task" as const, id: `${t.projectId}:${t.id}`, title: t.title, subtitle: t.projectName, date: t.dueDate!, parentId: t.projectId, taskId: t.id })), ...adhocOverdue.map(t => ({kind: "adhoc" as const, id: `adhoc:${t.id}`, title: t.title, subtitle: "To-do", date: t.plannedDate!, parentId: "", taskId: t.id}))];
   selectedDayItems.sort((a,b) => a.date.localeCompare(b.date));
   const mealEntries = foodData.mealPlan.filter(entry => entry.date === today);
   const mealTypes = ["breakfast", "lunch", "dinner"] as const;
@@ -179,14 +186,14 @@ export default function OverviewView({ projects, routines, goals, dreams, shoppi
     message: `${projectsDueSoon.length} project${projectsDueSoon.length === 1 ? " has" : "s have"} a target date within the next seven days.`,
     actionLabel: "View projects", action: () => onNavigate("projects"),
   });
-  if (upcoming.length) addInsight({
+  if (upcoming.length + upcomingAdhoc.length) addInsight({
     id: "tasks-due-soon", priority: 80, label: "Coming up",
-    message: `${upcoming.length} project task${upcoming.length === 1 ? " is" : "s are"} due within the next seven days.`,
+    message: `${upcoming.length + upcomingAdhoc.length} task${upcoming.length + upcomingAdhoc.length === 1 ? " is" : "s are"} due within the next seven days, including your to-dos.`,
     actionLabel: "See upcoming tasks", action: () => onNavigate("my-day"),
   });
   if (overdue) addInsight({
     id: "overdue-items", priority: 65, label: "Your day",
-    message: `${overdue} item${overdue === 1 ? " is" : "s are"} overdue across your routines and project tasks. You can review them at your own pace.`,
+    message: `${overdue} item${overdue === 1 ? " is" : "s are"} overdue across your routines, project tasks and to-dos. You can review them at your own pace.`,
     actionLabel: "Review overdue items", action: () => {
   setDayTab("overdue");
   onNavigate("my-day");
@@ -302,19 +309,19 @@ export default function OverviewView({ projects, routines, goals, dreams, shoppi
       {sectionHeading("Coming up", () => onNavigate("my-day"), "See my day", "Your agenda")}
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="grid min-w-0 gap-2 sm:grid-cols-2">
-          {upcoming.slice(0,4).map(t => <button key={`${t.projectId}:${t.id}`} type="button" onClick={() => onOpenProject(t.projectId)} className="flex min-w-0 items-center gap-3 rounded-xl bg-[#f1f6f4] px-3 py-3 text-left hover:bg-[#e2f0ea]">
-            <span className="flex w-12 shrink-0 flex-col items-center rounded-lg bg-white py-1 text-[#0f766e]"><span className="text-[10px] uppercase">{new Intl.DateTimeFormat("en-GB",{month:"short"}).format(new Date(`${t.dueDate}T12:00:00`))}</span><span className="text-lg font-semibold">{new Date(`${t.dueDate}T12:00:00`).getDate()}</span></span>
+          {agendaUpcoming.slice(0,4).map(t => <button key={t.id} type="button" onClick={t.open} className="flex min-w-0 items-center gap-3 rounded-xl bg-[#f1f6f4] px-3 py-3 text-left hover:bg-[#e2f0ea]">
+            <span className="flex w-12 shrink-0 flex-col items-center rounded-lg bg-white py-1 text-[#0f766e]"><span className="text-[10px] uppercase">{new Intl.DateTimeFormat("en-GB",{month:"short"}).format(new Date(`${t.date}T12:00:00`))}</span><span className="text-lg font-semibold">{new Date(`${t.date}T12:00:00`).getDate()}</span></span>
             <span className="min-w-0 truncate text-sm font-medium">{t.title}</span><ArrowUpRight size={15} className="ml-auto shrink-0 text-[#0f766e]"/>
           </button>)}
-          {!upcoming.length && <p className="rounded-xl bg-[#f1f6f4] px-4 py-5 text-sm text-[#64748b]">No project tasks due in the next seven days.</p>}
+          {!agendaUpcoming.length && <p className="rounded-xl bg-[#f1f6f4] px-4 py-5 text-sm text-[#64748b]">No tasks or to-dos due in the next seven days.</p>}
         </div>
         <div className="flex flex-wrap items-start gap-2 lg:justify-end">
           <button type="button" onClick={() => setDayTab(dayTab === "routines" ? null : "routines")} className="rounded-full bg-[#e9f4f0] px-3 py-2 text-xs font-medium text-[#0f766e]">{routinesToday.length} routines due</button>
-          <button type="button" onClick={() => setDayTab(dayTab === "tasks" ? null : "tasks")} className="rounded-full bg-[#e9f4f0] px-3 py-2 text-xs font-medium text-[#0f766e]">{tasksToday.length} tasks due</button>
+          <button type="button" onClick={() => setDayTab(dayTab === "tasks" ? null : "tasks")} className="rounded-full bg-[#e9f4f0] px-3 py-2 text-xs font-medium text-[#0f766e]">{tasksToday.length + adhocToday.length} tasks due</button>
           <button type="button" onClick={() => setDayTab(dayTab === "overdue" ? null : "overdue")} className="rounded-full bg-[#fff2ed] px-3 py-2 text-xs font-medium text-[#9b5038]">{overdue} overdue</button>
         </div>
       </div>
-      {dayTab && <div className="mt-3 rounded-xl border border-[#dce7e3] bg-white p-3"><div className="mb-2 flex justify-between text-xs font-semibold capitalize text-[#64748b]"><span>{dayTab} · {selectedDayItems.length}</span><button type="button" onClick={() => setDayTab(null)}>Close ×</button></div><div className="grid gap-2 sm:grid-cols-2">{selectedDayItems.slice(0,6).map(item => <div key={item.id} className="flex min-w-0 items-center gap-2 rounded-lg bg-[#f3f7f5] p-2 text-sm"><button type="button" aria-label={`Complete ${item.title}`} onClick={() => item.kind === "routine" ? onCompleteRoutineTask(item.parentId,item.taskId) : onCompleteProjectTask(item.parentId,item.taskId)} className="shrink-0 rounded-full border border-[#0f766e] p-1 text-[#0f766e]"><Check size={14}/></button><span className="min-w-0 flex-1 truncate">{item.title}</span><span className="shrink-0 text-xs text-[#64748b]">{shortDate(item.date)}</span></div>)}{!selectedDayItems.length && <p className="text-sm text-[#64748b]">Nothing to show.</p>}</div>{selectedDayItems.length > 6 && <button type="button" onClick={() => onNavigate("my-day")} className="mt-2 text-xs font-semibold text-[#0f766e]">View more ↗</button>}</div>}
+      {dayTab && <div className="mt-3 rounded-xl border border-[#dce7e3] bg-white p-3"><div className="mb-2 flex justify-between text-xs font-semibold capitalize text-[#64748b]"><span>{dayTab} · {selectedDayItems.length}</span><button type="button" onClick={() => setDayTab(null)}>Close ×</button></div><div className="grid gap-2 sm:grid-cols-2">{selectedDayItems.slice(0,6).map(item => <div key={item.id} className="flex min-w-0 items-center gap-2 rounded-lg bg-[#f3f7f5] p-2 text-sm"><button type="button" aria-label={`Complete ${item.title}`} onClick={() => item.kind === "routine" ? onCompleteRoutineTask(item.parentId,item.taskId) : item.kind === "adhoc" ? onCompleteAdhocTask(item.taskId) : onCompleteProjectTask(item.parentId,item.taskId)} className="shrink-0 rounded-full border border-[#0f766e] p-1 text-[#0f766e]"><Check size={14}/></button><span className="min-w-0 flex-1 truncate">{item.title}</span><span className="shrink-0 text-xs text-[#64748b]">{shortDate(item.date)}</span></div>)}{!selectedDayItems.length && <p className="text-sm text-[#64748b]">Nothing to show.</p>}</div>{selectedDayItems.length > 6 && <button type="button" onClick={() => onNavigate("my-day")} className="mt-2 text-xs font-semibold text-[#0f766e]">View more ↗</button>}</div>}
     </section>
 
     <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
