@@ -241,7 +241,10 @@ export default function OverviewView({ projects, routines, goals, dreams, shoppi
   const pinnedProjects = overviewPins.projects.map(id => currentProjects.find(p => p.id === id)).filter((p): p is SortdList => Boolean(p));
   const pinnedGoals = overviewPins.goals.map(id => goals.find(g => g.id === id)).filter((g): g is Goal => Boolean(g));
   const pinnedDreams = overviewPins.dreams.map(id => dreams.find(d => d.id === id)).filter((d): d is Dream => Boolean(d));
-  const scheduledRegimeId = fitnessData.weeklyPlan?.find(entry => entry.day === now.getDay())?.regimeId;
+  const mondayBasedDay = (now.getDay() + 6) % 7;
+  const scheduledRegimeId = fitnessData.weeklyPlan?.find(
+    entry => entry.day === mondayBasedDay
+  )?.regimeId;
   const todaysRegime = fitnessData.regimes?.find(regime => regime.id === scheduledRegimeId);
   const todaysLegacyWorkout = fitnessData.schedule?.filter(s => s.date === today).map(s => fitnessData.workouts?.find(w => w.id === s.workoutId)).find(Boolean);
   const workoutName = todaysRegime?.name ?? todaysLegacyWorkout?.name;
@@ -322,8 +325,22 @@ export default function OverviewView({ projects, routines, goals, dreams, shoppi
       <section className="min-w-0 rounded-2xl bg-[#102a43] p-3 text-white shadow-sm sm:p-4">
         <div className="mb-3 flex items-center justify-between gap-2"><div><p className="text-[10px] uppercase tracking-[0.17em] text-[#a7e1d6]">Today</p><h2 className="text-lg font-semibold">Your workout</h2></div><button type="button" onClick={() => onNavigate("fitness")} className="flex items-center gap-1 text-xs font-semibold text-[#b3e7dc]">Fitness <ArrowUpRight size={15}/></button></div>
         <button type="button" onClick={() => onNavigate("fitness")} className="flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-xl bg-white/10 p-2 text-left hover:bg-white/15">
-          <span className="relative block h-24 w-28 max-w-[40%] shrink-0 overflow-hidden rounded-lg"><CoverImage cover={workoutCover} alt={workoutName ?? "Fitness"} className="absolute inset-0 h-full w-full" /></span>
-          <span className="block min-w-0 flex-1"><span className="block break-words text-sm font-semibold">{workoutName ?? "No workout planned today"}</span><span className="mt-1 block text-xs text-white/70">{todaysRegime ? `${todaysRegime.exercises.length} exercises` : workoutName ? "Scheduled workout" : "Open Fitness to plan a session"}</span></span>
+          <span className="relative block h-24 w-28 max-w-[40%] shrink-0 overflow-hidden rounded-lg">
+            {workoutName ? (
+              <CoverImage cover={workoutCover} alt={workoutName} className="absolute inset-0 h-full w-full" />
+            ) : (
+              <img
+                src="/rest-day.jpeg"
+                alt="Rest and recovery"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
+          </span>
+          <span className="block min-w-0 flex-1"><span className="block break-words text-sm font-semibold">{workoutName ?? "Rest & recovery 🌿"}</span><span className="mt-1 block text-xs text-white/70">{todaysRegime
+  ? `${todaysRegime.exercises.length} exercises`
+  : workoutName
+    ? "Scheduled workout"
+    : "No workout scheduled today. Enjoy your rest!"}</span></span>
           <ArrowUpRight size={16} className="shrink-0 text-[#b3e7dc]"/>
         </button>
       </section>
