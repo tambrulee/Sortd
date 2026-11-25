@@ -63,7 +63,7 @@ export default function FitnessView({ data, onChange, saveStatus }: Props) {
   const [measures, setMeasures] = useState<FitnessMeasure[]>(["weight", "reps"]);
   const [distanceUnit, setDistanceUnit] = useState<"km" | "m">("km");
   const [showAllHistory, setShowAllHistory] = useState(false);
-  const [active, setActive] = useState<FitnessSession | null>(null);
+
   const migrated = useMemo(() => {
     const exercises: FitnessLibraryExercise[] = [];
     const regimes: FitnessRegime[] = [];
@@ -84,6 +84,7 @@ export default function FitnessView({ data, onChange, saveStatus }: Props) {
   const regimes = data.regimes ?? migrated.regimes;
   const weeklyPlan = data.weeklyPlan ?? [];
   const sessions = data.sessions ?? [];
+  const active = [...sessions].reverse().find(s => !s.completedAt) ?? null;
   const completed = [...sessions].filter(s => s.completedAt).sort((a,b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""));
   const current = regimes.find(r => r.id === editing);
   const lookup = (exerciseId: string) => exercises.find(e => e.id === exerciseId);
@@ -115,21 +116,46 @@ export default function FitnessView({ data, onChange, saveStatus }: Props) {
     saveWorkout({ ...current, exercises: entries });
   }
   function startWorkout(workout: FitnessRegime) {
-    if (active && !window.confirm("Discard the current workout?")) return;
-    setActive({ id: uid(), workoutId: workout.id, workoutName: workout.name, startedAt: new Date().toISOString(), exercises: workout.exercises.map(entry => ({ id: uid(), exerciseId: entry.exerciseId, name: lookup(entry.exerciseId)?.name ?? "Exercise", sets: Array.from({ length: Math.max(1, entry.sets ?? 1) }, () => ({ id: uid(), reps: entry.reps ?? 0, weightKg: entry.weightKg ?? 0, completed: false })) })) });
+    if (active && !window.confirm("Discard the current workout and start a new one?")) return;
+    const session: FitnessSession = {
+      id: uid(), workoutId: workout.id, workoutName: workout.name,
+      startedAt: new Date().toISOString(),
+      exercises: workout.exercises.map(entry => ({
+        id: uid(), exerciseId: entry.exerciseId,
+        name: lookup(entry.exerciseId)?.name ?? "Exercise",
+        sets: Array.from({ length: Math.max(1, entry.sets ?? 1) }, () => ({
+          id: uid(), reps: entry.reps ?? 0, weightKg: entry.weightKg ?? 0, completed: false
+        }))
+      }))
+    };
+    update({ sessions: [...sessions.filter(s => s.completedAt), session] });
+    setTab("overview"); setEditing(null);
+  }
+  function markExercise(exerciseId: string, checked: boolean) {
+    if (!active) return;
+    update({ sessions: sessions.map(s => s.id !== active.id ? s : {
+      ...s, exercises: s.exercises.map(item => item.id !== exerciseId ? item : {
+        ...item, sets: item.sets.map(set => ({ ...set, completed: checked }))
+      })
+    }) });
+  }
+  function discardWorkout() {
+    if (!active || !window.confirm("Discard this session? Your progress will be deleted.")) return;
+    update({ sessions: sessions.filter(s => s.id !== active.id) });
   }
   function finishWorkout() {
     if (!active) return;
-    update({ sessions: [...sessions, { ...active, completedAt: new Date().toISOString() }] }); setActive(null); setEditing(null); setTab("history");
+    update({ sessions: sessions.map(s => s.id === active.id ? { ...s, completedAt: new Date().toISOString() } : s) });
+    setEditing(null); setTab("history");
   }
   const visibleExercises = exercises.filter(e => (libraryCategoryFilter === "all" || e.category === libraryCategoryFilter) && `${e.name} ${e.category}`.toLowerCase().includes(search.trim().toLowerCase()));
   const pickerExercises = exercises.filter(e => (pickerCategoryFilter === "all" || e.category === pickerCategoryFilter) && `${e.name} ${e.category}`.toLowerCase().includes(pickerSearch.trim().toLowerCase()));
   return <main className="min-w-0 space-y-5 rounded-2xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-4 text-[var(--sortd-text)] shadow-sm sm:p-5">
     <header className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-semibold">Fitness</h1><p className="mt-1 text-sm text-[var(--sortd-text-muted)]">Build your workouts. Train your way.</p>{saveStatus && <p role="status" className={`mt-1 text-xs ${saveStatus === "error" ? "font-semibold text-red-700" : "text-[var(--sortd-text-muted)]"}`}>{saveStatus === "loading" ? "Loading workspace…" : saveStatus === "saving" ? "Saving changes…" : saveStatus === "saved" ? "All changes saved" : "Save failed — do not refresh"}</p>}</div><button className={primary} onClick={() => { setTab("overview"); setEditing(null); setCreatingWorkout(true); }}><Plus size={17}/> New workout</button></header>
-    {active ? <section className={`${card} space-y-4 p-4 sm:p-6`}>
+    {active && tab !== "history" ? <section className={`${card} space-y-4 p-4 sm:p-6`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><p className="text-xs font-semibold uppercase tracking-wider text-[var(--sortd-teal-dark)]">In progress</p><h2 className="mt-1 text-xl font-semibold">{active.workoutName}</h2><p className="mt-1 text-sm text-[var(--sortd-text-muted)]">{active.exercises.filter(e => e.sets.every(s => s.completed)).length} of {active.exercises.length} exercises completed</p></div>
-        <button className={secondary} onClick={() => { if (window.confirm("Discard this session?")) setActive(null); }}>Discard</button>
+        <div className="flex flex-wrap gap-2"><button className={secondary} onClick={() => setTab("history")}>History &amp; progress</button><button className={secondary} onClick={discardWorkout}>Discard</button></div>
       </div>
       <p className="text-sm text-[var(--sortd-text-muted)]">Tick each exercise when you&apos;ve finished all its sets. Your targets are shown alongside it.</p>
       <div className="overflow-hidden rounded-xl border border-[var(--sortd-border)] bg-white divide-y divide-[var(--sortd-border)]">
@@ -146,7 +172,7 @@ export default function FitnessView({ data, onChange, saveStatus }: Props) {
             libraryExercise?.measures.includes("duration") && regimeEntry?.durationMinutes != null ? `${regimeEntry.durationMinutes} min` : null,
           ].filter(Boolean).join(" · ");
           return <label key={exercise.id} className={`flex cursor-pointer items-center gap-3 px-3 py-3 sm:px-4 ${done ? "bg-[#e6f3ef]" : "hover:bg-[var(--sortd-muted)]"}`}>
-            <input type="checkbox" className="h-5 w-5 shrink-0 accent-[var(--sortd-teal-dark)]" checked={done} onChange={event => setActive(previous => previous ? { ...previous, exercises: previous.exercises.map(item => item.id === exercise.id ? { ...item, sets: item.sets.map(set => ({ ...set, completed: event.target.checked })) } : item) } : previous)}/>
+            <input type="checkbox" className="h-5 w-5 shrink-0 accent-[var(--sortd-teal-dark)]" checked={done} onChange={event => markExercise(exercise.id, event.target.checked)}/>
             <span className="flex min-w-0 flex-1 flex-col gap-1"><span className={`block text-sm font-semibold leading-5 ${done ? "text-[var(--sortd-teal-dark)]" : ""}`}>{exercise.name}</span><span className="block text-xs leading-5 text-[var(--sortd-text-muted)] sm:text-sm">{targets}</span></span>
             {done && <Check size={17} className="shrink-0 text-[var(--sortd-teal-dark)]"/>}
           </label>;
@@ -188,18 +214,18 @@ export default function FitnessView({ data, onChange, saveStatus }: Props) {
               ...(exercise.measures.includes("distance") ? [{ key: "distance" as const, label: exercise.distanceUnit ?? "km", step: "0.1" }] : []),
               ...(exercise.measures.includes("duration") ? [{ key: "durationMinutes" as const, label: "Minutes", step: "1" }] : []),
             ];
-            return <div key={entry.id} className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-surface)] px-3 py-2 lg:flex-nowrap">
-              <div className="flex min-w-[180px] flex-1 items-center gap-2 lg:max-w-[300px]">
+            return <div key={entry.id} className="flex min-w-0 flex-col gap-3 rounded-lg border border-[var(--sortd-border)] bg-[var(--sortd-surface)] px-3 py-3 lg:flex-row lg:items-center">
+              <div className="flex w-full min-w-0 items-center gap-2 lg:w-auto lg:min-w-[180px] lg:flex-1 lg:max-w-[300px]">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white text-[var(--sortd-teal-dark)]"><CategoryIcon category={exercise.category} size={15}/></div>
                 <div className="min-w-0"><p className="truncate text-sm font-semibold" title={exercise.name}>{exercise.name}</p><p className="truncate text-[11px] text-[var(--sortd-text-muted)]">{exercise.category}</p></div>
               </div>
-              <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2 sm:flex-nowrap">
-                {fields.map(f => <label key={f.key} className="min-w-[65px] flex-1 text-[11px] text-[var(--sortd-text-muted)]">{f.label}<input type="number" min="0" step={f.step} className={`${input} mt-0.5 !h-9 !min-w-0 !px-2 !py-1 text-sm`} value={entry[f.key] ?? 0} onChange={ev => saveWorkout({ ...current, exercises: current.exercises.map(x => x.id === entry.id ? { ...x, [f.key]: Math.max(0, Number(ev.target.value)||0) } : x) })}/></label>)}
+              <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:flex lg:w-auto lg:flex-1 lg:items-end">
+                {fields.map(f => <label key={f.key} className="min-w-0 flex-1 text-[11px] text-[var(--sortd-text-muted)]">{f.label}<input type="number" min="0" step={f.step} className={`${input} mt-0.5 !h-9 !min-w-0 !px-2 !py-1 text-sm`} value={entry[f.key] ?? 0} onChange={ev => saveWorkout({ ...current, exercises: current.exercises.map(x => x.id === entry.id ? { ...x, [f.key]: Math.max(0, Number(ev.target.value)||0) } : x) })}/></label>)}
               </div>
-              <div className="ml-auto flex shrink-0 items-center gap-1">
-                <button aria-label={`Move ${exercise.name} up`} title="Move up" className={`${secondary} !p-1.5`} disabled={i===0} onClick={() => moveEntry(i,-1)}><ArrowUp size={14}/></button>
-                <button aria-label={`Move ${exercise.name} down`} title="Move down" className={`${secondary} !p-1.5`} disabled={i===current.exercises.length-1} onClick={() => moveEntry(i,1)}><ArrowDown size={14}/></button>
-                <button aria-label={`Remove ${exercise.name}`} title="Remove exercise" className={`${secondary} !p-1.5`} onClick={() => saveWorkout({ ...current, exercises: current.exercises.filter(x => x.id !== entry.id) })}><X size={14}/></button>
+              <div className="flex w-full items-center justify-end gap-2 border-t border-[var(--sortd-border)] pt-2 lg:ml-auto lg:w-auto lg:shrink-0 lg:border-0 lg:pt-0">
+                <button aria-label={`Move ${exercise.name} up`} title="Move up" className={`${secondary} !p-2.5`} disabled={i===0} onClick={() => moveEntry(i,-1)}><ArrowUp size={14}/></button>
+                <button aria-label={`Move ${exercise.name} down`} title="Move down" className={`${secondary} !p-2.5`} disabled={i===current.exercises.length-1} onClick={() => moveEntry(i,1)}><ArrowDown size={14}/></button>
+                <button aria-label={`Remove ${exercise.name}`} title="Remove exercise" className={`${secondary} !p-2.5`} onClick={() => saveWorkout({ ...current, exercises: current.exercises.filter(x => x.id !== entry.id) })}><X size={14}/></button>
               </div>
             </div>;
           })}
@@ -218,7 +244,7 @@ export default function FitnessView({ data, onChange, saveStatus }: Props) {
       {exerciseForm && !editingExercise && <tr className="border-t border-[var(--sortd-border)] bg-[#e6f3ef]/60"><td className="px-4 py-3"><Plus size={16}/></td><td className="px-3 py-3"><input autoFocus aria-label="New exercise name" className={input} value={exerciseName} placeholder="Exercise name" onChange={e=>setExerciseName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();saveExercise();}}}/></td><td className="px-3 py-3"><select aria-label="New exercise category" className={input} value={exerciseCategory} onChange={e=>setExerciseCategory(e.target.value)}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></td><td className="px-3 py-3"><div className="flex flex-wrap gap-x-3 gap-y-2">{MEASURES.map(m=><label key={m.id} className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={measures.includes(m.id)} onChange={e=>setMeasures(prev=>e.target.checked?[...prev,m.id]:prev.filter(x=>x!==m.id))}/>{m.label}</label>)}{measures.includes("distance")&&<select aria-label="Distance unit" className="rounded border border-[var(--sortd-border)] bg-white px-2 py-1 text-xs" value={distanceUnit} onChange={e=>setDistanceUnit(e.target.value as "km"|"m")}><option value="km">km</option><option value="m">m</option></select>}</div></td><td className="px-4 py-3"><div className="flex justify-end gap-2"><button className={primary} disabled={!exerciseName.trim()||!measures.length} onClick={saveExercise}><Check size={15}/> Save</button><button className={secondary} onClick={()=>setExerciseForm(false)}>Cancel</button></div></td></tr>}
       {visibleExercises.map(e=> editingExercise===e.id && exerciseForm ? <tr key={e.id} className="border-t border-[var(--sortd-border)] bg-[#e6f3ef]/60"><td className="px-4 py-3"/><td className="px-3 py-3"><input autoFocus aria-label={`Edit ${e.name} name`} className={input} value={exerciseName} onChange={ev=>setExerciseName(ev.target.value)} onKeyDown={ev=>{if(ev.key==="Enter"){ev.preventDefault();saveExercise();}}}/></td><td className="px-3 py-3"><select aria-label={`Edit ${e.name} category`} className={input} value={exerciseCategory} onChange={ev=>setExerciseCategory(ev.target.value)}>{!CATEGORIES.includes(exerciseCategory)&&<option>{exerciseCategory}</option>}{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></td><td className="px-3 py-3"><div className="flex flex-wrap gap-x-3 gap-y-2">{MEASURES.map(m=><label key={m.id} className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={measures.includes(m.id)} onChange={ev=>setMeasures(prev=>ev.target.checked?[...prev,m.id]:prev.filter(x=>x!==m.id))}/>{m.label}</label>)}{measures.includes("distance")&&<select aria-label="Distance unit" className="rounded border border-[var(--sortd-border)] bg-white px-2 py-1 text-xs" value={distanceUnit} onChange={ev=>setDistanceUnit(ev.target.value as "km"|"m")}><option value="km">km</option><option value="m">m</option></select>}</div></td><td className="px-4 py-3"><div className="flex justify-end gap-2"><button className={primary} disabled={!exerciseName.trim()||!measures.length} onClick={saveExercise}><Check size={15}/> Save</button><button className={secondary} onClick={()=>{setExerciseForm(false);setEditingExercise(null);}}>Cancel</button></div></td></tr> : <tr key={e.id} className="border-t border-[var(--sortd-border)] hover:bg-[var(--sortd-muted)]/40"><td className="px-4 py-3"><input aria-label={`Select ${e.name}`} type="checkbox" checked={selectedExercises.includes(e.id)} onChange={ev=>setSelectedExercises(prev=>ev.target.checked?[...prev,e.id]:prev.filter(id=>id!==e.id))}/></td><td className="px-3 py-3 font-medium">{e.name}</td><td className="px-3 py-3"><select aria-label={`Category for ${e.name}`} className={`${input} !py-1.5`} value={e.category} onChange={ev=>update({exercises:exercises.map(x=>x.id===e.id?{...x,category:ev.target.value}:x)})}>{!CATEGORIES.includes(e.category)&&<option value={e.category}>{e.category}</option>}{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></td><td className="px-3 py-3 text-[var(--sortd-text-muted)]">{e.measures.map(m=>m==="distance"?`distance (${e.distanceUnit??"km"})`:m).join(" · ")}</td><td className="px-4 py-3"><div className="flex justify-end gap-2"><button className={secondary} onClick={()=>beginExerciseEdit(e)}>Edit</button><button className={secondary} onClick={()=>{if(window.confirm(`Delete ${e.name}? This removes it from all workouts.`))update({exercises:exercises.filter(x=>x.id!==e.id),regimes:regimes.map(r=>({...r,exercises:r.exercises.filter(x=>x.exerciseId!==e.id)}))});}}>Delete</button></div></td></tr>)}
       {!visibleExercises.length&&!exerciseForm&&<tr><td colSpan={5} className="px-4 py-8 text-center text-[var(--sortd-text-muted)]">No exercises found. Add one to get started.</td></tr>}</tbody></table></div></div></section>}
-    {tab === "history" && <section className="space-y-3"><div><h2 className="text-lg font-semibold">History & progress</h2><p className="text-sm text-[var(--sortd-text-muted)]">Your saved workout sessions are kept even when you edit a workout.</p></div>{!completed.length&&<div className={`${card} p-5 text-sm text-[var(--sortd-text-muted)]`}>Completed workouts will appear here.</div>}{completed.slice(0,showAllHistory?undefined:15).map(s=><details key={s.id} className={`${card} p-4`}><summary className="cursor-pointer font-semibold">{s.workoutName} <span className="text-xs font-normal text-[var(--sortd-text-muted)]">· {new Date(s.completedAt!).toLocaleDateString("en-GB")} · {s.exercises.reduce((n,e)=>n+e.sets.filter(x=>x.completed).length,0)} completed</span></summary><div className="mt-3 space-y-2">{s.exercises.map(e=><div key={e.id} className="rounded-xl bg-[var(--sortd-muted)] p-3 text-sm"><strong>{e.name}</strong><p className="mt-1 text-xs text-[var(--sortd-text-muted)]">{e.sets.filter(x=>x.completed).map(x=>x.reps||x.weightKg?`${x.weightKg} kg × ${x.reps} reps`:"Completed").join(" · ")||"No sets marked complete"}</p></div>)}</div></details>)}{completed.length>15&&<button className={secondary} onClick={()=>setShowAllHistory(v=>!v)}>{showAllHistory?"Show fewer":"Show all sessions"}</button>}</section>}
+    {tab === "history" && <section className="space-y-3"><div><h2 className="text-lg font-semibold">History & progress</h2><p className="text-sm text-[var(--sortd-text-muted)]">Your saved workout sessions are kept even when you edit a workout.</p></div>{active && <div className={`${card} flex flex-col gap-3 border-[var(--sortd-teal-dark)] bg-[#e6f3ef] p-4 sm:flex-row sm:items-center sm:justify-between`}><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wide text-[var(--sortd-teal-dark)]">In progress · Saved</p><h3 className="mt-1 font-semibold">{active.workoutName}</h3><p className="text-xs text-[var(--sortd-text-muted)]">{active.exercises.filter(e => e.sets.every(set => set.completed)).length} of {active.exercises.length} exercises completed</p></div><button className={primary} onClick={() => setTab("overview")}>Resume workout</button></div>}{!completed.length&&<div className={`${card} p-5 text-sm text-[var(--sortd-text-muted)]`}>Completed workouts will appear here.</div>}{completed.slice(0,showAllHistory?undefined:15).map(s=><details key={s.id} className={`${card} p-4`}><summary className="cursor-pointer font-semibold">{s.workoutName} <span className="text-xs font-normal text-[var(--sortd-text-muted)]">· {new Date(s.completedAt!).toLocaleDateString("en-GB")} · {s.exercises.reduce((n,e)=>n+e.sets.filter(x=>x.completed).length,0)} completed</span></summary><div className="mt-3 space-y-2">{s.exercises.map(e=><div key={e.id} className="rounded-xl bg-[var(--sortd-muted)] p-3 text-sm"><strong>{e.name}</strong><p className="mt-1 text-xs text-[var(--sortd-text-muted)]">{e.sets.filter(x=>x.completed).map(x=>x.reps||x.weightKg?`${x.weightKg} kg × ${x.reps} reps`:"Completed").join(" · ")||"No sets marked complete"}</p></div>)}</div></details>)}{completed.length>15&&<button className={secondary} onClick={()=>setShowAllHistory(v=>!v)}>{showAllHistory?"Show fewer":"Show all sessions"}</button>}</section>}
     </>}
     {coverFor && <CoverPicker itemId={coverFor} itemType="workout" current={covers[coverFor]} onSelect={cover => setCover(coverFor, cover)} onClose={() => setCoverFor(null)} />}
   </main>;
