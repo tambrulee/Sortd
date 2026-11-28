@@ -161,11 +161,51 @@ export default function MyDayView({
   onUpdateRoutineTask,
   onDeleteRoutineTask,
 }: MyDayViewProps) {
-  const today = getLocalDateKey();
+  const [today, setToday] = useState(getLocalDateKey);
+  useEffect(() => {
+    const refresh = () => setToday(getLocalDateKey());
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener("focus", refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
+  }, []);
 
   const [dayViewMode, setDayViewMode] = useState<"today" | "upcoming">("today");
 
-  const [itemDisplayMode, setItemDisplayMode] = useState<"all" | "grouped">("grouped");
+  const [itemDisplayMode, setItemDisplayMode] = useState<"all" | "grouped" | "board">("grouped");
+
+  // Board progress is independent of scheduling and persists across sessions.
+  type BoardStatus = "in-progress" | "completed";
+  type BoardEntry = { status: BoardStatus; completedOn?: string; title?: string; subtitle?: string };
+  const [boardEntries, setBoardEntries] = useState<Record<string, BoardEntry>>({});
+  const [boardReady, setBoardReady] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem("sortd-my-day-board-v1") || "{}");
+        if (saved && typeof saved === "object" && !Array.isArray(saved)) setBoardEntries(saved);
+      } catch { /* Storage unavailable or corrupt; start fresh. */ }
+      setBoardReady(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (!boardReady) return;
+    try {
+      const currentDay = getLocalDateKey();
+      const cleaned = Object.fromEntries(Object.entries(boardEntries).filter(([, entry]) =>
+        entry?.status === "in-progress" || (entry?.status === "completed" && entry.completedOn === currentDay)
+      ));
+      window.localStorage.setItem("sortd-my-day-board-v1", JSON.stringify(cleaned));
+    } catch { /* Storage may be blocked. */ }
+  }, [boardEntries, boardReady, today]);
+  const setBoardEntry = (key: string, entry?: BoardEntry) => {
+    setBoardEntries(previous => {
+      const next = { ...previous };
+      if (entry) next[key] = entry;
+      else delete next[key];
+      return next;
+    });
+  };
 
   const [activeGroup, setActiveGroup] = useState<{kind: "routine" | "project"; id: string; date?: string} | null>(null);
   useEffect(() => { if (!activeGroup) return; const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setActiveGroup(null); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [activeGroup]);
@@ -263,6 +303,85 @@ export default function MyDayView({
     ...actionableProjectTasks.map((task) => ({ kind: "project" as const, date: task.dueDate ?? today, task })),
     ...actionableAdhoc.map((task) => ({ kind: "adhoc" as const, date: task.plannedDate!, task })),
   ].sort((a, b) => a.date.localeCompare(b.date));
+
+  type BoardItem = { key: string; title: string; subtitle: string; date: string; complete: () => void; open?: () => void };
+  const makeBoardItems = (items: typeof allActionableItems): BoardItem[] => items.map(item => {
+    if (item.kind === "project") {
+      const task = item.task;
+      return {
+      key: `project:${task.projectId}:${task.id}`, title: task.title || "Untitled task",
+      subtitle: task.projectName, date: item.date,
+      complete: () => onCompleteProjectTask(task.projectId, task.id),
+      open: () => onOpenProject(task.projectId),
+    };
+    }
+    if (item.kind === "routine") {
+      const task = item.task;
+      return {
+      key: `routine:${task.routineId}:${task.id}`, title: task.title || "Untitled routine task",
+      subtitle: task.routineName, date: item.date,
+      complete: () => onCompleteRoutineTask(task.routineId, task.id),
+      open: () => setSelectedRoutineTask(task),
+    };
+    }
+    const task = item.task;
+    return { key: `adhoc:${task.id}`, title: task.title || "Untitled to-do", subtitle: "To-do",
+      date: item.date, complete: () => onCompleteAdhocTask(task.id) };
+  });
+
+  function renderBoard(items: BoardItem[], boardDate: string) {
+    const activeKeys = new Set(items.map(item => item.key));
+    // Completed cards are kept as snapshots after the parent removes the task.
+    const completedSnapshots: BoardItem[] = (boardDate === today ? Object.entries(boardEntries) : [])
+      .filter(([key, entry]) => !activeKeys.has(key) && entry.status === "completed" && entry.completedOn === boardDate)
+      .map(([key, entry]) => ({ key, title: entry.title || "Completed task", subtitle: entry.subtitle || "", date: boardDate, complete: () => {} }));
+    const columns = [
+      { id: "not-started", label: "Not Started", tint: "bg-slate-100" },
+      { id: "in-progress", label: "In Progress", tint: "bg-amber-50" },
+      { id: "completed", label: "Completed", tint: "bg-emerald-50" },
+    ] as const;
+    return <div className="grid min-w-0 gap-3 lg:grid-cols-3">
+      {columns.map(column => {
+        const visible = [...items, ...completedSnapshots].filter(item => {
+          const entry = boardEntries[item.key];
+          const status = entry?.status === "completed" && entry.completedOn !== today
+            ? "not-started" : (entry?.status || "not-started");
+          return status === column.id;
+        });
+        return <section key={column.id} className={`min-w-0 rounded-2xl border border-[var(--sortd-border)] ${column.tint} p-3 sm:p-4`}>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="font-semibold text-[var(--sortd-navy)]">{column.label}</h3>
+            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">{visible.length}</span>
+          </div>
+          <div className="space-y-2">
+            {visible.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">No tasks</p>}
+            {visible.map(item => <article key={item.key} className="min-w-0 rounded-xl border border-[var(--sortd-border)] bg-white p-3 shadow-sm">
+              <p className="break-words text-sm font-semibold text-slate-900">{item.title}</p>
+              <p className="mt-1 break-words text-xs text-slate-500">{item.subtitle}{item.date < boardDate ? " · Overdue" : ""}</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {column.id === "not-started" && <button type="button" onClick={() => setBoardEntry(item.key, { status: "in-progress" })} className="rounded-lg bg-amber-100 px-2.5 py-1.5 text-xs font-semibold text-amber-900">Start</button>}
+                {column.id === "in-progress" && <button type="button" onClick={() => setBoardEntry(item.key)} className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700">Not started</button>}
+                {column.id !== "completed" && <button type="button" onClick={() => {
+                  setBoardEntry(item.key, { status: "completed", completedOn: today, title: item.title, subtitle: item.subtitle });
+                  item.complete();
+                }} className="rounded-lg bg-[#176269] px-2.5 py-1.5 text-xs font-semibold text-white">✓ Complete</button>}
+                {item.open && column.id !== "completed" && <button type="button" onClick={item.open} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600">Details</button>}
+              </div>
+            </article>)}
+          </div>
+        </section>;
+      })}
+    </div>;
+  }
+
+  const persistentInProgress = makeBoardItems([
+    ...openRoutineTasks.map(task => ({ kind: "routine" as const, date: task.nextDueDate, task })),
+    ...openTasks.map(task => ({ kind: "project" as const, date: task.dueDate ?? today, task })),
+    ...openAdhocTasks.map(task => ({ kind: "adhoc" as const, date: task.plannedDate!, task })),
+  ]).filter(item => boardEntries[item.key]?.status === "in-progress");
+  const todayBoardItems = Array.from(
+    new Map([...makeBoardItems(allActionableItems), ...persistentInProgress].map(item => [item.key, item])).values()
+  );
 
   const todayDate =
     parseDateKey(today);
@@ -498,7 +617,6 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
 
   return (
     <div className="min-w-0 w-full max-w-full rounded-3xl border border-[var(--sortd-border)] bg-[var(--sortd-surface)] p-3 shadow-sm sm:p-5 md:p-8">
-      <section className="mb-5 rounded-2xl border border-[#dce7e3] bg-[#eaf3ef] p-4 sm:p-5"><div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold text-[#102a43]">On the menu</h2><button type="button" onClick={onOpenFood} className="text-xs font-semibold text-[#0f766e]">Open Food ↗</button></div><div className="grid gap-3 sm:grid-cols-3">{(["breakfast","lunch","dinner"] as const).map(type => {const entries = foodData.mealPlan.filter(entry => entry.date === today && entry.mealType === type); return <div key={type} className="min-w-0 rounded-xl bg-white p-3"><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#0f766e]">{type}</p>{entries.length ? entries.map(entry => {const meal = foodData.meals.find(m => m.id === entry.mealId); return <div key={entry.id} className="mb-2 flex items-center gap-2">{meal?.cover && <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg"><CoverDisplay className="h-full w-full" cover={meal.cover} alt={meal.name} /></div>}<span className="min-w-0 text-sm font-medium">{meal?.name ?? entry.adhocTitle ?? "Meal"}</span></div>;}) : <p className="text-sm text-slate-500">Not planned</p>}</div>;})}</div></section>
       <header className="mb-6">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#102a43] via-[#123b4c] to-[#176269] px-5 py-7 text-white shadow-lg sm:px-8 sm:py-9">
           <div className="pointer-events-none absolute -right-12 -top-24 h-64 w-64 rounded-full border border-white/10" />
@@ -518,10 +636,10 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
           </nav>
           <div className="flex flex-wrap items-center gap-2">
             <div role="group" aria-label="Routine and task grouping" className="flex rounded-xl bg-[var(--sortd-muted)] p-1">
-              {(["grouped", "all"] as const).map((mode) => (
+              {(["grouped", "all", "board"] as const).map((mode) => (
                 <button key={mode} type="button" aria-pressed={itemDisplayMode === mode} onClick={() => setItemDisplayMode(mode)}
                   className={`min-h-9 rounded-lg px-3 py-1.5 text-sm font-medium ${itemDisplayMode === mode ? "bg-white text-[#102a43] shadow-sm" : "text-slate-500"}`}>
-                  {mode === "all" ? "All" : "Grouped"}
+                  {mode === "all" ? "All" : mode === "board" ? "Board" : "Grouped"}
                 </button>
               ))}
             </div>
@@ -536,7 +654,8 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
             <p><strong className={overdue.length + overdueRoutineTasks.length > 0 ? "font-semibold text-red-700" : "font-semibold text-slate-900"}>{overdue.length + overdueRoutineTasks.length + adhocOverdue.length}</strong> overdue</p>
             <p title="Estimates for items due today; excludes overdue items and items without an estimate.">{workloadMinutes > 0 ? `${formatDuration(workloadMinutes)} estimated today` : "No time estimated today"}</p>
           </div>
-          {itemDisplayMode === "all" ? (
+          <section className="rounded-2xl border border-[#dce7e3] bg-[#eaf3ef] p-4 sm:p-5"><div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold text-[#102a43]">On the menu</h2><button type="button" onClick={onOpenFood} className="text-xs font-semibold text-[#0f766e]">Open Food ↗</button></div><div className="grid gap-3 sm:grid-cols-3">{(["breakfast","lunch","dinner"] as const).map(type => {const entries = foodData.mealPlan.filter(entry => entry.date === today && entry.mealType === type); return <div key={type} className="min-w-0 rounded-xl bg-white p-3"><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#0f766e]">{type}</p>{entries.length ? entries.map(entry => {const meal = foodData.meals.find(m => m.id === entry.mealId); return <div key={entry.id} className="mb-2 flex items-center gap-2">{meal?.cover && <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg"><CoverDisplay className="h-full w-full" cover={meal.cover} alt={meal.name} /></div>}<span className="min-w-0 text-sm font-medium">{meal?.name ?? entry.adhocTitle ?? "Meal"}</span></div>;}) : <p className="text-sm text-slate-500">Not planned</p>}</div>;})}</div></section>
+          {itemDisplayMode === "board" ? renderBoard(todayBoardItems, today) : itemDisplayMode === "all" ? (
             <section aria-label="All routines and tasks" className="space-y-2">
               {allActionableItems.length > 0 ? allActionableItems.map((item) => item.kind === "routine" ? renderRoutineTask(item.task) : item.kind === "adhoc" ? renderAdhoc(item.task) : renderTask(item.task, { showStatus: true })) : <p className={emptyClassName}>Nothing needs your attention today.</p>}
             </section>
@@ -575,13 +694,18 @@ const upcomingDays = Array.from({ length: 7 }, (_, index) => {
 
       {dayViewMode === "upcoming" && (
         <section aria-labelledby="my-day-upcoming">
+          <div className="mb-5"><section className="rounded-2xl border border-[#dce7e3] bg-[#eaf3ef] p-4 sm:p-5"><div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold text-[#102a43]">On the menu</h2><button type="button" onClick={onOpenFood} className="text-xs font-semibold text-[#0f766e]">Open Food ↗</button></div><div className="grid gap-3 sm:grid-cols-3">{(["breakfast","lunch","dinner"] as const).map(type => {const entries = foodData.mealPlan.filter(entry => entry.date === today && entry.mealType === type); return <div key={type} className="min-w-0 rounded-xl bg-white p-3"><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#0f766e]">{type}</p>{entries.length ? entries.map(entry => {const meal = foodData.meals.find(m => m.id === entry.mealId); return <div key={entry.id} className="mb-2 flex items-center gap-2">{meal?.cover && <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg"><CoverDisplay className="h-full w-full" cover={meal.cover} alt={meal.name} /></div>}<span className="min-w-0 text-sm font-medium">{meal?.name ?? entry.adhocTitle ?? "Meal"}</span></div>;}) : <p className="text-sm text-slate-500">Not planned</p>}</div>;})}</div></section></div>
           <h2 id="my-day-upcoming" className="text-lg font-semibold text-slate-900">Next 7 days</h2>
           <p className="mt-1 mb-5 text-sm text-slate-500">Scheduled tasks and next routine due dates.</p>
           <div className="space-y-6">
             {upcomingDays.length > 0 ? upcomingDays.map((day) => (
               <section key={day.key} aria-label={day.label}>
                 <h3 className="mb-3 text-sm font-semibold text-slate-700">{day.label}</h3>
-                {itemDisplayMode === "all" ? (
+                {itemDisplayMode === "board" ? renderBoard(makeBoardItems([
+                  ...day.routines.map(task => ({ kind: "routine" as const, date: day.key, task })),
+                  ...day.tasks.map(task => ({ kind: "project" as const, date: day.key, task })),
+                  ...day.adhoc.map(task => ({ kind: "adhoc" as const, date: day.key, task })),
+                ]), day.key) : itemDisplayMode === "all" ? (
                   <div className="space-y-2">
                     {day.routines.map((task) => renderRoutineTask(task))}
                     {day.tasks.map((task) => renderTask(task))}
